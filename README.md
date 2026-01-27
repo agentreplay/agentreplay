@@ -150,7 +150,7 @@ Built-in evaluation with no external dependencies:
 
 | Category | Evaluators |
 |----------|------------|
-| **Quality** | Hallucination detection, RAGAS, QAG faithfulness |
+| **Quality** | Hallucination detection, RAGAS, QAG faithfulness, G-Eval |
 | **Safety** | Toxicity detection, bias detection |
 | **Performance** | Latency benchmarks, cost analysis, trajectory efficiency |
 | **RAG** | Context precision, faithfulness, relevancy |
@@ -162,6 +162,25 @@ Built-in evaluation with no external dependencies:
 - 🛡️ **Safety** - toxicity + compliance checks
 - ⏱️ **Latency** - p50/p95/p99 with cost analysis
 - 📋 **Comprehensive** - run all evaluators
+
+**Eval Pipeline Features:**
+- **Datasets** - create test case collections with expected outputs
+- **Eval Runs** - track evaluation sessions with pass/fail results
+- **A/B Comparison** - statistical comparison (Welch's t-test, Cohen's d)
+- **G-Eval** - LLM-as-judge with configurable criteria (coherence, relevance, fluency)
+- **Human Annotations** - thumbs up/down, star ratings, corrected outputs
+
+### 📝 Prompt Registry & Versioning
+
+Git-like version control for your prompts:
+
+- **Automatic versioning** - each prompt update creates a new version
+- **Template variables** - `{{variable}}` syntax with validation
+- **Semantic versioning** - major.minor.patch for prompts
+- **Deployment environments** - dev, staging, production
+- **Traffic splitting** - A/B test prompts with rollout strategies
+- **Lineage tracking** - parent-child version relationships
+- **API endpoints** - `/api/v1/prompts` for CRUD operations
 
 ### 🔌 Plugin System
 
