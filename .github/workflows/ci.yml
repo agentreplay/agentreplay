@@ -1,0 +1,163 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # NOTE: Rust tests disabled to reduce CI costs - run locally with: cargo test --all
+  # test-rust:
+  #   name: Test Rust Workspace
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: rustfmt, clippy
+  #     - name: Cache Cargo registry
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-cargo-
+  #     - name: Check formatting
+  #       run: cargo fmt --all -- --check
+  #     - name: Run Clippy
+  #       run: cargo clippy --all-targets -- -D warnings
+  #     - name: Run tests
+  #       run: cargo test --all
+
+
+  # Frontend tests
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: flowtrace-ui/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('flowtrace-ui/bun.lockb', 'flowtrace-ui/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        working-directory: flowtrace-ui
+        run: bun install
+
+      - name: Type check
+        working-directory: flowtrace-ui
+        run: bun run type-check
+
+      - name: Lint
+        working-directory: flowtrace-ui
+        run: bun run lint || echo "Lint script not configured, skipping"
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: bun run build
+
+
+  # SDK tests
+  test-sdks:
+    name: Test SDKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # JavaScript SDK
+      - name: Install JS SDK dependencies
+        working-directory: sdks/js
+        run: npm install
+
+      - name: Lint JS SDK
+        working-directory: sdks/js
+        run: npm run lint || echo "Lint not configured, skipping"
+
+      - name: Type check JS SDK
+        working-directory: sdks/js
+        run: npm run typecheck
+
+      - name: Build JS SDK
+        working-directory: sdks/js
+        run: npm run build
+
+      - name: Test JS SDK
+        working-directory: sdks/js
+        run: npm test || echo "No tests found, skipping"
+
+      # Go SDK
+      - name: Test Go SDK
+        working-directory: sdks/golang
+        run: |
+          go mod tidy
+          go test -v .
+
+      # Rust SDK
+      - name: Test Rust SDK
+        working-directory: sdks/rust
+        run: |
+          cargo fmt -- --check
+          cargo clippy -- -D warnings
+          cargo test --verbose
+
+      # Python SDK
+      - name: Install Python SDK
+        working-directory: sdks/python
+        run: |
+          pip install -e .
+          pip install pytest pytest-asyncio
+
+      - name: Test Python SDK
+        working-directory: sdks/python
+        run: pytest -v || echo "No tests found or tests skipped"

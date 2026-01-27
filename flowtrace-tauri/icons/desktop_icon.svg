@@ -1,0 +1,78 @@
+<svg
+  width="256"
+  height="256"
+  viewBox="0 0 64 64"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="AI vision &amp; data visualization"
+>
+  <defs>
+    <!-- iOS-style blue gradient background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#22D3EE" />
+    </linearGradient>
+
+    <!-- slight top highlight -->
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.35" />
+      <stop offset="40%" stop-color="white" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect
+    x="4"
+    y="4"
+    width="56"
+    height="56"
+    rx="14"
+    fill="url(#bg)"
+  />
+
+  <!-- Soft gloss on top -->
+  <rect
+    x="4"
+    y="4"
+    width="56"
+    height="28"
+    rx="14"
+    fill="url(#gloss)"
+  />
+
+  <!-- Center group: white glyph -->
+  <g
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- Eye outline -->
+    <path
+      d="
+        M14 26
+        C20 20 26.5 18 32 18
+        C37.5 18 44 20 50 26
+        C44 32 37.5 34 32 34
+        C26.5 34 20 32 14 26
+        Z
+      "
+    />
+
+    <!-- Pupil -->
+    <circle cx="32" cy="26" r="4.3" fill="#FFFFFF" />
+
+    <!-- Data / visualization: converging V lines -->
+    <!-- Left line -->
+    <path d="M22 36 L32 48" />
+    <!-- Center line -->
+    <path d="M32 35 L32 48" />
+    <!-- Right line -->
+    <path d="M42 36 L32 48" />
+
+    <!-- Small base node -->
+    <circle cx="32" cy="48" r="2.2" fill="#FFFFFF" />
+  </g>
+</svg>

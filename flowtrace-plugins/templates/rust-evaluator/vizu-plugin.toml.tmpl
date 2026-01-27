@@ -1,0 +1,27 @@
+[plugin]
+name = "{{plugin_id}}"
+version = "{{version}}"
+description = "{{description}}"
+author = "{{author}}"
+license = "Apache-2.0"
+keywords = [{{#each tags}}"{{this}}", {{/each}}]
+categories = ["evaluators"]
+
+# Minimum Vizu version required
+vizu_version = "0.1.0"
+
+# Plugin capabilities
+[capabilities]
+trace_read = true
+eval_write = true
+network = false
+env_vars = []
+
+# Plugin entry point
+[entry]
+type = "wasm"
+main = "target/wasm32-wasip1/release/{{plugin_id}}.wasm"
+
+# Configuration schema
+[config]
+threshold = { type = "float", default = 0.7, description = "Pass threshold" }

@@ -1,0 +1,41 @@
+# Docker ignore file for Tauri builds
+# This keeps the Docker build context smaller and faster
+
+# Git
+.git
+.gitignore
+
+# Build artifacts
+target/
+flowtrace-tauri/target/
+**/node_modules/
+flowtrace-ui/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Virtual environments
+.venv/
+venv/
+benchmarks/venv/
+
+# OS files
+.DS_Store
+*.log
+
+# Archives and large files
+*.zip
+*.tar.gz
+Archive.zip
+
+# Test artifacts
+*.txt
+tests.txt
+build_output.txt
+combined_project_rust.txt
+llma.txt
+mm.json
+model_code.json

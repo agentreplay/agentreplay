@@ -1,0 +1,94 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Publish Python SDK to PyPI
+# Triggered on releases or manual workflow dispatch
+#
+# Prerequisites:
+# 1. Package name 'flowtrace-client' must be registered on PyPI
+# 2. Environment 'pypi' must be configured with trusted publisher settings:
+#    - Repository: sushanthpy/flowtrace
+#    - Workflow: pypi-publish.yml
+#    - Environment name: pypi
+
+name: Publish Python SDK to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (leave empty to use pyproject.toml version)'
+        required: false
+        type: string
+
+jobs:
+  build:
+    name: Build Distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Update version (if specified)
+        if: ${{ inputs.version != '' }}
+        working-directory: sdks/python
+        run: |
+          sed -i "s/version = \".*\"/version = \"${{ inputs.version }}\"/" pyproject.toml
+
+      - name: Build package
+        working-directory: sdks/python
+        run: python -m build
+
+      - name: Check package
+        working-directory: sdks/python
+        run: twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: sdks/python/dist/
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/flowtrace-client
+
+    permissions:
+      id-token: write  # Required for trusted publishing
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true

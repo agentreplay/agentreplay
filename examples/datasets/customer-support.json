@@ -1,0 +1,96 @@
+{
+  "name": "Customer Support QA Dataset",
+  "description": "Common customer support questions and expected responses for quality evaluation",
+  "test_cases": [
+    {
+      "input": "How do I reset my password?",
+      "expected_output": "To reset your password, click on 'Forgot Password' on the login page, enter your email address, and follow the instructions sent to your inbox.",
+      "metadata": {
+        "category": "account_management",
+        "difficulty": "easy",
+        "expected_sentiment": "helpful"
+      }
+    },
+    {
+      "input": "What are your refund policies?",
+      "expected_output": "We offer a 30-day money-back guarantee. If you're not satisfied with your purchase, contact our support team within 30 days for a full refund.",
+      "metadata": {
+        "category": "billing",
+        "difficulty": "medium",
+        "expected_sentiment": "professional"
+      }
+    },
+    {
+      "input": "How can I upgrade my subscription plan?",
+      "expected_output": "To upgrade your subscription, go to Account Settings > Subscription, choose your desired plan, and click 'Upgrade Now'. The changes will take effect immediately.",
+      "metadata": {
+        "category": "subscriptions",
+        "difficulty": "easy",
+        "expected_sentiment": "encouraging"
+      }
+    },
+    {
+      "input": "I'm having trouble connecting to the API",
+      "expected_output": "Let's troubleshoot your API connection. First, verify your API key is correct. Check that you're using the correct endpoint URL. Ensure your firewall allows outbound HTTPS connections. If issues persist, check our status page or contact support.",
+      "metadata": {
+        "category": "technical_support",
+        "difficulty": "hard",
+        "expected_sentiment": "supportive"
+      }
+    },
+    {
+      "input": "Can I export my data?",
+      "expected_output": "Yes, you can export your data at any time. Navigate to Settings > Data Export, select your preferred format (CSV, JSON, or XML), and click 'Export'. You'll receive a download link via email within minutes.",
+      "metadata": {
+        "category": "data_management",
+        "difficulty": "easy",
+        "expected_sentiment": "informative"
+      }
+    },
+    {
+      "input": "What security measures do you have in place?",
+      "expected_output": "We take security seriously. Your data is encrypted at rest and in transit using AES-256 and TLS 1.3. We perform regular security audits, maintain SOC 2 compliance, and offer two-factor authentication for all accounts.",
+      "metadata": {
+        "category": "security",
+        "difficulty": "medium",
+        "expected_sentiment": "reassuring"
+      }
+    },
+    {
+      "input": "How do I cancel my subscription?",
+      "expected_output": "You can cancel your subscription anytime from Account Settings > Subscription > Cancel Subscription. Your access will continue until the end of your current billing period. No refunds for partial months.",
+      "metadata": {
+        "category": "subscriptions",
+        "difficulty": "easy",
+        "expected_sentiment": "neutral"
+      }
+    },
+    {
+      "input": "Is there a mobile app available?",
+      "expected_output": "Yes! Our mobile app is available for both iOS and Android. Download it from the App Store or Google Play Store. All features available on web are also accessible in the mobile app.",
+      "metadata": {
+        "category": "product_info",
+        "difficulty": "easy",
+        "expected_sentiment": "positive"
+      }
+    },
+    {
+      "input": "How do I integrate with Slack?",
+      "expected_output": "To integrate with Slack: 1) Go to Settings > Integrations, 2) Click 'Connect Slack', 3) Authorize our app in your Slack workspace, 4) Select channels to receive notifications. You can customize notification preferences after setup.",
+      "metadata": {
+        "category": "integrations",
+        "difficulty": "medium",
+        "expected_sentiment": "instructional"
+      }
+    },
+    {
+      "input": "What's included in the enterprise plan?",
+      "expected_output": "Our Enterprise plan includes unlimited users, advanced analytics, priority support, custom integrations, dedicated account manager, SLA guarantees, and on-premise deployment options. Contact our sales team for detailed pricing.",
+      "metadata": {
+        "category": "sales",
+        "difficulty": "medium",
+        "expected_sentiment": "professional"
+      }
+    }
+  ]
+}

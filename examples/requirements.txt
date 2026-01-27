@@ -1,0 +1,29 @@
+# Requirements for Flowtrace Framework Examples
+
+# Core Flowtrace
+flowtrace>=0.1.0
+
+# LangGraph (Project 31696)
+langgraph>=0.0.40
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+
+# LangChain (Project 31697)
+langchain>=0.2.0
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+
+# AutoGen (Project 31698)
+pyautogen>=0.2.0
+
+# CrewAI (Project 31699)
+crewai>=0.1.0
+crewai-tools>=0.1.0
+
+# Shared dependencies
+python-dotenv>=1.0.0
+tavily-python>=0.3.0
+openai>=1.0.0
+
+# Optional: For advanced features
+tiktoken>=0.5.0

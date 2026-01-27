@@ -1,0 +1,1 @@
+import flowtrace.bootstrap; flowtrace.bootstrap._auto_init()

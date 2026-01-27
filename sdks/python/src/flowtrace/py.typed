@@ -1,0 +1,3 @@
+# Marker file for PEP 561 - ChronoLake SDK is type-checked
+# This file tells type checkers (mypy, pyright, etc.) that this package
+# includes inline type hints and supports type checking.

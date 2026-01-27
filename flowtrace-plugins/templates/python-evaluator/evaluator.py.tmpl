@@ -1,0 +1,72 @@
+"""
+{{plugin_name}} - A Vizu Evaluator Plugin
+
+{{description}}
+"""
+
+from vizu_plugin import (
+    Evaluator,
+    TraceContext,
+    EvalResult,
+    PluginMetadata,
+    Host,
+    export,
+)
+
+
+class {{class_name}}(Evaluator):
+    """{{description}}"""
+
+    def __init__(self):
+        # Load configuration
+        config = Host.get_config()
+        self.threshold = config.get("threshold", 0.7)
+
+    def evaluate(self, trace: TraceContext) -> EvalResult:
+        """
+        Evaluate a trace.
+
+        Args:
+            trace: The trace context containing all spans and metadata
+
+        Returns:
+            EvalResult with pass/fail status, confidence, and explanation
+        """
+        # Calculate score based on your evaluation logic
+        score = self._calculate_score(trace)
+
+        return EvalResult(
+            evaluator_id="{{plugin_id}}",
+            passed=score >= self.threshold,
+            confidence=score,
+            explanation=f"Score: {score:.2f} (threshold: {self.threshold})",
+            metrics={
+                "score": score,
+                "num_spans": len(trace.spans),
+            },
+        )
+
+    def _calculate_score(self, trace: TraceContext) -> float:
+        """Calculate the evaluation score for a trace."""
+        # Example: Calculate completion rate of spans
+        completed = sum(1 for s in trace.spans if s.duration_us is not None)
+        total = len(trace.spans)
+
+        if total == 0:
+            return 0.0
+
+        return completed / total
+
+    def get_metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            id="{{plugin_id}}",
+            name="{{plugin_name}}",
+            version="{{version}}",
+            description="{{description}}",
+            author="{{author}}",
+            tags=[{{#each tags}}"{{this}}", {{/each}}],
+        )
+
+
+# Export the plugin
+export({{class_name}}())

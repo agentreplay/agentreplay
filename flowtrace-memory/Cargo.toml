@@ -1,0 +1,49 @@
+[package]
+name = "flowtrace-memory"
+version = "0.1.0"
+edition = "2021"
+description = "Persistent memory system for LLM agents - context compression, semantic retrieval, and session continuity"
+license = "Apache-2.0"
+repository = "https://github.com/flowtrace/flowtrace"
+authors = ["Flowtrace Team <team@flowtrace.dev>"]
+keywords = ["memory", "llm", "agent", "context", "rag"]
+categories = ["database", "memory-management"]
+
+[dependencies]
+# Core Flowtrace dependencies
+flowtrace-core = { path = "../flowtrace-core" }
+flowtrace-index = { path = "../flowtrace-index" }
+flowtrace-storage = { path = "../flowtrace-storage" }
+
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Unique IDs
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Hashing
+blake3 = "1"
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Logging
+tracing = "0.1"
+
+# Async channels
+async-channel = "2"
+
+# Semantic similarity (optional embedding support)
+# Uses flowtrace-index for vector search
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
+tempfile = "3"

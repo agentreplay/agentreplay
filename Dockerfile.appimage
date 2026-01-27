@@ -1,0 +1,72 @@
+# Dockerfile for building Vizu Linux AppImage
+# Build: docker build -f Dockerfile.appimage -t vizu-appimage .
+# Run:   docker run --rm -v "$PWD":/app vizu-appimage
+
+FROM node:22-bookworm
+
+# System dependencies for Tauri 2 + AppImage
+RUN apt-get update && apt-get install -y \
+    libgtk-3-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
+    libssl-dev \
+    curl \
+    wget \
+    xz-utils \
+    build-essential \
+    pkg-config \
+    libglib2.0-dev \
+    libwebkit2gtk-4.1-dev \
+    patchelf \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust (stable)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Tauri CLI
+RUN cargo install tauri-cli --version "^2.0"
+
+WORKDIR /app
+
+# Copy workspace Cargo files for dependency caching
+COPY Cargo.toml Cargo.lock ./
+COPY vizu-core/Cargo.toml ./vizu-core/
+COPY vizu-storage/Cargo.toml ./vizu-storage/
+COPY vizu-index/Cargo.toml ./vizu-index/
+COPY vizu-query/Cargo.toml ./vizu-query/
+COPY vizu-server/Cargo.toml ./vizu-server/
+COPY vizu-evals/Cargo.toml ./vizu-evals/
+COPY vizu-prompts/Cargo.toml ./vizu-prompts/
+COPY vizu-tauri/Cargo.toml ./vizu-tauri/
+
+# Copy frontend package files for npm caching
+COPY vizu-ui/package.json vizu-ui/package-lock.json ./vizu-ui/
+
+# Install frontend dependencies
+WORKDIR /app/vizu-ui
+RUN npm ci
+
+# Copy the rest of the project
+WORKDIR /app
+COPY . .
+
+# Build frontend
+WORKDIR /app/vizu-ui
+RUN npm run build
+
+# Copy frontend dist to Tauri
+WORKDIR /app
+RUN rm -rf vizu-tauri/vizu-ui/dist && \
+    mkdir -p vizu-tauri/vizu-ui && \
+    cp -r vizu-ui/dist vizu-tauri/vizu-ui/
+
+# Build Tauri AppImage (release)
+WORKDIR /app/vizu-tauri
+RUN cargo tauri build --target x86_64-unknown-linux-gnu
+
+# Output will be in:
+# /app/vizu-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+# /app/vizu-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb

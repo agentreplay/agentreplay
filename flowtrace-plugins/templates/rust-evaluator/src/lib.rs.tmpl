@@ -1,0 +1,74 @@
+//! {{plugin_name}} - A Vizu Evaluator Plugin
+//!
+//! {{description}}
+
+use vizu_plugin_sdk::prelude::*;
+
+/// {{plugin_name}} evaluator
+#[derive(Default)]
+pub struct {{class_name}};
+
+impl Evaluator for {{class_name}} {
+    fn evaluate(&self, trace: TraceContext) -> Result<EvalResult, String> {
+        // Get configuration
+        let config = Host::get_config();
+        let threshold: f64 = config
+            .get("threshold")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.7);
+        
+        // Calculate score based on your evaluation logic
+        let score = self.calculate_score(&trace);
+        
+        // Create result
+        Ok(EvalResult {
+            evaluator_id: "{{plugin_id}}".into(),
+            passed: score >= threshold,
+            confidence: score,
+            explanation: Some(format!(
+                "Score: {:.2} (threshold: {:.2})",
+                score, threshold
+            )),
+            metrics: [
+                ("score".into(), MetricValue::Float(score)),
+                ("num_spans".into(), MetricValue::Int(trace.spans.len() as i64)),
+            ]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        })
+    }
+    
+    fn get_metadata(&self) -> PluginMetadata {
+        PluginMetadata {
+            id: "{{plugin_id}}".into(),
+            name: "{{plugin_name}}".into(),
+            version: "{{version}}".into(),
+            description: "{{description}}".into(),
+            author: Some("{{author}}".into()),
+            tags: vec![{{#each tags}}"{{this}}".into(),{{/each}}],
+            cost_per_eval: None,
+        }
+    }
+}
+
+impl {{class_name}} {
+    /// Calculate the evaluation score for a trace
+    fn calculate_score(&self, trace: &TraceContext) -> f64 {
+        // Example: Calculate completion rate of spans
+        let completed = trace.spans.iter()
+            .filter(|s| s.duration_us.is_some())
+            .count();
+        
+        let total = trace.spans.len();
+        
+        if total == 0 {
+            return 0.0;
+        }
+        
+        completed as f64 / total as f64
+    }
+}
+
+// Export the evaluator
+export_evaluator!({{class_name}});

@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunDetailResponseV1",
+  "type": "object",
+  "required": [
+    "id",
+    "dataset_id",
+    "name",
+    "agent_id",
+    "model",
+    "schema_version",
+    "status",
+    "started_at",
+    "results",
+    "task_aggregates",
+    "aggregated_metrics",
+    "passed_count",
+    "failed_count",
+    "pass_rate",
+    "config"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "dataset_id": { "type": "string" },
+    "name": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "model": { "type": "string" },
+    "schema_version": { "type": "string" },
+    "status": { "type": "string" },
+    "started_at": { "type": "integer" },
+    "completed_at": { "type": ["integer", "null"] },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["test_case_id", "trial_id", "eval_metrics", "passed", "timestamp_us"],
+        "properties": {
+          "test_case_id": { "type": "string" },
+          "trial_id": { "type": "integer" },
+          "seed": { "type": ["integer", "null"] },
+          "trace_id": { "type": ["string", "null"] },
+          "trace_ref": {
+            "type": ["object", "null"],
+            "required": ["schema_version", "trace_id"],
+            "properties": {
+              "schema_version": { "type": "string" },
+              "trace_id": { "type": "string" },
+              "export_uri": { "type": ["string", "null"] },
+              "hash": { "type": ["string", "null"] }
+            }
+          },
+          "eval_trace": { "type": ["object", "null"] },
+          "trace_summary": {
+            "type": ["object", "null"],
+            "required": ["status", "tool_call_count"],
+            "properties": {
+              "status": { "type": "string" },
+              "final_output_text": { "type": ["string", "null"] },
+              "tool_call_count": { "type": "integer" },
+              "state_diff_hash": { "type": ["string", "null"] }
+            }
+          },
+          "eval_metrics": { "type": "object" },
+          "grader_results": { "type": "array" },
+          "overall": { "type": ["object", "null"] },
+          "passed": { "type": "boolean" },
+          "error": { "type": ["string", "null"] },
+          "timestamp_us": { "type": "integer" },
+          "cost_usd": { "type": ["number", "null"] },
+          "latency_ms": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "task_aggregates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["test_case_id", "trials", "passed", "pass_rate"],
+        "properties": {
+          "test_case_id": { "type": "integer" },
+          "trials": { "type": "integer" },
+          "passed": { "type": "integer" },
+          "pass_rate": { "type": "number" },
+          "pass_at_k_estimated": { "type": "object" },
+          "pass_at_k_empirical": { "type": "object" },
+          "pass_all_k_estimated": { "type": "object" },
+          "pass_all_k_empirical": { "type": "object" },
+          "mean_cost_usd": { "type": ["number", "null"] },
+          "p50_latency_ms": { "type": ["integer", "null"] },
+          "p95_latency_ms": { "type": ["integer", "null"] },
+          "pass_rate_ci": {
+            "type": ["object", "null"],
+            "required": ["method", "lower", "upper"],
+            "properties": {
+              "method": { "type": "string" },
+              "lower": { "type": "number" },
+              "upper": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "aggregated_metrics": { "type": "object" },
+    "passed_count": { "type": "integer" },
+    "failed_count": { "type": "integer" },
+    "pass_rate": { "type": "number" },
+    "config": { "type": "object" }
+  }
+}

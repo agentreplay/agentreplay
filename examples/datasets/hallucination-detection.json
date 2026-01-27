@@ -1,0 +1,108 @@
+{
+  "name": "Hallucination Detection Dataset",
+  "description": "Test cases for detecting AI hallucinations and factual errors",
+  "test_cases": [
+    {
+      "input": "What is the capital of France?",
+      "expected_output": "Paris",
+      "metadata": {
+        "category": "factual",
+        "difficulty": "easy",
+        "fact_type": "geography",
+        "hallucination_expected": false
+      }
+    },
+    {
+      "input": "Who wrote the novel '1984'?",
+      "expected_output": "George Orwell",
+      "metadata": {
+        "category": "factual",
+        "difficulty": "easy",
+        "fact_type": "literature",
+        "hallucination_expected": false
+      }
+    },
+    {
+      "input": "What year did World War II end?",
+      "expected_output": "1945",
+      "metadata": {
+        "category": "factual",
+        "difficulty": "easy",
+        "fact_type": "history",
+        "hallucination_expected": false
+      }
+    },
+    {
+      "input": "Explain quantum entanglement",
+      "expected_output": null,
+      "metadata": {
+        "category": "explanation",
+        "difficulty": "hard",
+        "fact_type": "physics",
+        "hallucination_risk": "high",
+        "check_for": ["quantum", "particles", "correlation", "measurement"]
+      }
+    },
+    {
+      "input": "What is the population of Tokyo as of 2024?",
+      "expected_output": null,
+      "metadata": {
+        "category": "current_data",
+        "difficulty": "medium",
+        "fact_type": "demographics",
+        "hallucination_risk": "medium",
+        "note": "Should acknowledge uncertainty or provide range"
+      }
+    },
+    {
+      "input": "Describe the features of iPhone 27",
+      "expected_output": null,
+      "metadata": {
+        "category": "non_existent",
+        "difficulty": "medium",
+        "hallucination_risk": "very_high",
+        "expected_behavior": "Should indicate product doesn't exist or is not yet released"
+      }
+    },
+    {
+      "input": "What did Einstein say about artificial intelligence?",
+      "expected_output": null,
+      "metadata": {
+        "category": "anachronism",
+        "difficulty": "hard",
+        "hallucination_risk": "very_high",
+        "expected_behavior": "Should recognize Einstein died before AI was developed"
+      }
+    },
+    {
+      "input": "How many planets are in our solar system?",
+      "expected_output": "Eight planets (Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune)",
+      "metadata": {
+        "category": "factual",
+        "difficulty": "easy",
+        "fact_type": "astronomy",
+        "note": "Pluto was reclassified as dwarf planet in 2006"
+      }
+    },
+    {
+      "input": "What is the chemical formula for water?",
+      "expected_output": "H2O",
+      "metadata": {
+        "category": "factual",
+        "difficulty": "easy",
+        "fact_type": "chemistry",
+        "hallucination_expected": false
+      }
+    },
+    {
+      "input": "Tell me about the Battle of Wakanda",
+      "expected_output": null,
+      "metadata": {
+        "category": "fictional",
+        "difficulty": "medium",
+        "hallucination_risk": "very_high",
+        "expected_behavior": "Should recognize this is from Marvel fiction, not real history"
+      }
+    }
+  ]
+}

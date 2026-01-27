@@ -1,0 +1,125 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Publish JavaScript SDK to npm
+# Triggered on releases or manual workflow dispatch
+#
+# Prerequisites:
+# 1. Package name 'flowtrace-client' must be registered on npm
+# 2. NPM_TOKEN secret must be configured in repository settings
+#    OR use npm provenance with trusted publishing
+
+name: Publish JS SDK to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (leave empty to use package.json version)'
+        required: false
+        type: string
+
+jobs:
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        working-directory: sdks/js
+        run: npm ci
+
+      - name: Update version (if specified)
+        if: ${{ inputs.version != '' }}
+        working-directory: sdks/js
+        run: npm version ${{ inputs.version }} --no-git-tag-version
+
+      - name: Build package
+        working-directory: sdks/js
+        run: npm run build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-package-dist
+          path: |
+            sdks/js/dist/
+            sdks/js/package.json
+            sdks/js/README.md
+            sdks/js/LICENSE
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # For npm provenance
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: js-package-dist
+          path: sdks/js/
+
+      - name: Publish to npm
+        working-directory: sdks/js
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-npm-dry-run:
+    name: Dry Run (Test Build)
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: js-package-dist
+          path: sdks/js/
+
+      - name: Dry run publish
+        working-directory: sdks/js
+        run: npm publish --dry-run

@@ -1,0 +1,175 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowtrace-client"
+version = "0.1.2"
+description = "Flowtrace is a high-performance observability and tracing platform for LLM agents and AI apps, combining semantic search, specialized evals (RAGAS, G-Eval, toxicity), and Git-like versioning of prompts and responses."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Sushanth", email = "sushanth@flowtrace.dev"}
+]
+keywords = [
+    "llm", "agents", "tracing", "observability", "ai", "opentelemetry",
+    "ragas", "evaluation", "prompts", "semantic-search"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "pydantic>=2.0.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20.0",
+    # Official OTEL instrumentations (maintained by OTEL community)
+    "opentelemetry-instrumentation>=0.41b0",
+    # Auto-instrumentation for popular libraries
+    "opentelemetry-instrumentation-openai>=0.48.0",  # For OpenAI SDK auto-tracing
+    # HTTP client (used by Flowtrace client)
+    "httpx>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+# Framework Integrations
+langchain = [
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+]
+langgraph = [
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0",
+]
+llamaindex = [
+    "llama-index>=0.11.0",
+    "llama-index-core>=0.11.0",
+]
+llamaindex-workflows = [
+    "llama-index>=0.11.0",
+    "llama-index-workflows>=0.2.0",
+]
+openai-agents = [
+    "openai-agents>=0.5.0",
+]
+autogen = [
+    "autogen-agentchat>=0.4.0",
+    "autogen-core>=0.4.0",
+]
+semantic-kernel = [
+    "semantic-kernel>=1.0.0",
+]
+crewai = [
+    "crewai>=0.1.0",
+]
+smolagents = [
+    "smolagents>=1.0.0",
+]
+pydantic-ai = [
+    "pydantic-ai>=1.0.0",
+]
+strands = [
+    "strands-sdk>=1.0.0",
+]
+google-adk = [
+    "google-adk>=1.0.0",
+]
+
+# Convenience bundles
+all-frameworks = [
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langgraph>=0.2.0",
+    "llama-index>=0.11.0",
+    "openai-agents>=0.5.0",
+    "autogen-agentchat>=0.4.0",
+    "semantic-kernel>=1.0.0",
+    "crewai>=0.1.0",
+    "smolagents>=1.0.0",
+    "pydantic-ai>=1.0.0",
+]
+all = [
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langgraph>=0.2.0",
+    "llama-index>=0.11.0",
+    "openai-agents>=0.5.0",
+    "autogen-agentchat>=0.4.0",
+    "semantic-kernel>=1.0.0",
+    "crewai>=0.1.0",
+    "smolagents>=1.0.0",
+    "pydantic-ai>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.urls]
+Homepage = "https://flowtrace.dev"
+Documentation = "https://docs.flowtrace.dev"
+Repository = "https://github.com/sushanthpy/flowtrace"
+Issues = "https://github.com/sushanthpy/flowtrace/issues"
+Changelog = "https://github.com/sushanthpy/flowtrace/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+flowtrace = ["py.typed", "flowtrace-init.pth"]
+
+# Include the .pth file for auto-initialization
+[tool.setuptools]
+include-package-data = true
+
+# NOTE: .pth files cannot be included in wheels directly.
+# Users should run: python -m flowtrace.install_pth after pip install
+# Or use: FLOWTRACE_ENABLED=true with manual init
+
+[project.scripts]
+flowtrace-install = "flowtrace.install_pth:main"
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

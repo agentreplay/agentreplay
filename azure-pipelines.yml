@@ -1,0 +1,26 @@
+# Azure Pipelines - Manual Trigger Only
+# 
+# This file is intentionally minimal.
+# All platform release builds are configured separately in .azure-pipelines/
+#
+# Available Pipelines in .azure-pipelines/:
+#   - release-linux.yml   - Linux Tauri release builds
+#   - release-macos.yml   - macOS Tauri release builds  
+#   - release-windows.yml - Windows Tauri release builds
+#   - publish-python.yml  - Publish Python SDK to PyPI
+#   - publish-npm.yml     - Publish JS SDK to npm
+#
+# Setup Instructions:
+# 1. Go to Azure DevOps > Pipelines > New Pipeline
+# 2. Select your repository
+# 3. Choose "Existing Azure Pipelines YAML file"
+# 4. Select from .azure-pipelines/ directory
+# 5. Configure required variables/secrets in Pipeline settings:
+#    - TAURI_PRIVATE_KEY     - Tauri signing key (for release builds)
+#    - TAURI_KEY_PASSWORD    - Tauri key password (for release builds)
+#    - PYPI_TOKEN            - PyPI API token (for Python SDK publish)
+#    - NPM_TOKEN             - npm auth token (for JS SDK publish)
+
+# Disable all automatic triggers
+trigger: none
+pr: none

@@ -1,0 +1,86 @@
+name: Release Build - macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.1.0)'
+        required: true
+        default: '0.1.0'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-tauri-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            name: macOS (Apple Silicon)
+          - target: x86_64-apple-darwin
+            name: macOS (Intel)
+    
+    name: Build ${{ matrix.name }}
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: flowtrace-ui/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install frontend dependencies
+        working-directory: flowtrace-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: npm run build
+
+      - name: Copy frontend to Tauri
+        shell: bash
+        run: |
+          rm -rf flowtrace-tauri/flowtrace-ui/dist
+          mkdir -p flowtrace-tauri/flowtrace-ui
+          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0"
+
+      - name: Build Tauri App
+        working-directory: flowtrace-tauri
+        run: cargo tauri build --target ${{ matrix.target }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-${{ matrix.target }}
+          path: |
+            flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            flowtrace-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+          if-no-files-found: error
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            flowtrace-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

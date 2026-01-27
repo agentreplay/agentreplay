@@ -1,0 +1,98 @@
+{
+  "name": "Sentiment Analysis Dataset",
+  "description": "Customer reviews and feedback for sentiment classification",
+  "test_cases": [
+    {
+      "input": "This product exceeded all my expectations! Absolutely love it!",
+      "expected_output": "positive",
+      "metadata": {
+        "sentiment": "very_positive",
+        "intensity": 0.9,
+        "category": "product_review"
+      }
+    },
+    {
+      "input": "Terrible experience. The product broke after one day. Do not buy!",
+      "expected_output": "negative",
+      "metadata": {
+        "sentiment": "very_negative",
+        "intensity": 0.95,
+        "category": "product_review"
+      }
+    },
+    {
+      "input": "It's okay, nothing special. Does what it's supposed to do.",
+      "expected_output": "neutral",
+      "metadata": {
+        "sentiment": "neutral",
+        "intensity": 0.5,
+        "category": "product_review"
+      }
+    },
+    {
+      "input": "Great customer service! They resolved my issue quickly and professionally.",
+      "expected_output": "positive",
+      "metadata": {
+        "sentiment": "positive",
+        "intensity": 0.85,
+        "category": "customer_service"
+      }
+    },
+    {
+      "input": "I've been waiting for 2 weeks and still no response from support. Very disappointed.",
+      "expected_output": "negative",
+      "metadata": {
+        "sentiment": "negative",
+        "intensity": 0.8,
+        "category": "customer_service"
+      }
+    },
+    {
+      "input": "The app is good but crashes occasionally. Would be 5 stars if they fix the bugs.",
+      "expected_output": "mixed",
+      "metadata": {
+        "sentiment": "mixed",
+        "positive_aspects": ["functionality"],
+        "negative_aspects": ["stability"],
+        "category": "software_review"
+      }
+    },
+    {
+      "input": "Best purchase I've made this year! Highly recommend to everyone!",
+      "expected_output": "positive",
+      "metadata": {
+        "sentiment": "very_positive",
+        "intensity": 0.95,
+        "category": "product_review"
+      }
+    },
+    {
+      "input": "The delivery was on time. Product matches the description.",
+      "expected_output": "neutral",
+      "metadata": {
+        "sentiment": "neutral_positive",
+        "intensity": 0.6,
+        "category": "delivery_review"
+      }
+    },
+    {
+      "input": "Waste of money. Poor quality and overpriced.",
+      "expected_output": "negative",
+      "metadata": {
+        "sentiment": "very_negative",
+        "intensity": 0.9,
+        "category": "product_review"
+      }
+    },
+    {
+      "input": "I like the design, but the battery life is disappointing. Mixed feelings about this.",
+      "expected_output": "mixed",
+      "metadata": {
+        "sentiment": "mixed",
+        "positive_aspects": ["design"],
+        "negative_aspects": ["battery_life"],
+        "category": "product_review"
+      }
+    }
+  ]
+}

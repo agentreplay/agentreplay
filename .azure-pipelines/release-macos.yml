@@ -1,0 +1,153 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Azure Pipelines - Release Build for macOS
+# Equivalent to GitHub Actions: release-mac.yml
+
+trigger: none
+
+pr: none
+
+parameters:
+  - name: version
+    displayName: 'Version (e.g., 0.1.0)'
+    type: string
+    default: '0.1.0'
+
+variables:
+  CARGO_TERM_COLOR: always
+
+stages:
+  - stage: BuildMacOS
+    displayName: 'Build macOS'
+    jobs:
+      # -------------------------------------------------------------------------
+      # macOS Apple Silicon (arm64)
+      # -------------------------------------------------------------------------
+      - job: BuildTauriMacOSARM
+        displayName: 'Build macOS (Apple Silicon)'
+        pool:
+          vmImage: 'macos-latest'
+        steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: 'Setup Node.js'
+            inputs:
+              versionSpec: '20.x'
+
+          - task: Cache@2
+            displayName: 'Cache npm packages'
+            inputs:
+              key: 'npm | "$(Agent.OS)" | flowtrace-ui/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.npm
+
+          - script: |
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              echo "##vso[task.prependpath]$HOME/.cargo/bin"
+              rustup target add aarch64-apple-darwin
+            displayName: 'Install Rust'
+
+          - script: npm ci
+            displayName: 'Install frontend dependencies'
+            workingDirectory: flowtrace-ui
+
+          - script: npm run build
+            displayName: 'Build frontend'
+            workingDirectory: flowtrace-ui
+
+          - script: |
+              rm -rf flowtrace-tauri/flowtrace-ui/dist
+              mkdir -p flowtrace-tauri/flowtrace-ui
+              cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+            displayName: 'Copy frontend to Tauri'
+
+          - script: cargo install tauri-cli --version "^2.0"
+            displayName: 'Install Tauri CLI'
+
+          - script: cargo tauri build --target aarch64-apple-darwin
+            displayName: 'Build Tauri App'
+            workingDirectory: flowtrace-tauri
+            env:
+              TAURI_SIGNING_PRIVATE_KEY: $(TAURI_PRIVATE_KEY)
+              TAURI_SIGNING_PRIVATE_KEY_PASSWORD: $(TAURI_KEY_PASSWORD)
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish macOS ARM artifacts'
+            inputs:
+              targetPath: 'flowtrace-tauri/target/aarch64-apple-darwin/release/bundle'
+              artifact: 'Flowtrace-aarch64-apple-darwin'
+              publishLocation: 'pipeline'
+
+      # -------------------------------------------------------------------------
+      # macOS Intel (x64)
+      # -------------------------------------------------------------------------
+      - job: BuildTauriMacOSIntel
+        displayName: 'Build macOS (Intel)'
+        pool:
+          vmImage: 'macos-latest'
+        steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: 'Setup Node.js'
+            inputs:
+              versionSpec: '20.x'
+
+          - task: Cache@2
+            displayName: 'Cache npm packages'
+            inputs:
+              key: 'npm | "$(Agent.OS)" | flowtrace-ui/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(Pipeline.Workspace)/.npm
+
+          - script: |
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              echo "##vso[task.prependpath]$HOME/.cargo/bin"
+              rustup target add x86_64-apple-darwin
+            displayName: 'Install Rust'
+
+          - script: npm ci
+            displayName: 'Install frontend dependencies'
+            workingDirectory: flowtrace-ui
+
+          - script: npm run build
+            displayName: 'Build frontend'
+            workingDirectory: flowtrace-ui
+
+          - script: |
+              rm -rf flowtrace-tauri/flowtrace-ui/dist
+              mkdir -p flowtrace-tauri/flowtrace-ui
+              cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+            displayName: 'Copy frontend to Tauri'
+
+          - script: cargo install tauri-cli --version "^2.0"
+            displayName: 'Install Tauri CLI'
+
+          - script: cargo tauri build --target x86_64-apple-darwin
+            displayName: 'Build Tauri App'
+            workingDirectory: flowtrace-tauri
+            env:
+              TAURI_SIGNING_PRIVATE_KEY: $(TAURI_PRIVATE_KEY)
+              TAURI_SIGNING_PRIVATE_KEY_PASSWORD: $(TAURI_KEY_PASSWORD)
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish macOS Intel artifacts'
+            inputs:
+              targetPath: 'flowtrace-tauri/target/x86_64-apple-darwin/release/bundle'
+              artifact: 'Flowtrace-x86_64-apple-darwin'
+              publishLocation: 'pipeline'

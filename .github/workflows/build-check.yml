@@ -1,0 +1,105 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Build Check
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Quick build check on Linux only (fastest)
+  build-check:
+    name: Build Check (Linux)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      # Rust workspace checks
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: |
+          cargo clippy --all-targets -- \
+            -D warnings \
+            -A dead_code \
+            -A unused \
+            -A clippy::type-complexity \
+            -A clippy::too-many-arguments \
+            -A clippy::result-large-err \
+            -A clippy::manual-clamp \
+            -A clippy::doc-lazy-continuation \
+            -A clippy::manual-div-ceil \
+            -A clippy::manual-is-multiple-of \
+            -A clippy::needless-range-loop \
+            -A clippy::collapsible-if \
+            -A clippy::derivable-impls \
+            -A clippy::excessive-precision \
+            -A clippy::unnecessary-map-or \
+            -A clippy::manual-range-contains \
+            -A clippy::while-let-loop \
+            -A clippy::unwrap-or-default \
+            -A clippy::unnecessary-cast \
+            -A clippy::redundant-closure \
+            -A clippy::needless-borrows-for-generic-args \
+            -A clippy::manual-strip \
+            -A clippy::iter-cloned-collect \
+            -A clippy::implicit-saturating-sub \
+            -A clippy::assign-op-pattern \
+            -A clippy::cloned-ref-to-slice-refs \
+            -A clippy::io-other-error \
+            -A clippy::match-like-matches-macro \
+            -A clippy::only-used-in-recursion \
+            -A clippy::should-implement-trait \
+            -A clippy::ptr-arg \
+            -A clippy::collapsible-else-if \
+            -A clippy::unnecessary-get-then-check
+
+      - name: Run workspace tests
+        run: cargo test --all --verbose
+
+      # Build workspace
+      - name: Build workspace
+        run: cargo build --all --release
+
+      - name: Build check passed
+        run: |
+          echo "## Build Check Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Rust workspace builds and tests pass on Linux." >> $GITHUB_STEP_SUMMARY

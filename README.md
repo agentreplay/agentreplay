@@ -1,0 +1,841 @@
+# Flowtrace
+
+<div align="center">
+
+**A Purpose-Built, High-Performance Observability Platform for LLM Agents**
+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Performance](#-performance) • [Contributing](#-contributing)
+
+</div>
+
+---
+
+## 🎯 Overview
+
+Flowtrace is a purpose-built observability platform for LLM (Large Language Model) agents. Designed from the ground up to handle the unique challenges of agent observability:
+
+- **High-performance ingestion** with LSM-tree storage engine
+- **Native causal graph support** for tracking complex agent reasoning flows
+- **Built-in evaluation framework** with 20+ automated evaluators
+- **Offline-first desktop app** with optional cloud sync
+- **Multi-index architecture** for optimized queries
+
+### Key Capabilities
+
+Flowtrace implements the **AgentFlow Format (AFF) v2.0** - a specialized trace format optimized for LLM agents:
+- **Fixed 128-byte edge format** for optimal cache performance
+- **LSM-tree storage engine** for write-optimized durability
+- **CSR causal graph index** for fast parent-child traversal
+- **HNSW vector index** for semantic similarity search
+- **Temporal index** for time-based partitioning
+
+---
+
+## ✨ Features
+
+### Core Capabilities
+
+- **🚀 High-Performance Ingestion**
+  - Optimized for high-throughput trace ingestion
+  - Sub-millisecond point query latency
+  - Write-optimized LSM-tree storage
+  - Lock-free reads for concurrent access
+
+- **🔗 Native Causal Graph Support**
+  - Track parent-child relationships between agent actions
+  - Traverse reasoning chains efficiently
+  - Understand multi-step agent workflows
+  - Query ancestors, descendants, and siblings
+
+- **📊 Comprehensive Evaluation Framework**
+  - **Hallucination Detection**: LLM-as-judge with claim verification
+  - **Relevance Scoring**: Semantic similarity between input/output
+  - **Toxicity Detection**: Content safety monitoring
+  - **Latency Benchmarking**: Performance profiling with percentiles
+  - **Cost Tracking**: Token usage and costs across providers
+  - **Anomaly Detection**: Statistical outlier identification
+
+- **💰 Cost Intelligence**
+  - Track costs per model, agent, session, and project
+  - Budget alerts with configurable thresholds
+  - Historical cost analysis and forecasting
+  - Input/output token separation for accurate pricing
+
+- **🧪 A/B Testing & Experimentation**
+  - Multi-variant experiment support
+  - Traffic splitting with statistical analysis
+  - Prompt template versioning
+  - Side-by-side performance comparison
+
+- **🔍 Powerful Query Engine**
+  - Temporal range queries with microsecond precision
+  - Causal traversal (ancestors, descendants, paths)
+  - Multi-tenant filtering (tenant, project, agent, session)
+  - Vector similarity search (semantic search)
+  - Aggregations and analytics
+
+### Platform Options
+
+- **🖥️ Desktop Application** (Tauri-based)
+  - Fully offline operation with local database
+  - Cross-platform (Windows, macOS, Linux)
+  - 10x faster IPC vs HTTP
+  - System tray integration and native menus
+
+- **☁️ Server Deployment**
+  - REST API with 23+ endpoint modules
+  - Multi-tenancy with API key authentication
+  - WebSocket support for real-time updates
+  - OpenTelemetry GenAI compliance (75% complete)
+
+- **📦 SDKs & Integrations**
+  - **Python SDK** with 10+ framework integrations:
+    - LangChain / LangGraph
+    - LlamaIndex
+    - OpenAI Agents SDK
+    - Microsoft AutoGen
+    - CrewAI
+    - Semantic Kernel
+    - Hugging Face smolagents
+    - PydanticAI
+    - AWS Strands Agents
+    - Google ADK
+  - **JavaScript/TypeScript SDK** (npm package)
+  - **Rust SDK** (crates.io package)
+  - **Go SDK** (Go module)
+
+### Enterprise Features
+
+- **📋 Compliance Reporting**
+  - GDPR/CCPA compliance reports
+  - Security audit trails
+  - Quality metrics dashboards
+  - Data retention policies
+
+- **📈 Advanced Analytics**
+  - Time-series analysis with trend detection
+  - Correlation discovery across metrics
+  - Custom dashboard creation
+  - Export to Prometheus, Grafana, Jaeger
+
+- **🔐 Security & Governance**
+  - Multi-tenant isolation
+  - Role-based access control (RBAC)
+  - API key management
+  - Audit logging
+
+---
+
+## 🚀 Quick Start
+
+### Option 1: Desktop Application (Recommended for Local Development)
+
+**Prerequisites:**
+- Rust 1.70+ ([rustup.rs](https://rustup.rs/))
+- Node.js 18+ ([nodejs.org](https://nodejs.org/))
+
+```bash
+# Clone the repository
+git clone https://github.com/sushanthpy/flowtrace.git
+cd flowtrace
+
+# Install frontend dependencies
+cd ui
+npm install
+
+# Run the desktop app
+npm run tauri dev
+```
+
+The desktop app will launch with a local database at:
+- **Windows**: `C:\Users\<User>\AppData\Roaming\Flowtrace\database`
+- **macOS**: `~/Library/Application Support/Flowtrace/database`
+- **Linux**: `~/.local/share/Flowtrace/database`
+
+### Option 2: Server Deployment
+
+**Prerequisites:**
+- Rust 1.70+
+- (Optional) Docker & Docker Compose
+
+```bash
+# Build the server
+cargo build --release -p flowtrace-server
+
+# Run with default configuration
+./target/release/flowtrace-server
+
+# Or use Docker
+docker-compose up -d
+```
+
+The server will start on `http://localhost:8080` by default.
+
+**Configuration**: Edit `flowtrace-server-config.toml` or set environment variables.
+
+### Option 3: Python SDK
+
+```bash
+# Install from PyPI
+pip install flowtrace-client
+
+# Or with framework integrations
+pip install flowtrace-client[langchain]      # LangChain/LangGraph
+pip install flowtrace-client[llamaindex]     # LlamaIndex
+pip install flowtrace-client[all-frameworks] # All integrations
+```
+
+**Basic Usage:**
+
+```python
+from flowtrace import FlowtraceClient, SpanType
+
+# Initialize client
+client = FlowtraceClient(
+    url="http://localhost:8080",
+    tenant_id=1,
+    project_id=0
+)
+
+# Log a trace with automatic parent-child relationships
+with client.trace(span_type=SpanType.ROOT) as root:
+    # Planning step
+    with root.child(SpanType.PLANNING) as planning:
+        planning.set_token_count(50)
+        planning.set_confidence(0.95)
+
+    # Tool call
+    with root.child(SpanType.TOOL_CALL) as tool:
+        tool.set_token_count(20)
+        tool.set_duration_ms(150)
+
+    # Response
+    with root.child(SpanType.RESPONSE) as response:
+        response.set_token_count(80)
+        response.set_confidence(0.94)
+
+# Query traces
+edges = client.query_temporal_range(
+    start_timestamp_us=start_time,
+    end_timestamp_us=end_time
+)
+
+# Get causal relationships
+children = client.get_children(edge_id)
+ancestors = client.get_ancestors(edge_id)
+```
+
+**Framework Integration Example (LangChain):**
+
+```python
+from flowtrace.integrations.langchain import FlowtraceCallbackHandler
+from langchain.chains import LLMChain
+
+callback = FlowtraceCallbackHandler(
+    url="http://localhost:8080",
+    tenant_id=1
+)
+
+chain = LLMChain(llm=llm, callbacks=[callback])
+result = chain.run("What is the weather?")
+# Automatically creates traces with full parent-child relationships
+```
+
+---
+
+## 🏗️ Architecture
+
+Flowtrace is built as a modular Rust workspace with 8 specialized crates:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Client Applications                    │
+│     (Python SDK, Desktop App, Custom Integrations)      │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        ▼                         ▼
+┌──────────────┐        ┌──────────────────┐
+│  Python SDK  │        │  Tauri Desktop   │
+│  (10 Frmwks) │        │  (IPC Commands)  │
+└──────┬───────┘        └────────┬─────────┘
+       │                         │
+       └──────────┬──────────────┘
+                  ▼
+      ┌───────────────────────┐
+      │  flowtrace-server    │  ← REST API, Auth, WebSocket
+      └──────────┬────────────┘
+                 ▼
+      ┌───────────────────────┐
+      │  flowtrace-query     │  ← Query Engine, Aggregations
+      └──────────┬────────────┘
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+┌───────────────┐  ┌──────────────────┐
+│ flowtrace-   │  │ flowtrace-      │
+│   index       │  │   evals          │
+└───────┬───────┘  └──────────────────┘
+        │          ↓ Evaluation Framework
+        ▼
+┌──────────────────────────────────────┐
+│      flowtrace-storage              │  ← LSM-Tree Engine
+│                                      │
+│  ┌──────────┐  ┌─────────────────┐ │
+│  │   WAL    │→ │   Memtable      │ │
+│  └──────────┘  └────────┬────────┘ │
+│                         ▼           │
+│              Flush (when full)      │
+│                         ▼           │
+│  ┌──────────────────────────────┐  │
+│  │  SSTables (L0-L6)            │  │
+│  │  - Bloom filters             │  │
+│  │  - Index blocks              │  │
+│  │  - Data blocks               │  │
+│  └──────────────────────────────┘  │
+│                                     │
+│  ┌──────────────────────┐          │
+│  │  Payload Store       │          │
+│  │  (Variable data)     │          │
+│  └──────────────────────┘          │
+└─────────────────────────────────────┘
+        ▼
+┌───────────────────────┐
+│  flowtrace-core      │  ← Edge format, data structures
+└───────────────────────┘
+```
+
+
+### Key Components
+
+| Crate | Purpose | Key Features |
+|-------|---------|--------------|
+| **flowtrace-core** | Foundational types | 128-byte AgentFlowEdge, span types, validation |
+| **flowtrace-storage** | LSM-tree engine | WAL, memtable, SSTables, compaction, backup |
+| **flowtrace-index** | Indexing layer | HNSW, Vamana with Product Quantization (32x compression), Bloom filters, causal graph, temporal index |
+| **flowtrace-query** | Query engine | Temporal queries, causal traversal, aggregations |
+| **flowtrace-server** | HTTP API | REST endpoints, auth, multi-tenancy, WebSocket |
+| **flowtrace-cli** | Command-line tool | Server management, DB inspection, benchmarks |
+| **flowtrace-observability** | O11y integrations | OpenTelemetry, Prometheus, Jaeger export |
+| **flowtrace-evals** | Evaluation framework | 20+ evaluators, LLM-as-judge, dataset management |
+
+### The AgentFlowEdge Format
+
+At the heart of Flowtrace is the **128-byte fixed-size edge format**:
+
+```rust
+pub struct AgentFlowEdge {
+    edge_id: u128,          // 16 bytes - Unique identifier
+    causal_parent: u128,    // 16 bytes - Parent reference
+    timestamp_us: u64,      // 8 bytes - Microsecond timestamp
+    logical_clock: u64,     // 8 bytes - Lamport clock
+    tenant_id: u64,         // 8 bytes - Multi-tenancy
+    project_id: u16,        // 2 bytes - Project isolation
+    agent_id: u64,          // 8 bytes - Agent ID
+    session_id: u64,        // 8 bytes - Session tracking
+    span_type: u64,         // 8 bytes - Span categorization
+    token_count: u32,       // 4 bytes - Token usage
+    duration_us: u32,       // 4 bytes - Execution time
+    confidence: f32,        // 4 bytes - Confidence score
+    sampling_rate: f32,     // 4 bytes - Sampling
+    // ... additional fields to 128 bytes
+}
+```
+
+**Why 128 bytes?**
+- Cache-line aligned for optimal CPU performance
+- Fixed size enables high-speed sequential writes
+- Small enough to minimize storage overhead
+- Large enough for essential metadata
+
+**Variable-size data** (prompts, responses, metadata) is stored separately in the **Payload Store** and referenced by `edge_id`.
+
+---
+
+## 📊 Performance
+
+### Benchmark Results
+
+Tested against a real Flowtrace server with **240K+ traces** in the database:
+
+#### Write Performance
+
+| Metric | Value |
+|--------|-------|
+| Single Write Latency | P50: 13.7ms, P99: 19.1ms |
+| Batch Throughput | 55-75 spans/sec (via HTTP API) |
+| 100K Span Ingest | ~30 minutes (concurrent) |
+
+#### Query Performance at Scale (240K+ traces)
+
+| Metric | Value |
+|--------|-------|
+| Point Query (single trace) | P50: 0.96ms, P99: 4.4ms |
+| Range Query (100 results) | P50: 76ms, P99: 145ms |
+| Causal Traversal | P50: 47.7ms |
+| Sessions List | P50: 160ms |
+
+#### Index Architecture Performance
+
+| Index Type | Operation | Performance |
+|------------|-----------|-------------|
+| LSM-Tree | Point Lookup | P50: 1.47ms |
+| CSR Graph | Tree Traversal | P50: 5.56ms |
+| Temporal | Range Scan | P50: 9.40ms |
+| HNSW Vector | 384-dim Insert | P50: 14.37ms |
+| Vamana + PQ | 384-dim Search | P50: 8.5ms (32x compression) |
+| Concurrent | Mixed Workload | 319 ops/sec |
+
+### Vamana + Product Quantization: Scaling to 10M+ Vectors
+
+Flowtrace now includes the **Vamana index** with **Product Quantization (PQ)** for massive vector scaling:
+
+**Memory Efficiency at Scale:**
+
+| Vectors | F32 | F16 | PQ (Vamana) | Savings |
+|---------|-----|-----|-------------|----------|
+| 10K | 15.2 MB | 7.6 MB | 0.48 MB | 32x vs F32 |
+| 100K | 152 MB | 76 MB | 4.8 MB | 32x vs F32 |
+| 1M | 1.43 GB | 0.72 GB | 48 MB | 32x vs F32 |
+| 10M | 14.31 GB | 7.15 GB | 480 MB | 32x vs F32 |
+
+**Key Features:**
+
+- **Product Quantization**: 384-dim vectors compressed to 48 bytes (32x compression)
+- **Single-layer Graph**: Faster traversal than multi-layer HNSW
+- **Beam Search**: Efficient nearest neighbor search with tunable accuracy
+- **RobustPrune**: Angular diversity ensures long edges for fewer hops
+- **Backedge Deltas**: Reduce write amplification during insertions
+- **Integrated with LSM Storage**: Full vectors on disk via MmapVectorStorage
+
+**Usage:**
+
+```rust
+// Create Vamana index with PQ
+let config = VamanaConfig::for_dimension(384); // Auto-config for 384-dim
+let index = VamanaIndex::new(config);
+
+// Train PQ codebooks on sample vectors
+index.train_codebooks(&sample_vectors);
+
+// Insert vectors (automatically PQ-encoded)
+for (id, vector) in vectors.iter().enumerate() {
+    index.insert_array(id as u128, vector.clone())?;
+}
+
+// Search with PQ distance table (8.5ms for 384-dim)
+let results = index.search(query, k=10)?;
+```
+
+### Architecture Benefits
+
+1. **LSM-Tree Storage**: Write-optimized, sequential writes to disk
+2. **Fixed-Size Edges**: No parsing overhead, direct memory mapping
+3. **Bloom Filters**: Eliminates unnecessary disk reads
+4. **CSR Causal Index**: 50-70% memory savings vs hash maps
+5. **HNSW Vector Index**: ~95% recall for semantic search
+6. **Vamana + Product Quantization**: 32x memory reduction + single-layer graph for 10M+ vectors
+7. **Batch Writes**: Amortizes write overhead across multiple edges
+8. **Compression**: LZ4/Zstd reduces disk I/O
+
+---
+
+## 📚 Documentation
+
+📖 **Full Documentation**: [sushanthpy.github.io/flowtrace](https://sushanthpy.github.io/flowtrace)
+
+### Quick Links
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](https://sushanthpy.github.io/flowtrace/docs/getting-started/) | Installation and first trace |
+| [Python SDK](https://sushanthpy.github.io/flowtrace/docs/python-sdk/) | Python client with framework integrations |
+| [JavaScript SDK](https://sushanthpy.github.io/flowtrace/docs/javascript-sdk/) | TypeScript/JavaScript client |
+| [Rust SDK](https://sushanthpy.github.io/flowtrace/docs/rust-sdk/) | Rust client library |
+| [Go SDK](https://sushanthpy.github.io/flowtrace/docs/go-sdk/) | Go client library |
+| [API Reference](https://sushanthpy.github.io/flowtrace/docs/api-reference/) | REST API documentation |
+| [Architecture](https://sushanthpy.github.io/flowtrace/docs/architecture/) | System design overview |
+| [Evaluation Framework](https://sushanthpy.github.io/flowtrace/docs/evaluation/) | 20+ built-in evaluators |
+
+### In-Repo Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and crate dependencies
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+- [SECURITY.md](SECURITY.md) - Security policy
+- [ADRs](docs/adr/) - Architecture Decision Records
+- [Python SDK README](sdks/python/README.md) - Python SDK details
+
+---
+
+## 🎯 Use Cases
+
+### 1. LLM Agent Observability
+Track multi-step agent reasoning with automatic parent-child relationship capture:
+```python
+with client.trace(SpanType.ROOT) as root:
+    with root.child(SpanType.PLANNING) as plan:
+        # Agent planning step
+        pass
+    with root.child(SpanType.TOOL_CALL) as tool:
+        # Tool execution
+        pass
+```
+
+### 2. Cost Tracking & Budget Management
+Monitor LLM costs in real-time with budget alerts:
+```bash
+# Create budget alert
+curl -X POST http://localhost:8080/api/v1/budget/alerts \
+  -d '{"threshold_type": "daily_cost", "threshold_value": 100.0}'
+```
+
+### 3. A/B Testing Prompts
+Compare prompt variants with statistical analysis:
+```bash
+# Create experiment
+curl -X POST http://localhost:8080/api/v1/experiments \
+  -d '{
+    "name": "Temperature Test",
+    "variants": [
+      {"name": "temp_0.7", "config": {"temperature": 0.7}},
+      {"name": "temp_0.9", "config": {"temperature": 0.9}}
+    ]
+  }'
+```
+
+### 4. Quality Monitoring
+Automated evaluation with hallucination detection:
+```python
+from flowtrace_evals import HallucinationDetector
+
+detector = HallucinationDetector()
+result = await detector.evaluate(trace)
+# Returns: {score: 0.02, passed: true, confidence: 0.92}
+```
+
+### 5. Performance Profiling
+Identify slow agent steps with latency benchmarking:
+```python
+# Get latency statistics for an agent
+stats = client.get_latency_stats(agent_id="my-agent")
+# Returns: {p50: 120ms, p95: 450ms, p99: 890ms}
+```
+
+### 6. Framework Integration
+Zero-code integration with popular frameworks:
+```python
+# LangChain
+callback = FlowtraceCallbackHandler(url="http://localhost:8080")
+chain = LLMChain(llm=llm, callbacks=[callback])
+
+# LlamaIndex
+callback_manager = create_callback_manager(flowtrace_url="...")
+index = VectorStoreIndex.from_documents(docs, callback_manager=callback_manager)
+
+# OpenAI Agents
+agent = FlowtraceAgentWrapper(agent=openai_agent, flowtrace_url="...")
+```
+
+---
+
+## 🔧 Configuration
+
+### Server Configuration (`flowtrace-server-config.toml`)
+
+```toml
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 8
+
+[database]
+path = "./data/flowtrace.db"
+max_memtable_size = 67108864  # 64 MB
+enable_wal = true
+enable_compression = true
+compression_algorithm = "lz4"  # or "zstd"
+
+[storage]
+l0_compaction_trigger = 4
+max_levels = 7
+target_file_size_base = 67108864  # 64 MB
+bloom_filter_bits_per_key = 10
+
+[auth]
+require_auth = true
+api_keys_file = "./data/api_keys.json"
+
+[observability]
+enable_metrics = true
+metrics_port = 9090
+enable_tracing = true
+tracing_endpoint = "http://localhost:4317"
+```
+
+### Environment Variables
+
+```bash
+# Server
+export FLOWTRACE_HOST="0.0.0.0"
+export FLOWTRACE_PORT=8080
+export FLOWTRACE_DB_PATH="./data/flowtrace.db"
+
+# Authentication
+export FLOWTRACE_REQUIRE_AUTH=true
+export FLOWTRACE_API_KEY="your-api-key"
+
+# Observability
+export FLOWTRACE_ENABLE_METRICS=true
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+```
+
+---
+
+## 🧪 Development
+
+### Building from Source
+
+**Prerequisites:**
+- Rust 1.70+ with cargo
+- (Optional) Node.js 18+ for UI/Desktop app
+
+```bash
+# Clone repository
+git clone https://github.com/sushanthpy/flowtrace.git
+cd flowtrace
+
+# Build all components
+cargo build --release
+
+# Build specific component
+cargo build --release -p flowtrace-server
+cargo build --release -p flowtrace-cli
+
+# Build desktop app
+cd ui && npm install && npm run tauri build
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test --workspace
+
+# Run tests for specific crate
+cargo test -p flowtrace-storage
+
+# Run benchmarks
+cargo bench -p flowtrace-storage
+```
+
+### Project Structure
+
+```
+flowtrace/
+├── flowtrace-core/          # Core data structures
+├── flowtrace-storage/       # LSM-tree storage engine
+├── flowtrace-index/         # Indexing layer
+├── flowtrace-query/         # Query engine
+├── flowtrace-server/        # HTTP API server
+├── flowtrace-cli/           # Command-line interface
+├── flowtrace-observability/ # O11y integrations
+├── flowtrace-evals/         # Evaluation framework
+├── flowtrace-plugins/       # Plugin system
+│   ├── core/                # Plugin runtime
+│   ├── sdk/                 # Plugin development SDKs
+│   ├── examples/            # Example plugins
+│   └── templates/           # Plugin templates
+├── flowtrace-ui/            # Web UI (React)
+├── flowtrace-tauri/         # Tauri desktop app
+├── sdks/
+│   └── python/              # Python SDK
+├── examples/                # Example code
+└── docs/                    # Documentation
+```
+
+---
+
+## 💾 Backup & Restore
+
+Flowtrace includes comprehensive backup and restore features to protect your data. Both the Desktop App and CLI support full backup operations.
+
+### Desktop App Backup
+
+Navigate to **Settings → Backup** in the desktop application to:
+
+- **Create Backups**: Timestamped snapshots of your database
+- **List Backups**: View all available backups with size and date
+- **Export as ZIP**: Download backups for external storage or sharing
+- **Import from ZIP**: Restore from previously exported backups
+- **Restore Options**:
+  - **Replace (Full Restore)**: Replace all data with backup (creates pre-restore backup automatically)
+  - **Merge (Append)**: Experimental - adds backup traces to existing data
+    - ⚠️ Warning: Project associations may not be preserved
+
+### CLI Backup Commands
+
+The CLI provides the same backup functionality for automation and scripting:
+
+```bash
+# List all backups
+flowtrace --db-path <path> backup list
+
+# Create a new backup
+flowtrace --db-path <path> backup create [--name <name>]
+
+# Restore from a backup (creates pre-restore backup automatically)
+flowtrace --db-path <path> backup restore <backup_id> [-y]
+
+# Delete a backup
+flowtrace --db-path <path> backup delete <backup_id> [-y]
+
+# Export backup as ZIP file
+flowtrace --db-path <path> backup export <backup_id> [-o <output.zip>]
+
+# Import backup from ZIP file
+flowtrace --db-path <path> backup import <path.zip>
+```
+
+**Example Workflow:**
+
+```bash
+# Create a backup before making changes
+flowtrace --db-path ./flowtrace-data backup create --name "before-experiment"
+
+# List all backups
+flowtrace --db-path ./flowtrace-data backup list
+# Output:
+# Backups (3):
+# ============================================================
+#   before-experiment - 2026-01-26 12:00:00 (120611 bytes)
+#   backup_1769456740 - 2026-01-26 11:45:40 (120611 bytes)
+#   backup_1769455267 - 2026-01-26 11:21:07 (120432 bytes)
+
+# Export backup for archival or sharing
+flowtrace --db-path ./flowtrace-data backup export before-experiment \
+  -o ~/backups/flowtrace_backup_20260126.zip
+
+# Restore from backup (with confirmation prompt)
+flowtrace --db-path ./flowtrace-data backup restore before-experiment
+
+# Or skip confirmation in scripts
+flowtrace --db-path ./flowtrace-data backup restore before-experiment -y
+```
+
+**JSON Output for Automation:**
+
+```bash
+# Get machine-readable JSON output
+flowtrace --db-path ./flowtrace-data --json backup list
+# Output:
+# {"backups": [{"backup_id": "before-experiment", "created_at": 1737889200, ...}], "total": 3}
+```
+
+**Backup Storage Location:**
+- Backups are stored in `<db-path>/../backups/`
+- Each backup is a complete copy of the database directory
+- Pre-restore backups are automatically created with `pre_restore_<timestamp>` naming
+
+**Best Practices:**
+- Create backups before major updates or experiments
+- Export important backups to external storage
+- Use descriptive names for manual backups
+- Regularly clean up old pre-restore backups
+- Test restore procedures periodically
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+### Quick Start
+
+```bash
+git clone https://github.com/sushanthpy/flowtrace.git
+cd flowtrace
+cargo build --workspace
+cargo test --workspace
+```
+
+### Contributor Resources
+
+| Resource | Description |
+|----------|-------------|
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines, PR process |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | System design, crate dependencies |
+| **[Developer Guide](docs-site/docs/developer-guide.md)** | Codebase tour, testing, common gotchas |
+| **[ADRs](docs/adr/)** | Architecture Decision Records |
+| **[SECURITY.md](SECURITY.md)** | Vulnerability reporting |
+
+### Finding Work
+
+| You are... | Start with... |
+|-----------|---------------|
+| New to the project | [Good First Issues](https://github.com/sushanthpy/flowtrace/labels/good%20first%20issue) |
+| Experienced in Rust | [Help Wanted](https://github.com/sushanthpy/flowtrace/labels/help%20wanted) |
+| Interested in storage | `flowtrace-storage` crate |
+| Interested in ML/vectors | `flowtrace-index` crate |
+| Interested in SDKs | `sdks/` directory |
+
+### Code Style
+
+- **Rust**: `cargo fmt --all && cargo clippy --workspace -- -D warnings`
+- **Python**: Black + isort + mypy
+- **TypeScript**: ESLint + Prettier
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) format
+
+---
+
+## 📄 License
+
+Flowtrace is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+
+### Third-Party Licenses
+
+Flowtrace uses several open-source libraries. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Flowtrace builds on research and insights from:
+
+- **Observability**: OpenTelemetry
+- **LLM Frameworks**: LangChain, LlamaIndex, Hugging Face, OpenAI
+
+Special thanks to the open-source community and all contributors.
+
+---
+
+## 🔗 Links
+
+- **GitHub**: [github.com/sushanthpy/flowtrace](https://github.com/sushanthpy/flowtrace)
+- **Documentation**: [sushanthpy.github.io/flowtrace](https://sushanthpy.github.io/flowtrace)
+- **Python SDK**: [PyPI](https://pypi.org/project/flowtrace-client/)
+- **JavaScript SDK**: [npm](https://www.npmjs.com/package/flowtrace-client)
+- **Rust SDK**: [crates.io](https://crates.io/crates/flowtrace-client)
+- **Issues**: [Bug reports & feature requests](https://github.com/sushanthpy/flowtrace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sushanthpy/flowtrace/discussions)
+
+---
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/sushanthpy/flowtrace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sushanthpy/flowtrace/discussions)
+- **Email**: support@flowtrace.dev (coming soon)
+
+---
+
+<div align="center">
+
+**⭐ Star us on GitHub if you find Flowtrace useful! ⭐**
+
+Made with ❤️ by the Flowtrace team
+
+</div>

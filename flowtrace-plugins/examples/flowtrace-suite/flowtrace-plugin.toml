@@ -1,0 +1,235 @@
+# Flowtrace Suite Bundle Plugin
+#
+# This is a schema v2 manifest that demonstrates bundle plugins for
+# external integrations (Claude Code, Cursor, etc.)
+#
+# Bundle plugins can install files, configurations, and hooks into
+# external editor/agent ecosystems while remaining managed by Flowtrace.
+
+schema_version = 2
+
+[plugin]
+id = "flowtrace-suite"
+name = "Flowtrace Suite"
+version = "1.0.0"
+description = "Agent tracing + memory + Claude/Cursor integrations in one plugin"
+authors = ["Flowtrace Team <team@flowtrace.dev>"]
+license = "Apache-2.0"
+repository = "https://github.com/flowtrace/flowtrace-suite"
+homepage = "https://flowtrace.dev"
+type = "bundle"
+min_flowtrace_version = "0.2.0"
+tags = ["tracing", "memory", "claude", "cursor", "mcp", "integration"]
+
+# Capabilities required by this plugin
+[capabilities]
+read_traces = true
+write_traces = true
+notifications = true
+
+[capabilities.network]
+http = true
+https = true
+allowed_domains = ["localhost", "127.0.0.1"]
+
+[capabilities.filesystem]
+read = ["traces/", "memory/"]
+write = ["traces/", "memory/", "context/"]
+
+# Bundle configuration
+[bundle]
+bundle_version = "1.0.0"
+default_install_mode = "guided"
+assets_root = "integrations"
+
+# User-prompted variables for installation
+[[bundle.variables]]
+name = "project_dir"
+label = "Project folder"
+description = "The project folder for project-scoped installations. Leave empty for user-scope only."
+kind = "directory"
+required = false
+
+[[bundle.variables]]
+name = "flowtrace_port"
+label = "Flowtrace Server Port"
+description = "The port where Flowtrace server is running"
+kind = "string"
+required = false
+default = "4318"
+
+# ============================================================================
+# Target: Claude Code
+# ============================================================================
+[[bundle.targets]]
+id = "claude-code"
+display_name = "Claude Code"
+kind = "claude_plugin"
+install_md = "claude/install.md"
+scopes = ["user", "project", "local"]
+default_scope = "user"
+required_capabilities = ["filesystem"]
+
+# Detection: Check if Claude Code is configured
+[[bundle.targets.detect]]
+type = "file_exists"
+path = "${home}/.claude/settings.json"
+
+[[bundle.targets.detect]]
+type = "file_exists"
+path = "${project_dir}/.claude/settings.json"
+when = { var = "project_dir", is_set = true }
+
+[[bundle.targets.detect]]
+type = "command_exists"
+command = "claude"
+
+# Files to copy for Claude Code integration
+[[bundle.targets.files_to_copy]]
+from = "claude/.claude-plugin/plugin.json"
+to = "${install_root}/.claude-plugin/plugin.json"
+strategy = "copy"
+overwrite = true
+description = "Main plugin manifest for Claude Code"
+
+[[bundle.targets.files_to_copy]]
+from = "claude/.claude-plugin/marketplace.json"
+to = "${install_root}/.claude-plugin/marketplace.json"
+strategy = "copy"
+overwrite = true
+description = "Marketplace metadata"
+
+[[bundle.targets.files_to_copy]]
+from = "claude/hooks/hooks.json"
+to = "${install_root}/hooks/hooks.json"
+strategy = "merge_json"
+merge_key = "hooks"
+description = "Hook configurations for session start/end and observations"
+
+[[bundle.targets.files_to_copy]]
+from = "claude/commands"
+to = "${install_root}/commands"
+strategy = "copy_dir"
+overwrite = true
+description = "Slash commands for Claude"
+
+[[bundle.targets.files_to_copy]]
+from = "claude/skills"
+to = "${install_root}/skills"
+strategy = "copy_dir"
+overwrite = true
+description = "Skills for Claude"
+
+[[bundle.targets.files_to_copy]]
+from = "claude/.mcp.json"
+to = "${install_root}/.mcp.json"
+strategy = "merge_json"
+merge_key = "mcpServers"
+description = "MCP server configuration for Flowtrace"
+
+# Templates that need variable substitution
+[[bundle.targets.templates]]
+file = "claude/.mcp.json"
+vars = ["flowtrace_port"]
+
+# Commands to show during installation
+[[bundle.targets.commands]]
+label = "Install via Claude CLI (recommended)"
+command = "claude plugin install flowtrace-suite --scope ${scope}"
+shell = true
+auto_run = false
+confirm = "This will install the Flowtrace plugin for Claude Code. Continue?"
+
+[[bundle.targets.commands]]
+label = "Verify installation"
+command = "claude plugin list | grep flowtrace"
+shell = true
+auto_run = false
+
+# ============================================================================
+# Target: Cursor
+# ============================================================================
+[[bundle.targets]]
+id = "cursor"
+display_name = "Cursor"
+kind = "cursor_mcp"
+install_md = "cursor/install.md"
+scopes = ["user", "project"]
+default_scope = "user"
+required_capabilities = ["filesystem"]
+
+# Detection: Check if Cursor is installed
+[[bundle.targets.detect]]
+type = "directory_exists"
+path = "${home}/.cursor"
+
+[[bundle.targets.detect]]
+type = "file_exists"
+path = "${project_dir}/.cursor/mcp.json"
+when = { var = "project_dir", is_set = true }
+
+# Files to copy for Cursor integration
+[[bundle.targets.files_to_copy]]
+from = "cursor/mcp.flowtrace.json"
+to = "${cursor_mcp_path}"
+strategy = "merge_json"
+merge_key = "mcpServers"
+overwrite = false
+description = "Add Flowtrace MCP server to Cursor configuration"
+
+[[bundle.targets.files_to_copy]]
+from = "cursor/rules/flowtrace.mdc"
+to = "${home}/.cursor/rules/flowtrace.mdc"
+strategy = "copy"
+overwrite = true
+description = "Cursor rules for Flowtrace context injection"
+
+# Templates
+[[bundle.targets.templates]]
+file = "cursor/mcp.flowtrace.json"
+vars = ["flowtrace_port"]
+
+# Commands
+[[bundle.targets.commands]]
+label = "Restart Cursor to apply changes"
+command = "echo 'Please restart Cursor to load the new MCP configuration'"
+shell = true
+auto_run = true
+
+# ============================================================================
+# Target: VS Code (via Continue extension)
+# ============================================================================
+[[bundle.targets]]
+id = "vscode-continue"
+display_name = "VS Code (Continue)"
+kind = "generic"
+install_md = "vscode/install.md"
+scopes = ["user"]
+default_scope = "user"
+
+# Detection
+[[bundle.targets.detect]]
+type = "directory_exists"
+path = "${home}/.continue"
+
+[[bundle.targets.detect]]
+type = "command_exists"
+command = "code"
+
+# Files
+[[bundle.targets.files_to_copy]]
+from = "vscode/continue/config.flowtrace.json"
+to = "${home}/.continue/config.json"
+strategy = "merge_json"
+merge_key = "mcpServers"
+description = "Add Flowtrace MCP server to Continue configuration"
+
+[[bundle.targets.templates]]
+file = "vscode/continue/config.flowtrace.json"
+vars = ["flowtrace_port"]
+
+[[bundle.targets.commands]]
+label = "Reload VS Code window"
+command = "code --reuse-window --command 'workbench.action.reloadWindow'"
+shell = true
+auto_run = false

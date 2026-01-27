@@ -1,0 +1,41 @@
+{
+  "name": "@sochdb/flowtrace-claude-code",
+  "version": "0.1.0",
+  "description": "Flowtrace observability plugin for Claude Code - automatic tracing of all tool calls and sessions",
+  "main": "index.js",
+  "bin": {
+    "flowtrace-claude-code-install": "./bin/install.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/install.js || true"
+  },
+  "files": [
+    "bin/",
+    "plugin/",
+    "index.js",
+    "README.md"
+  ],
+  "keywords": [
+    "claude-code",
+    "claude",
+    "plugin",
+    "flowtrace",
+    "observability",
+    "tracing",
+    "llm",
+    "agent",
+    "monitoring",
+    "genai"
+  ],
+  "author": "Flowtrace",
+  "license": "MIT",
+  "homepage": "https://flowtrace.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flowtrace/flowtrace.git",
+    "directory": "sdks/claude-code"
+  },
+  "bugs": {
+    "url": "https://github.com/flowtrace/flowtrace/issues"
+  }
+}

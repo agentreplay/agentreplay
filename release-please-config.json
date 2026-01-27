@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "component": "flowtrace",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "flowtrace-tauri/tauri.conf.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "toml",
+          "path": "flowtrace-tauri/Cargo.toml",
+          "glob": "version = \"*\""
+        },
+        {
+          "type": "json",
+          "path": "flowtrace-ui/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "sdks/js/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "toml",
+          "path": "sdks/rust/Cargo.toml",
+          "glob": "version = \"*\""
+        },
+        {
+          "type": "toml",
+          "path": "sdks/python/pyproject.toml",
+          "glob": "version = \"*\""
+        }
+      ],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance Improvements"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"},
+        {"type": "test", "section": "Tests"},
+        {"type": "ci", "section": "CI/CD"},
+        {"type": "chore", "section": "Miscellaneous", "hidden": true}
+      ]
+    }
+  },
+  "include-component-in-tag": false,
+  "include-v-in-tag": true
+}

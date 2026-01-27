@@ -1,0 +1,250 @@
+/* 
+ * Copyright 2025 Sushanth (https://github.com/sushanthpy)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import '../app/globals.css';
+@import '../node_modules/tauri-controls/dist/style.css';
+
+/* Tauri Transparent Window with Rounded Corners - macOS polish */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Dark background color instead of transparent */
+  background-color: hsl(var(--background));
+}
+
+/* Apply rounded corners and background to body */
+body {
+  border-radius: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  /* Ensure root also clips fixed-position descendants */
+  border-radius: inherit;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: hsl(var(--background));
+  min-height: 100vh;
+}
+
+/* Ensure the viewport itself clips fixed-position elements */
+html {
+  border-radius: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tauri-drag {
+  -webkit-app-region: drag;
+}
+
+.tauri-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Ensure tauri-controls is visible */
+.tauri-controls {
+  display: flex !important;
+  align-items: center;
+  height: 100%;
+  gap: 0;
+  z-index: 9999;
+}
+
+.tauri-controls button {
+  all: unset;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 32px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: auto !important;
+}
+
+.tauri-controls button:hover {
+  background-color: hsl(var(--surface-hover));
+  color: hsl(var(--foreground));
+}
+
+.tauri-controls button:active {
+  background-color: hsl(var(--secondary));
+}
+
+/* macOS traffic lights */
+.tauri-controls[data-platform="macos"] button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin: 0 4px;
+}
+
+.tauri-controls[data-platform="macos"] button[aria-label="Close"] {
+  background-color: #ff5f57;
+}
+
+.tauri-controls[data-platform="macos"] button[aria-label="Minimize"] {
+  background-color: #febc2e;
+}
+
+.tauri-controls[data-platform="macos"] button[aria-label="Maximize"] {
+  background-color: #28c840;
+}
+
+.tauri-controls[data-platform="macos"] button:hover {
+  filter: brightness(1.1);
+}
+
+/* Windows/GNOME close button - red on hover */
+.tauri-controls button[aria-label="Close"]:hover,
+.tauri-controls button[aria-label="Close window"]:hover {
+  background-color: #e81123 !important;
+  color: white !important;
+}
+
+.tauri-controls button[aria-label="Close"]:active,
+.tauri-controls button[aria-label="Close window"]:active {
+  background-color: #c50f1f !important;
+}
+
+/* Fix SVG icons inside buttons */
+.tauri-controls button svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+/* Remove web focus outlines & implement native-feeling accessible focus */
+:focus-visible {
+  outline: none !important;
+}
+
+.focus-visible {
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Custom Scrollbar - Cash App Style */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--ring)) transparent;
+}
+
+.dark * {
+  scrollbar-color: hsl(var(--muted-foreground)) transparent;
+}
+
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--ring));
+  border: 3px solid transparent;
+  /* Creates padding effect */
+  border-radius: 8px;
+  background-clip: padding-box;
+  min-height: 40px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--secondary-foreground));
+  border: 2px solid transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--foreground));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: hsl(var(--foreground));
+  border: 2px solid transparent;
+}
+
+/* Disable text selection on drag regions */
+[data-tauri-drag-region] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Window resize grip */
+.resize-grip {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  z-index: 10000;
+}
+
+.resize-grip::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.2) 50%);
+  border-radius: 2px;
+}
+
+/* Toast animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}

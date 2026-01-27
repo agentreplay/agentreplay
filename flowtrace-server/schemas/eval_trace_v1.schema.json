@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EvalTraceV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "trace_id",
+    "session_id",
+    "spans",
+    "transcript",
+    "outcome",
+    "stats"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "trace_id": { "type": "string" },
+    "trace_ref": {
+      "type": ["object", "null"],
+      "required": ["schema_version", "trace_id"],
+      "properties": {
+        "schema_version": { "type": "string" },
+        "trace_id": { "type": "string" },
+        "export_uri": { "type": ["string", "null"] },
+        "hash": { "type": ["string", "null"] }
+      }
+    },
+    "session_id": { "type": "integer" },
+    "spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["span_id", "span_type", "timestamp_us", "duration_us", "status"],
+        "properties": {
+          "span_id": { "type": "string" },
+          "parent_span_id": { "type": ["string", "null"] },
+          "span_type": { "type": "string" },
+          "timestamp_us": { "type": "integer" },
+          "duration_us": { "type": "integer" },
+          "status": { "type": "string" },
+          "attributes": {}
+        }
+      }
+    },
+    "transcript": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "id", "role", "content", "timestamp_us"],
+            "properties": {
+              "type": { "const": "message" },
+              "id": { "type": "string" },
+              "role": { "type": "string" },
+              "content": { "type": "array" },
+              "timestamp_us": { "type": "integer" },
+              "span_id": { "type": ["string", "null"] },
+              "metadata": { "type": "object" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "id", "name", "timestamp_us"],
+            "properties": {
+              "type": { "const": "tool_call" },
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "arguments": { "type": ["string", "null"] },
+              "timestamp_us": { "type": "integer" },
+              "span_id": { "type": ["string", "null"] },
+              "metadata": { "type": "object" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "id", "tool_call_id", "timestamp_us"],
+            "properties": {
+              "type": { "const": "tool_result" },
+              "id": { "type": "string" },
+              "tool_call_id": { "type": "string" },
+              "content": { "type": ["string", "null"] },
+              "timestamp_us": { "type": "integer" },
+              "span_id": { "type": ["string", "null"] },
+              "metadata": { "type": "object" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "span_id", "span_type", "timestamp_us"],
+            "properties": {
+              "type": { "const": "span_start" },
+              "span_id": { "type": "string" },
+              "parent_span_id": { "type": ["string", "null"] },
+              "span_type": { "type": "string" },
+              "timestamp_us": { "type": "integer" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "span_id", "timestamp_us", "duration_us", "status"],
+            "properties": {
+              "type": { "const": "span_end" },
+              "span_id": { "type": "string" },
+              "timestamp_us": { "type": "integer" },
+              "duration_us": { "type": "integer" },
+              "status": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "required": ["status", "messages"],
+      "properties": {
+        "status": { "type": "string" },
+        "error": { "type": ["string", "null"] },
+        "messages": { "type": "array" },
+        "output_text": { "type": ["string", "null"] },
+        "metadata": { "type": "object" }
+      }
+    },
+    "outcome_v2": {
+      "type": ["object", "null"],
+      "properties": {
+        "status": { "type": "string" },
+        "error": { "type": ["string", "null"] },
+        "messages": { "type": "array" },
+        "output_text": { "type": ["string", "null"] },
+        "metadata": { "type": "object" },
+        "state_before": { "type": ["object", "null"] },
+        "state_after": { "type": ["object", "null"] },
+        "side_effects": { "type": "array" }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["total_tokens", "input_tokens", "output_tokens"],
+      "properties": {
+        "total_tokens": { "type": "integer" },
+        "input_tokens": { "type": "integer" },
+        "output_tokens": { "type": "integer" },
+        "cost_usd": { "type": ["number", "null"] },
+        "latency_ms": { "type": ["number", "null"] }
+      }
+    }
+  }
+}

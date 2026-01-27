@@ -1,0 +1,22 @@
+{
+    "app": {
+        "windows": [
+            {
+                "label": "main",
+                "title": "Flowtrace",
+                "width": 1280,
+                "height": 800,
+                "minWidth": 1100,
+                "minHeight": 650,
+                "center": true,
+                "decorations": true,
+                "hiddenTitle": true,
+                "titleBarStyle": "Overlay",
+                "trafficLightPosition": {
+                    "x": 16,
+                    "y": 16
+                }
+            }
+        ]
+    }
+}

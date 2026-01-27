@@ -1,0 +1,72 @@
+# escape=`
+# Dockerfile for building Vizu Windows Installer
+# This Dockerfile MUST be built on a Windows host
+# Build: docker build -f Dockerfile.windows -t vizu-windows .
+# Run:   docker run --rm -v ${PWD}:C:/app vizu-windows
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+SHELL ["powershell", "-Command"]
+
+# 1) Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = `
+    [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# 2) Install Node, Rust (MSVC) and VS Build Tools
+RUN choco install -y `
+    nodejs-lts `
+    rust-ms `
+    visualstudio2019buildtools `
+    visualstudio2019-workload-vctools
+
+# 3) Add Cargo to PATH
+RUN $envPath = [Environment]::GetEnvironmentVariable('Path','Machine'); `
+    $envPath += ';C:\Users\ContainerAdministrator\.cargo\bin'; `
+    [Environment]::SetEnvironmentVariable('Path',$envPath,'Machine')
+
+# 4) Install Tauri CLI
+RUN cargo install tauri-cli --version "^2.0"
+
+WORKDIR C:/app
+
+# 5) Copy workspace Cargo files for dependency caching
+COPY Cargo.toml Cargo.lock ./
+COPY vizu-core/Cargo.toml ./vizu-core/
+COPY vizu-storage/Cargo.toml ./vizu-storage/
+COPY vizu-index/Cargo.toml ./vizu-index/
+COPY vizu-query/Cargo.toml ./vizu-query/
+COPY vizu-server/Cargo.toml ./vizu-server/
+COPY vizu-evals/Cargo.toml ./vizu-evals/
+COPY vizu-prompts/Cargo.toml ./vizu-prompts/
+COPY vizu-tauri/Cargo.toml ./vizu-tauri/
+
+# 6) Copy frontend package files for npm caching
+COPY vizu-ui/package.json vizu-ui/package-lock.json ./vizu-ui/
+
+# 7) Install frontend dependencies
+WORKDIR C:/app/vizu-ui
+RUN npm ci
+
+# 8) Copy the rest of the project
+WORKDIR C:/app
+COPY . .
+
+# 9) Build frontend
+WORKDIR C:/app/vizu-ui
+RUN npm run build
+
+# 10) Copy frontend dist to Tauri
+WORKDIR C:/app
+RUN Remove-Item -Recurse -Force vizu-tauri/vizu-ui/dist -ErrorAction SilentlyContinue; `
+    New-Item -ItemType Directory -Force -Path vizu-tauri/vizu-ui; `
+    Copy-Item -Recurse vizu-ui/dist vizu-tauri/vizu-ui/
+
+# 11) Build Tauri for Windows (MSVC)
+WORKDIR C:/app/vizu-tauri
+RUN cargo tauri build --target x86_64-pc-windows-msvc
+
+# Output will be in:
+# C:\app\vizu-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi
+# C:\app\vizu-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe

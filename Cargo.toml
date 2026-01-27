@@ -1,0 +1,125 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[workspace]
+members = [
+    "flowtrace-core",
+    "flowtrace-storage",
+    "flowtrace-index",
+    "flowtrace-query",
+    "flowtrace-cli",
+    "flowtrace-server",
+    "flowtrace-observability",
+    "flowtrace-telemetry",
+    "flowtrace-evals",
+    "flowtrace-prompts",
+    "flowtrace-experiments",
+    "flowtrace-plugins/core",
+    "flowtrace-plugins/sdk/rust",
+]
+exclude = ["flowtrace-tauri", "sdks/rust"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Flowtrace Contributors"]
+license = "Apache-2.0"
+repository = "https://github.com/flowtrace/flowtrace"
+
+[workspace.dependencies]
+# NOTE: tokio was removed - storage engine uses sync I/O (std::fs, std::thread)
+# If async is needed in future, add it back with minimal features
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+prost = "0.12"
+toml = "0.8"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Data structures
+parking_lot = "0.12"
+
+# Hashing
+twox-hash = "1.6"
+seahash = "4.1"
+blake3 = "1.5"
+hex = "0.4"
+
+# Math and vectors
+# NOTE: nalgebra was removed - unused (ndarray is used for vector ops)
+ndarray = "0.15"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging and Observability
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-opentelemetry = "0.25"
+
+# OpenTelemetry
+opentelemetry = { version = "0.24", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.24", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.17", features = ["grpc-tonic", "trace", "metrics"] }
+opentelemetry-semantic-conventions = "0.16"
+opentelemetry-http = "0.13"
+opentelemetry-stdout = { version = "0.5", features = ["trace", "metrics"] }
+tokio = { version = "1.35", features = ["full"] }
+tonic = "0.12"
+reqwest = { version = "0.11", features = ["json"] }
+
+# Testing
+criterion = "0.5"
+proptest = "1.4"
+tempfile = "3.8"
+
+# Utilities
+byteorder = "1.5"
+memmap2 = "0.9"
+dashmap = "5.5"
+rand = "0.8"
+moka = "0.12"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# SochDB integration (storage backend migration)
+# Using path dependencies to local SochDB workspace
+sochdb-core = { version = "0.4.4" }
+sochdb-storage = { version = "0.4.4" }
+sochdb-index = { version = "0.4.4" }
+sochdb-query = { version = "0.4.4" }
+sochdb = { version = "0.4.4", features = ["embedded"] }
+
+[patch.crates-io]
+sochdb-core = { path = "../sochdb/sochdb-core" }
+sochdb-storage = { path = "../sochdb/sochdb-storage" }
+sochdb-index = { path = "../sochdb/sochdb-index" }
+sochdb-query = { path = "../sochdb/sochdb-query" }
+sochdb = { path = "../sochdb/sochdb-client" } # client crate is usually the main 'sochdb' lib
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[profile.bench]
+inherits = "release"

@@ -1,0 +1,59 @@
+{
+  "name": "@sochdb/flowtrace-clawdbot",
+  "version": "0.1.0",
+  "description": "Flowtrace observability plugin for Clawdbot - automatic tracing of agent activities, tool calls, and memory operations",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "author": "Flowtrace",
+  "homepage": "https://flowtrace.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flowtrace/flowtrace.git",
+    "directory": "sdks/clawdbot"
+  },
+  "bugs": {
+    "url": "https://github.com/flowtrace/flowtrace/issues"
+  },
+  "keywords": [
+    "clawdbot",
+    "plugin",
+    "flowtrace",
+    "observability",
+    "tracing",
+    "llm",
+    "agent",
+    "memory",
+    "monitoring",
+    "genai"
+  ],
+  "peerDependencies": {
+    "clawdbot": ">=2024.0.0"
+  },
+  "peerDependenciesMeta": {
+    "clawdbot": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "typescript": "^5.3.0"
+  }
+}

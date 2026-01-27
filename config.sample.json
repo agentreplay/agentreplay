@@ -1,0 +1,23 @@
+{
+  "database": {
+    "auto_backup_enabled": true,
+    "auto_backup_interval_hours": 24,
+    "max_backups_to_keep": 7
+  },
+  "ui": {
+    "theme": "system",
+    "default_time_range_hours": 24
+  },
+  "server_export": {
+    "enabled": false,
+    "server_url": null,
+    "api_key": null
+  },
+  "ingestion_server": {
+    "enabled": true,
+    "port": 9432,
+    "host": "127.0.0.1",
+    "auth_token": null,
+    "max_connections": 1000
+  }
+}
