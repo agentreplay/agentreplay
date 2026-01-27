@@ -49,14 +49,13 @@
 
 ---
 
-## 🚀 One-Click Install
+## 🚀 Quick Start
 
 ```bash
-# macOS
-brew install sochdb/tap/flowtrace
-
-# Or download the app directly
-curl -sSL https://flowtrace.dev/install.sh | bash
+# Clone and run (that's it!)
+git clone https://github.com/sochdb/flowtrace.git
+cd flowtrace
+./run-tauri.sh
 ```
 
 **That's it.** No Docker. No `docker-compose up`. No environment variables. No database setup. Just a native app with everything inside.
