@@ -57,7 +57,8 @@
 |----------|----------|--------------|
 | **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
 | **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64.dmg) | Intel |
-| **Windows** | [Flowtrace.exe](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64-setup.exe) | x64 |
+| **Windows** | [Flowtrace.exe](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64-setup.exe) | x64 (NSIS Installer) |
+| **Windows** | [Flowtrace.msi](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64.msi) | x64 (MSI Installer) |
 | **Linux** | [Flowtrace.AppImage](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.AppImage) | x64 |
 | **Linux** | [Flowtrace.deb](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.deb) | Debian/Ubuntu |
 
