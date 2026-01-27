@@ -2,7 +2,9 @@
 
 <div align="center">
 
-**A Purpose-Built, High-Performance Observability Platform for LLM Agents**
+### 🖥️ Local-First Desktop Observability & AI Memory for Your Agents
+
+**No Docker. No servers. No cloud. Just run.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
@@ -14,40 +16,108 @@
 
 ---
 
+## 🎯 Why Flowtrace?
+
+<table>
+<tr>
+<td width="50%">
+
+### ❌ What We're NOT
+- ~~Docker containers~~
+- ~~Web servers to run~~
+- ~~Cloud accounts required~~
+- ~~Complex infrastructure~~
+- ~~Memory limits~~
+- ~~Monthly subscriptions~~
+
+</td>
+<td width="50%">
+
+### ✅ What We ARE
+- **Native desktop app** - double-click and run
+- **Everything built-in** - storage, UI, APIs
+- **Unlimited local memory** - use your full disk
+- **Works with Claude Code, Cursor, Windsurf, Cline**
+- **Zero configuration** - start tracing in seconds
+- **100% offline capable** - your data stays local
+
+</td>
+</tr>
+</table>
+
+> **Built for AI coding agents** - Flowtrace gives your tools like Claude Code, Cursor, and VS Code agents persistent memory and full observability without cloud dependencies.
+
+---
+
+## 🚀 One-Click Install
+
+```bash
+# macOS
+brew install sochdb/tap/flowtrace
+
+# Or download the app directly
+curl -sSL https://flowtrace.dev/install.sh | bash
+```
+
+**That's it.** No Docker. No `docker-compose up`. No environment variables. No database setup. Just a native app with everything inside.
+
+---
+
 ## 🎯 Overview
 
-Flowtrace is a purpose-built observability platform for LLM (Large Language Model) agents. Designed from the ground up to handle the unique challenges of agent observability:
+Flowtrace is a **local-first desktop application** that gives your AI agents and coding tools:
 
-- **High-performance ingestion** powered by [SochDB](https://github.com/sochdb/sochdb) storage engine
-- **Native causal graph support** for tracking complex agent reasoning flows
-- **Built-in evaluation framework** with 20+ automated evaluators
-- **Offline-first desktop app** with optional cloud sync
-- **Multi-index architecture** for optimized queries
+- **🧠 Unlimited persistent memory** - stored on your machine, not in the cloud
+- **👁️ Full observability** - see every decision, tool call, and reasoning step
+- **⚡ Instant performance** - native desktop app, not a browser tab
+- **🔒 Complete privacy** - your conversations and code never leave your machine
 
-### Powered by SochDB
+### Works With Your Favorite AI Tools
 
-Flowtrace uses **SochDB** as its storage backend - a high-performance embedded database designed for AI/ML workloads:
+| Tool | Integration | Status |
+|------|-------------|--------|
+| **Claude Code** | Native MCP server | ✅ Ready |
+| **Cursor** | MCP + Extension | ✅ Ready |
+| **Windsurf** | MCP server | ✅ Ready |
+| **Cline** | MCP server | ✅ Ready |
+| **VS Code + Copilot** | Extension | ✅ Ready |
+| **Custom Agents** | Python/JS/Rust SDK | ✅ Ready |
 
-- **LSM-tree storage engine** for write-optimized durability
-- **ACID-compliant transactions** with WAL and crash recovery
-- **Columnar projection** for 80%+ I/O reduction on analytics queries
-- **Native vector search** with HNSW and Vamana (DiskANN) indexes
-- **100K+ edges/sec** batch ingestion throughput
+### Powered by SochDB - Everything Built-In
 
-> SochDB is developed by the same team and provides the foundational storage layer that makes Flowtrace's performance possible.
+Unlike tools that need Postgres, Redis, or cloud databases, Flowtrace uses **SochDB** - a high-performance embedded database that lives inside the app:
 
-### Key Capabilities
+| Feature | Benefit |
+|---------|---------|
+| **Embedded database** | No external services needed |
+| **LSM-tree storage** | Write-optimized for trace ingestion |
+| **Columnar storage** | 80% less I/O for analytics |
+| **Vector indexes** | Semantic search over your agent memory |
+| **ACID transactions** | Crash-safe, no data loss |
 
-Flowtrace implements the **AgentFlow Format (AFF) v2.0** - a specialized trace format optimized for LLM agents:
-- **Fixed 128-byte edge format** for optimal cache performance
-- **SochDB storage backend** for ACID-compliant persistence
-- **CSR causal graph index** for fast parent-child traversal
-- **HNSW/Vamana vector index** for semantic similarity search
-- **Temporal index** for time-based partitioning
+> Your traces, memory, and analytics all stored locally with zero setup.
 
 ---
 
 ## ✨ Features
+
+### 🧠 AI Agent Memory
+
+Give your coding agents **persistent, unlimited memory** that survives restarts:
+
+- **Session continuity** - Claude Code remembers your entire project context
+- **Cross-session learning** - agents learn from past interactions
+- **Semantic search** - find relevant past conversations instantly
+- **No token limits** - store everything locally, retrieve what's relevant
+
+### 👁️ Full Observability
+
+See exactly what your AI agents are doing:
+
+- **Every tool call** traced with inputs, outputs, and timing
+- **Reasoning chains** visualized as interactive graphs
+- **Token usage** tracked per model, session, and project
+- **Cost analytics** - know exactly what you're spending
 
 ### Core Capabilities
 
@@ -90,35 +160,33 @@ Flowtrace implements the **AgentFlow Format (AFF) v2.0** - a specialized trace f
   - Vector similarity search (semantic search)
   - Aggregations and analytics
 
-### Platform Options
+### 🖥️ Desktop-First Architecture
 
-- **🖥️ Desktop Application** (Tauri-based)
-  - Fully offline operation with local database
-  - Cross-platform (Windows, macOS, Linux)
-  - 10x faster IPC vs HTTP
-  - System tray integration and native menus
+The primary way to run Flowtrace - a native desktop app:
 
-- **☁️ Server Deployment**
-  - REST API with 23+ endpoint modules
-  - Multi-tenancy with API key authentication
-  - WebSocket support for real-time updates
-  - OpenTelemetry GenAI compliance (75% complete)
+- **Double-click to run** - no terminal, no commands
+- **Everything embedded** - database, UI, API server all inside
+- **Cross-platform** - Windows, macOS, Linux
+- **Unlimited storage** - uses your local disk, no cloud limits
+- **10x faster** - native IPC vs HTTP
+- **System tray** - runs in background, always available
 
-- **📦 SDKs & Integrations**
-  - **Python SDK** with 10+ framework integrations:
-    - LangChain / LangGraph
-    - LlamaIndex
-    - OpenAI Agents SDK
-    - Microsoft AutoGen
-    - CrewAI
-    - Semantic Kernel
-    - Hugging Face smolagents
-    - PydanticAI
-    - AWS Strands Agents
-    - Google ADK
-  - **JavaScript/TypeScript SDK** (npm package)
-  - **Rust SDK** (crates.io package)
-  - **Go SDK** (Go module)
+### 📦 SDKs & Integrations
+
+- **Python SDK** with 10+ framework integrations:
+  - LangChain / LangGraph
+  - LlamaIndex
+  - OpenAI Agents SDK
+  - Microsoft AutoGen
+  - CrewAI
+  - Semantic Kernel
+  - Hugging Face smolagents
+  - PydanticAI
+  - AWS Strands Agents
+  - Google ADK
+- **JavaScript/TypeScript SDK** (npm package)
+- **Rust SDK** (crates.io package)
+- **Go SDK** (Go module)
 
 ### Enterprise Features
 
