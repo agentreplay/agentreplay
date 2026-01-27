@@ -38,10 +38,10 @@
   "homepage": "https://flowtrace.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sushanthpy/flowtrace"
+    "url": "https://github.com/sochdb/flowtrace"
   },
   "bugs": {
-    "url": "https://github.com/sushanthpy/flowtrace/issues"
+    "url": "https://github.com/sochdb/flowtrace/issues"
   },
   "dependencies": {},
   "devDependencies": {

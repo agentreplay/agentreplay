@@ -44,7 +44,7 @@ Before contributing, ensure you have the following installed:
    ```
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/sushanthpy/flowtrace.git
+   git remote add upstream https://github.com/sochdb/flowtrace.git
    ```
 
 ## Development Setup

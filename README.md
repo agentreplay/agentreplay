@@ -18,19 +18,31 @@
 
 Flowtrace is a purpose-built observability platform for LLM (Large Language Model) agents. Designed from the ground up to handle the unique challenges of agent observability:
 
-- **High-performance ingestion** with LSM-tree storage engine
+- **High-performance ingestion** powered by [SochDB](https://github.com/sochdb/sochdb) storage engine
 - **Native causal graph support** for tracking complex agent reasoning flows
 - **Built-in evaluation framework** with 20+ automated evaluators
 - **Offline-first desktop app** with optional cloud sync
 - **Multi-index architecture** for optimized queries
 
+### Powered by SochDB
+
+Flowtrace uses **SochDB** as its storage backend - a high-performance embedded database designed for AI/ML workloads:
+
+- **LSM-tree storage engine** for write-optimized durability
+- **ACID-compliant transactions** with WAL and crash recovery
+- **Columnar projection** for 80%+ I/O reduction on analytics queries
+- **Native vector search** with HNSW and Vamana (DiskANN) indexes
+- **100K+ edges/sec** batch ingestion throughput
+
+> SochDB is developed by the same team and provides the foundational storage layer that makes Flowtrace's performance possible.
+
 ### Key Capabilities
 
 Flowtrace implements the **AgentFlow Format (AFF) v2.0** - a specialized trace format optimized for LLM agents:
 - **Fixed 128-byte edge format** for optimal cache performance
-- **LSM-tree storage engine** for write-optimized durability
+- **SochDB storage backend** for ACID-compliant persistence
 - **CSR causal graph index** for fast parent-child traversal
-- **HNSW vector index** for semantic similarity search
+- **HNSW/Vamana vector index** for semantic similarity search
 - **Temporal index** for time-based partitioning
 
 ---
@@ -140,7 +152,7 @@ Flowtrace implements the **AgentFlow Format (AFF) v2.0** - a specialized trace f
 
 ```bash
 # Clone the repository
-git clone https://github.com/sushanthpy/flowtrace.git
+git clone https://github.com/sochdb/flowtrace.git
 cd flowtrace
 
 # Install frontend dependencies
@@ -283,25 +295,23 @@ Flowtrace is built as a modular Rust workspace with 8 specialized crates:
         │          ↓ Evaluation Framework
         ▼
 ┌──────────────────────────────────────┐
-│      flowtrace-storage              │  ← LSM-Tree Engine
+│      flowtrace-storage              │  ← SochDB Backend
 │                                      │
-│  ┌──────────┐  ┌─────────────────┐ │
-│  │   WAL    │→ │   Memtable      │ │
-│  └──────────┘  └────────┬────────┘ │
-│                         ▼           │
-│              Flush (when full)      │
-│                         ▼           │
-│  ┌──────────────────────────────┐  │
-│  │  SSTables (L0-L6)            │  │
-│  │  - Bloom filters             │  │
-│  │  - Index blocks              │  │
-│  │  - Data blocks               │  │
-│  └──────────────────────────────┘  │
-│                                     │
-│  ┌──────────────────────┐          │
-│  │  Payload Store       │          │
-│  │  (Variable data)     │          │
-│  └──────────────────────┘          │
+│  ┌─────────────────────────────────┐│
+│  │           SochDB                ││
+│  │  ┌──────────────────────────┐  ││
+│  │  │ sochdb-storage (LSM/WAL) │  ││
+│  │  ├──────────────────────────┤  ││
+│  │  │ sochdb-index (HNSW/BM25) │  ││
+│  │  ├──────────────────────────┤  ││
+│  │  │ sochdb-query (SOCH-QL)   │  ││
+│  │  └──────────────────────────┘  ││
+│  └─────────────────────────────────┘│
+│                                      │
+│  ┌──────────────────────┐           │
+│  │  Payload Store       │           │
+│  │  (Variable data)     │           │
+│  └──────────────────────┘           │
 └─────────────────────────────────────┘
         ▼
 ┌───────────────────────┐
@@ -315,13 +325,41 @@ Flowtrace is built as a modular Rust workspace with 8 specialized crates:
 | Crate | Purpose | Key Features |
 |-------|---------|--------------|
 | **flowtrace-core** | Foundational types | 128-byte AgentFlowEdge, span types, validation |
-| **flowtrace-storage** | LSM-tree engine | WAL, memtable, SSTables, compaction, backup |
+| **flowtrace-storage** | SochDB integration | Unified storage layer, columnar projection, key encoding |
 | **flowtrace-index** | Indexing layer | HNSW, Vamana with Product Quantization (32x compression), Bloom filters, causal graph, temporal index |
 | **flowtrace-query** | Query engine | Temporal queries, causal traversal, aggregations |
 | **flowtrace-server** | HTTP API | REST endpoints, auth, multi-tenancy, WebSocket |
 | **flowtrace-cli** | Command-line tool | Server management, DB inspection, benchmarks |
 | **flowtrace-observability** | O11y integrations | OpenTelemetry, Prometheus, Jaeger export |
 | **flowtrace-evals** | Evaluation framework | 20+ evaluators, LLM-as-judge, dataset management |
+
+### SochDB Storage Architecture
+
+Flowtrace's storage layer is built on **SochDB**, providing:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FlowTraceStorage                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │ Trace Store  │  │ Payload Store│  │ Metrics Store│           │
+│  │ (edges)      │  │ (blobs)      │  │ (aggregates) │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         └─────────────────┼─────────────────┘                   │
+│                           │                                     │
+│                    ┌──────▼──────┐                              │
+│                    │   SochDB    │                              │
+│                    │ Connection  │                              │
+│                    └─────────────┘                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Encoding Schema:**
+- Traces: `traces/{tenant_id}/{project_id}/{timestamp:020}/{edge_id:032x}`
+- Payloads: `payloads/{edge_id:032x}`
+- Metrics: `metrics/{granularity}/{tenant_id}/{project_id}/{timestamp:020}`
+- Graph: `graph/{direction}/{node_id:032x}/{related_id:032x}`
+
+**Columnar Edge Storage** enables 80% I/O reduction on analytics queries by reading only needed columns instead of full edges.
 
 ### The AgentFlowEdge Format
 
@@ -433,33 +471,34 @@ let results = index.search(query, k=10)?;
 
 ### Architecture Benefits
 
-1. **LSM-Tree Storage**: Write-optimized, sequential writes to disk
-2. **Fixed-Size Edges**: No parsing overhead, direct memory mapping
-3. **Bloom Filters**: Eliminates unnecessary disk reads
-4. **CSR Causal Index**: 50-70% memory savings vs hash maps
-5. **HNSW Vector Index**: ~95% recall for semantic search
-6. **Vamana + Product Quantization**: 32x memory reduction + single-layer graph for 10M+ vectors
-7. **Batch Writes**: Amortizes write overhead across multiple edges
-8. **Compression**: LZ4/Zstd reduces disk I/O
+1. **SochDB Storage Backend**: ACID-compliant embedded database with LSM-tree architecture
+2. **Columnar Projection**: 80%+ I/O reduction for analytics queries via SochDB's PackedRow format
+3. **Fixed-Size Edges**: No parsing overhead, direct memory mapping
+4. **Bloom Filters**: Eliminates unnecessary disk reads
+5. **CSR Causal Index**: 50-70% memory savings vs hash maps
+6. **HNSW Vector Index**: ~95% recall for semantic search
+7. **Vamana + Product Quantization**: 32x memory reduction + single-layer graph for 10M+ vectors
+8. **Batch Writes**: Amortizes write overhead across multiple edges
+9. **Compression**: LZ4/Zstd reduces disk I/O
 
 ---
 
 ## 📚 Documentation
 
-📖 **Full Documentation**: [sushanthpy.github.io/flowtrace](https://sushanthpy.github.io/flowtrace)
+📖 **Full Documentation**: [sochdb.github.io/flowtrace](https://sochdb.github.io/flowtrace)
 
 ### Quick Links
 
 | Guide | Description |
 |-------|-------------|
-| [Getting Started](https://sushanthpy.github.io/flowtrace/docs/getting-started/) | Installation and first trace |
-| [Python SDK](https://sushanthpy.github.io/flowtrace/docs/python-sdk/) | Python client with framework integrations |
-| [JavaScript SDK](https://sushanthpy.github.io/flowtrace/docs/javascript-sdk/) | TypeScript/JavaScript client |
-| [Rust SDK](https://sushanthpy.github.io/flowtrace/docs/rust-sdk/) | Rust client library |
-| [Go SDK](https://sushanthpy.github.io/flowtrace/docs/go-sdk/) | Go client library |
-| [API Reference](https://sushanthpy.github.io/flowtrace/docs/api-reference/) | REST API documentation |
-| [Architecture](https://sushanthpy.github.io/flowtrace/docs/architecture/) | System design overview |
-| [Evaluation Framework](https://sushanthpy.github.io/flowtrace/docs/evaluation/) | 20+ built-in evaluators |
+| [Getting Started](https://sochdb.github.io/flowtrace/docs/getting-started/) | Installation and first trace |
+| [Python SDK](https://sochdb.github.io/flowtrace/docs/python-sdk/) | Python client with framework integrations |
+| [JavaScript SDK](https://sochdb.github.io/flowtrace/docs/javascript-sdk/) | TypeScript/JavaScript client |
+| [Rust SDK](https://sochdb.github.io/flowtrace/docs/rust-sdk/) | Rust client library |
+| [Go SDK](https://sochdb.github.io/flowtrace/docs/go-sdk/) | Go client library |
+| [API Reference](https://sochdb.github.io/flowtrace/docs/api-reference/) | REST API documentation |
+| [Architecture](https://sochdb.github.io/flowtrace/docs/architecture/) | System design overview |
+| [Evaluation Framework](https://sochdb.github.io/flowtrace/docs/evaluation/) | 20+ built-in evaluators |
 
 ### In-Repo Documentation
 
@@ -605,7 +644,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 
 ```bash
 # Clone repository
-git clone https://github.com/sushanthpy/flowtrace.git
+git clone https://github.com/sochdb/flowtrace.git
 cd flowtrace
 
 # Build all components
@@ -756,7 +795,7 @@ We welcome contributions! Here's how to get started:
 ### Quick Start
 
 ```bash
-git clone https://github.com/sushanthpy/flowtrace.git
+git clone https://github.com/sochdb/flowtrace.git
 cd flowtrace
 cargo build --workspace
 cargo test --workspace
@@ -776,8 +815,8 @@ cargo test --workspace
 
 | You are... | Start with... |
 |-----------|---------------|
-| New to the project | [Good First Issues](https://github.com/sushanthpy/flowtrace/labels/good%20first%20issue) |
-| Experienced in Rust | [Help Wanted](https://github.com/sushanthpy/flowtrace/labels/help%20wanted) |
+| New to the project | [Good First Issues](https://github.com/sochdb/flowtrace/labels/good%20first%20issue) |
+| Experienced in Rust | [Help Wanted](https://github.com/sochdb/flowtrace/labels/help%20wanted) |
 | Interested in storage | `flowtrace-storage` crate |
 | Interested in ML/vectors | `flowtrace-index` crate |
 | Interested in SDKs | `sdks/` directory |
@@ -791,7 +830,20 @@ cargo test --workspace
 
 ---
 
-## 📄 License
+## � Related Projects
+
+Flowtrace is part of the SochDB ecosystem:
+
+| Project | Description | Link |
+|---------|-------------|------|
+| **SochDB** | High-performance embedded database for AI/ML workloads | [github.com/sochdb/sochdb](https://github.com/sochdb/sochdb) |
+| **SochDB Python SDK** | Python client for SochDB | [github.com/sochdb/sochdb-python-sdk](https://github.com/sochdb/sochdb-python-sdk) |
+| **SochDB Node.js SDK** | Node.js client for SochDB | [github.com/sochdb/sochdb-nodejs-sdk](https://github.com/sochdb/sochdb-nodejs-sdk) |
+| **SochDB Go SDK** | Go client for SochDB | [github.com/sochdb/sochdb-go](https://github.com/sochdb/sochdb-go) |
+
+---
+
+## �📄 License
 
 Flowtrace is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
 
@@ -814,20 +866,20 @@ Special thanks to the open-source community and all contributors.
 
 ## 🔗 Links
 
-- **GitHub**: [github.com/sushanthpy/flowtrace](https://github.com/sushanthpy/flowtrace)
-- **Documentation**: [sushanthpy.github.io/flowtrace](https://sushanthpy.github.io/flowtrace)
+- **GitHub**: [github.com/sochdb/flowtrace](https://github.com/sochdb/flowtrace)
+- **Documentation**: [sochdb.github.io/flowtrace](https://sochdb.github.io/flowtrace)
 - **Python SDK**: [PyPI](https://pypi.org/project/flowtrace-client/)
 - **JavaScript SDK**: [npm](https://www.npmjs.com/package/flowtrace-client)
 - **Rust SDK**: [crates.io](https://crates.io/crates/flowtrace-client)
-- **Issues**: [Bug reports & feature requests](https://github.com/sushanthpy/flowtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sushanthpy/flowtrace/discussions)
+- **Issues**: [Bug reports & feature requests](https://github.com/sochdb/flowtrace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
 
 ---
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/sushanthpy/flowtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sushanthpy/flowtrace/discussions)
+- **Issues**: [GitHub Issues](https://github.com/sochdb/flowtrace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
 - **Email**: support@flowtrace.dev (coming soon)
 
 ---

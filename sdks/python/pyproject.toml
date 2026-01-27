@@ -139,9 +139,9 @@ all = [
 [project.urls]
 Homepage = "https://flowtrace.dev"
 Documentation = "https://docs.flowtrace.dev"
-Repository = "https://github.com/sushanthpy/flowtrace"
-Issues = "https://github.com/sushanthpy/flowtrace/issues"
-Changelog = "https://github.com/sushanthpy/flowtrace/blob/main/CHANGELOG.md"
+Repository = "https://github.com/sochdb/flowtrace"
+Issues = "https://github.com/sochdb/flowtrace/issues"
+Changelog = "https://github.com/sochdb/flowtrace/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

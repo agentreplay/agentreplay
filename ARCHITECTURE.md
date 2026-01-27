@@ -5,6 +5,7 @@
 ## Table of Contents
 
 - [System Overview](#system-overview)
+- [SochDB Storage Backend](#sochdb-storage-backend)
 - [Crate Dependency Graph](#crate-dependency-graph)
 - [Data Flow](#data-flow)
 - [Key Design Decisions](#key-design-decisions)
@@ -25,6 +26,8 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
 2. **Causality-aware**: Traces form DAGs, not just flat logs; we preserve relationships
 3. **Evaluation-native**: Testing and validation are first-class, not afterthoughts
 4. **Memory-integrated**: Persistent context across sessions with semantic retrieval
+
+**Powered by SochDB**: Flowtrace uses [SochDB](https://github.com/sochdb/sochdb) as its storage backend - a high-performance embedded database designed for AI/ML workloads.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -112,6 +115,89 @@ flowtrace-plugins                     flowtrace-tauri (Desktop)
 
 ---
 
+## SochDB Storage Backend
+
+Flowtrace's storage layer is built entirely on **SochDB** - a high-performance embedded database from the same team. This provides Flowtrace with enterprise-grade storage capabilities without reinventing the wheel.
+
+### Why SochDB?
+
+| Feature | Benefit for Flowtrace |
+|---------|----------------------|
+| **LSM-tree architecture** | Write-optimized for high-throughput trace ingestion |
+| **ACID transactions** | Durability guarantees for critical observability data |
+| **Columnar storage (PackedRow)** | 80%+ I/O reduction on analytics queries |
+| **Native vector indexes** | HNSW and Vamana for semantic search |
+| **Embedded design** | No external dependencies for desktop app |
+| **Crash recovery (WAL)** | Zero data loss on unexpected shutdown |
+
+### Storage Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FlowTraceStorage                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │ Trace Store  │  │ Payload Store│  │ Metrics Store│           │
+│  │ (edges)      │  │ (blobs)      │  │ (aggregates) │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         └─────────────────┼─────────────────┘                   │
+│                           │                                     │
+│                    ┌──────▼──────┐                              │
+│                    │   SochDB    │                              │
+│                    │ Connection  │                              │
+│                    └─────────────┘                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Encoding
+
+Flowtrace uses hierarchical key encoding for efficient range scans:
+
+| Store | Key Format | Example |
+|-------|------------|---------|
+| **Traces** | `traces/{tenant}/{project}/{timestamp:020}/{edge:032x}` | `traces/1/42/00000001704067200000000/0a1b2c...` |
+| **Payloads** | `payloads/{edge:032x}` | `payloads/0a1b2c3d4e5f...` |
+| **Metrics** | `metrics/{granularity}/{tenant}/{project}/{timestamp:020}` | `metrics/hour/1/42/00000001704067200000000` |
+| **Graph** | `graph/{direction}/{node:032x}/{related:032x}` | `graph/children/0a1b2c.../0d4e5f...` |
+
+### Columnar Edge Storage
+
+SochDB's `PackedRow` format enables columnar projection - queries that only need specific fields read only those columns:
+
+```rust
+// Column schema for edge storage
+| Column        | Type   | Size  | Description              |
+|---------------|--------|-------|--------------------------|
+| edge_id       | Binary | 16    | Unique edge identifier   |
+| tenant_id     | UInt   | 8     | Tenant identifier        |
+| project_id    | UInt   | 2     | Project identifier       |
+| timestamp_us  | UInt   | 8     | Event timestamp (micros) |
+| session_id    | UInt   | 8     | Session identifier       |
+| agent_id      | UInt   | 8     | Agent identifier         |
+| span_type     | UInt   | 4     | Type of span             |
+| duration_us   | UInt   | 4     | Duration in microseconds |
+| token_count   | UInt   | 4     | Token count              |
+| has_payload   | Bool   | 1     | Payload flag             |
+```
+
+**Result**: Analytics queries that only need `timestamp_us + duration_us` achieve **80%+ I/O reduction** compared to reading full edges.
+
+### SochDB Components Used
+
+```
+flowtrace-storage
+    │
+    ├── sochdb (EmbeddedConnection)
+    │   └── Primary database connection
+    │
+    ├── sochdb-storage (PackedRow, PackedTableSchema)
+    │   └── Columnar storage for 80% I/O reduction
+    │
+    └── sochdb-core (SochValue)
+        └── Type system for column values
+```
+
+---
+
 ## Data Flow
 
 ### Write Path (Hot Path - Optimized for Speed)
@@ -129,11 +215,11 @@ Client SDK
     │
     ▼
 ┌───────────────────────────────────────────────────────┐
-│ flowtrace-storage::LSMTree                            │
-│   1. Append to WAL (durability) ─────► fsync          │
-│   2. Insert into Memtable (skip list)                 │
-│   3. Update block cache                               │
-│   4. Maybe trigger flush if memtable full             │
+│ flowtrace-storage (SochDB Backend)                    │
+│   1. Encode key: traces/{tenant}/{project}/{ts}/{id} │
+│   2. Convert edge to PackedRow (columnar)            │
+│   3. Write to SochDB (WAL + Memtable)                │
+│   4. SochDB handles durability & compaction          │
 └───────────────────────────────────────────────────────┘
     │
     ├──────────────────────────────┐
@@ -160,32 +246,24 @@ Client Query
 │   2. Plan execution (index selection, parallelism)    │
 └───────────────────────────────────────────────────────┘
     │
-    ├─────────────────────┬───────────────────────┐
-    ▼                     ▼                       ▼
-┌─────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│ BlockCache  │   │ Memtable        │   │ SSTables        │
-│ (L1 cache)  │   │ (in-memory)     │   │ (L0 → L6)       │
-└─────────────┘   └─────────────────┘   └─────────────────┘
-    │                     │                       │
-    └─────────────────────┴───────────────────────┘
-                          │
-                          ▼
-                    Merge & Filter
-                          │
-                          ▼
-              ┌─────────────────────┐
-              │ Optional: Causal    │
-              │ graph traversal     │
-              └─────────────────────┘
-                          │
-                          ▼
-              ┌─────────────────────┐
-              │ Optional: Vector    │
-              │ similarity search   │
-              └─────────────────────┘
-                          │
-                          ▼
-                    Return Results
+    ▼
+┌───────────────────────────────────────────────────────┐
+│ flowtrace-storage (SochDB Backend)                    │
+│   1. Build scan prefix from query filters             │
+│   2. SochDB range scan with columnar projection      │
+│   3. Deserialize only needed columns (80% I/O saved) │
+└───────────────────────────────────────────────────────┘
+    │
+    ▼
+┌───────────────────────────────────────────────────────┐
+│ Post-Processing                                       │
+│   1. Optional: Causal graph traversal                 │
+│   2. Optional: Vector similarity search               │
+│   3. Aggregation & filtering                          │
+└───────────────────────────────────────────────────────┘
+    │
+    ▼
+Return Results
 ```
 
 
@@ -251,7 +329,20 @@ Read-time defaults provide backward compatibility for stored runs.
 
 These are the most important architectural decisions. See `/docs/adr/` for full ADRs.
 
-### 1. Fixed 128-byte Edge Format
+### 1. SochDB as Storage Backend
+
+**Decision**: Use SochDB as the unified storage backend instead of a custom LSM-tree.
+
+**Why**:
+- SochDB provides ACID transactions, WAL, and crash recovery out of the box
+- Columnar storage (PackedRow) enables 80%+ I/O reduction for analytics
+- Native vector indexes (HNSW, Vamana) for semantic search
+- Same team maintains both projects → tight integration
+- Embedded design perfect for offline-first desktop app
+
+**Trade-off**: External dependency, but SochDB is designed specifically for this use case.
+
+### 2. Fixed 128-byte Edge Format
 
 **Decision**: `AgentFlowEdge` is exactly 128 bytes, cache-line aligned.
 
@@ -263,17 +354,16 @@ These are the most important architectural decisions. See `/docs/adr/` for full 
 
 **Trade-off**: Rigid format, but 128 bytes covers 99%+ of use cases. Extensions go in payload store.
 
-### 2. LSM-Tree over B-Tree
+### 3. Columnar Edge Storage
 
-**Decision**: Use LSM-tree (Log-Structured Merge-tree) for storage.
+**Decision**: Store edges in SochDB's columnar PackedRow format.
 
 **Why**:
-- Agents produce write-heavy workloads (10:1 write:read ratio typical)
-- LSM writes are sequential → 10-100x faster than B-tree random writes
-- Compaction amortizes write cost
-- Leveled structure enables tiered compression
+- Analytics queries often need only 2-3 columns (timestamp, duration, etc.)
+- Reading only needed columns saves 80%+ I/O
+- SochDB's PackedRow enables projection pushdown
 
-**Trade-off**: Read amplification (check multiple levels), but mitigated by bloom filters and block cache.
+**Trade-off**: Slightly more complex serialization, but massive performance win.
 
 ### 3. Hybrid Logical Clock (HLC)
 
@@ -318,12 +408,12 @@ These are the most important architectural decisions. See `/docs/adr/` for full 
 | You want to... | Look in... |
 |----------------|------------|
 | Understand the core data model | `flowtrace-core/src/edge.rs` |
-| See how writes are persisted | `flowtrace-storage/src/lsm.rs` |
-| Understand WAL implementation | `flowtrace-storage/src/wal_*.rs` |
-| See SSTable format | `flowtrace-storage/src/sstable.rs` |
-| Understand compaction | `flowtrace-storage/src/compaction/` |
+| See SochDB integration | `flowtrace-storage/src/sochdb_unified.rs` |
+| Understand key encoding | `flowtrace-storage/src/sochdb_unified.rs` (key functions) |
+| See columnar edge schema | `flowtrace-storage/src/sochdb_unified.rs` (`create_edge_schema`) |
+| See payload storage | `flowtrace-storage/src/observation_store.rs` |
 | See causal graph traversal | `flowtrace-index/src/causal.rs` |
-| Understand vector search | `flowtrace-index/src/hnsw.rs` |
+| Understand vector search | `flowtrace-index/src/hnsw.rs`, `flowtrace-index/src/vamana.rs` |
 | See query planning | `flowtrace-query/src/engine.rs` |
 | Understand API routing | `flowtrace-server/src/api/` |
 | See evaluation implementations | `flowtrace-evals/src/evaluators/` |
