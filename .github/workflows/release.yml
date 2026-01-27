@@ -1,5 +1,22 @@
 name: Release Build - All Platforms
 
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# GitHub Actions - Release Build for All Platforms
+# Equivalent to Azure Pipelines: release-*.yml
+
 on:
   release:
     types: [created]
@@ -15,21 +32,10 @@ env:
 
 jobs:
   # ============================================
-  # macOS Builds (DMG)
+  # macOS Apple Silicon (arm64)
   # ============================================
-  build-macos:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            name: macOS (Apple Silicon)
-            artifact_suffix: aarch64
-          - target: x86_64-apple-darwin
-            name: macOS (Intel)
-            artifact_suffix: x64
-    
-    name: Build ${{ matrix.name }}
+  build-macos-arm:
+    name: Build macOS (Apple Silicon)
     runs-on: macos-latest
     
     steps:
@@ -46,12 +52,19 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: aarch64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: flowtrace-tauri
+          workspaces: 'flowtrace-tauri -> target'
+          cache-targets: true
+
+      - name: Cache Cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install frontend dependencies
         working-directory: flowtrace-ui
@@ -68,27 +81,106 @@ jobs:
           cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
 
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2.0"
+        run: |
+          if ! command -v cargo-tauri &> /dev/null; then
+            cargo install tauri-cli --version "^2.0"
+          fi
 
       - name: Build Tauri App
         working-directory: flowtrace-tauri
-        run: cargo tauri build --target ${{ matrix.target }}
+        run: cargo tauri build --target aarch64-apple-darwin
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
         run: |
-          cd flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg
+          cd flowtrace-tauri/target/aarch64-apple-darwin/release/bundle/dmg
           for f in *.dmg; do
-            mv "$f" "Flowtrace_${{ matrix.artifact_suffix }}.dmg" 2>/dev/null || true
+            [ -f "$f" ] && mv "$f" "Flowtrace_aarch64.dmg"
           done
 
-      - name: Upload macOS DMG
+      - name: Upload macOS ARM DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-macos-${{ matrix.artifact_suffix }}
-          path: flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          name: Flowtrace-macos-aarch64
+          path: flowtrace-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  # ============================================
+  # macOS Intel (x64)
+  # ============================================
+  build-macos-intel:
+    name: Build macOS (Intel)
+    runs-on: macos-13  # Intel runner for native x64 build
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: flowtrace-ui/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: 'flowtrace-tauri -> target'
+          cache-targets: true
+
+      - name: Cache Cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-tauri-2.0
+
+      - name: Install frontend dependencies
+        working-directory: flowtrace-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: npm run build
+
+      - name: Copy frontend to Tauri
+        run: |
+          rm -rf flowtrace-tauri/flowtrace-ui/dist
+          mkdir -p flowtrace-tauri/flowtrace-ui
+          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+
+      - name: Install Tauri CLI
+        run: |
+          if ! command -v cargo-tauri &> /dev/null; then
+            cargo install tauri-cli --version "^2.0"
+          fi
+
+      - name: Build Tauri App
+        working-directory: flowtrace-tauri
+        run: cargo tauri build --target x86_64-apple-darwin
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Rename artifacts for consistency
+        run: |
+          cd flowtrace-tauri/target/x86_64-apple-darwin/release/bundle/dmg
+          for f in *.dmg; do
+            [ -f "$f" ] && mv "$f" "Flowtrace_x64.dmg"
+          done
+
+      - name: Upload macOS Intel DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-macos-x64
+          path: flowtrace-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
   # ============================================
@@ -117,7 +209,14 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: flowtrace-tauri
+          workspaces: 'flowtrace-tauri -> target'
+          cache-targets: true
+
+      - name: Cache Cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install Linux dependencies
         run: |
@@ -144,7 +243,10 @@ jobs:
           cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
 
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2.0"
+        run: |
+          if ! command -v cargo-tauri &> /dev/null; then
+            cargo install tauri-cli --version "^2.0"
+          fi
 
       - name: Build Tauri App
         working-directory: flowtrace-tauri
@@ -157,11 +259,11 @@ jobs:
         run: |
           cd flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage
           for f in *.AppImage; do
-            mv "$f" "Flowtrace_amd64.AppImage" 2>/dev/null || true
+            [ -f "$f" ] && mv "$f" "Flowtrace_amd64.AppImage"
           done
           cd ../deb
           for f in *.deb; do
-            mv "$f" "Flowtrace_amd64.deb" 2>/dev/null || true
+            [ -f "$f" ] && mv "$f" "Flowtrace_amd64.deb"
           done
 
       - name: Upload Linux AppImage
@@ -204,7 +306,14 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: flowtrace-tauri
+          workspaces: 'flowtrace-tauri -> target'
+          cache-targets: true
+
+      - name: Cache Cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install frontend dependencies
         working-directory: flowtrace-ui
@@ -236,11 +345,11 @@ jobs:
         run: |
           cd flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis
           for f in *.exe; do
-            mv "$f" "Flowtrace_x64-setup.exe" 2>/dev/null || true
+            [ -f "$f" ] && mv "$f" "Flowtrace_x64-setup.exe"
           done
           cd ../msi
           for f in *.msi; do
-            mv "$f" "Flowtrace_x64.msi" 2>/dev/null || true
+            [ -f "$f" ] && mv "$f" "Flowtrace_x64.msi"
           done
 
       - name: Upload Windows EXE
@@ -262,7 +371,7 @@ jobs:
   # ============================================
   release:
     name: Create Release
-    needs: [build-macos, build-linux, build-windows]
+    needs: [build-macos-arm, build-macos-intel, build-linux, build-windows]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     
