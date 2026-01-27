@@ -1,0 +1,289 @@
+name: Release Build - All Platforms
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.1.0)'
+        required: true
+        default: '0.1.0'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ============================================
+  # macOS Builds (DMG)
+  # ============================================
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            name: macOS (Apple Silicon)
+            artifact_suffix: aarch64
+          - target: x86_64-apple-darwin
+            name: macOS (Intel)
+            artifact_suffix: x64
+    
+    name: Build ${{ matrix.name }}
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: flowtrace-ui/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: flowtrace-tauri
+
+      - name: Install frontend dependencies
+        working-directory: flowtrace-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: npm run build
+
+      - name: Copy frontend to Tauri
+        run: |
+          rm -rf flowtrace-tauri/flowtrace-ui/dist
+          mkdir -p flowtrace-tauri/flowtrace-ui
+          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0"
+
+      - name: Build Tauri App
+        working-directory: flowtrace-tauri
+        run: cargo tauri build --target ${{ matrix.target }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Rename artifacts for consistency
+        run: |
+          cd flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg
+          for f in *.dmg; do
+            mv "$f" "Flowtrace_${{ matrix.artifact_suffix }}.dmg" 2>/dev/null || true
+          done
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-macos-${{ matrix.artifact_suffix }}
+          path: flowtrace-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  # ============================================
+  # Linux Build (AppImage, .deb)
+  # ============================================
+  build-linux:
+    name: Build Linux (AppImage + Deb)
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: flowtrace-ui/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: flowtrace-tauri
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install frontend dependencies
+        working-directory: flowtrace-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: npm run build
+
+      - name: Copy frontend to Tauri
+        run: |
+          rm -rf flowtrace-tauri/flowtrace-ui/dist
+          mkdir -p flowtrace-tauri/flowtrace-ui
+          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0"
+
+      - name: Build Tauri App
+        working-directory: flowtrace-tauri
+        run: cargo tauri build --target x86_64-unknown-linux-gnu
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Rename artifacts for consistency
+        run: |
+          cd flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage
+          for f in *.AppImage; do
+            mv "$f" "Flowtrace_amd64.AppImage" 2>/dev/null || true
+          done
+          cd ../deb
+          for f in *.deb; do
+            mv "$f" "Flowtrace_amd64.deb" 2>/dev/null || true
+          done
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-linux-appimage
+          path: flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload Linux Deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-linux-deb
+          path: flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+          if-no-files-found: error
+
+  # ============================================
+  # Windows Build (EXE, MSI)
+  # ============================================
+  build-windows:
+    name: Build Windows (EXE + MSI)
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: flowtrace-ui/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: flowtrace-tauri
+
+      - name: Install frontend dependencies
+        working-directory: flowtrace-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: flowtrace-ui
+        run: npm run build
+
+      - name: Copy frontend to Tauri
+        shell: bash
+        run: |
+          rm -rf flowtrace-tauri/flowtrace-ui/dist
+          mkdir -p flowtrace-tauri/flowtrace-ui
+          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0"
+
+      - name: Build Tauri App
+        working-directory: flowtrace-tauri
+        run: cargo tauri build --target x86_64-pc-windows-msvc
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Rename artifacts for consistency
+        shell: bash
+        run: |
+          cd flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis
+          for f in *.exe; do
+            mv "$f" "Flowtrace_x64-setup.exe" 2>/dev/null || true
+          done
+          cd ../msi
+          for f in *.msi; do
+            mv "$f" "Flowtrace_x64.msi" 2>/dev/null || true
+          done
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-windows-exe
+          path: flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: Upload Windows MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flowtrace-windows-msi
+          path: flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: error
+
+  # ============================================
+  # Create Release with All Artifacts
+  # ============================================
+  release:
+    name: Create Release
+    needs: [build-macos, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Flowtrace-macos-aarch64/*.dmg
+            artifacts/Flowtrace-macos-x64/*.dmg
+            artifacts/Flowtrace-linux-appimage/*.AppImage
+            artifacts/Flowtrace-linux-deb/*.deb
+            artifacts/Flowtrace-windows-exe/*.exe
+            artifacts/Flowtrace-windows-msi/*.msi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

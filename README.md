@@ -51,6 +51,18 @@
 
 ## 🚀 Quick Start
 
+### Download Flowtrace Desktop
+
+| Platform | Download | Architecture |
+|----------|----------|--------------|
+| **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
+| **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64.dmg) | Intel |
+| **Windows** | [Flowtrace.exe](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64-setup.exe) | x64 |
+| **Linux** | [Flowtrace.AppImage](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.AppImage) | x64 |
+| **Linux** | [Flowtrace.deb](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.deb) | Debian/Ubuntu |
+
+### Or Build from Source
+
 ```bash
 # Clone and run (that's it!)
 git clone https://github.com/sochdb/flowtrace.git
@@ -75,12 +87,32 @@ Flowtrace is a **local-first desktop application** that gives your AI agents and
 
 | Tool | Integration | Status |
 |------|-------------|--------|
-| **Claude Code** | Native MCP server | ✅ Ready |
+| **Claude Code** | [Native Plugin](https://github.com/sochdb/flowtrace-claude-plugin) | ✅ Ready |
 | **Cursor** | MCP + Extension | ✅ Ready |
 | **Windsurf** | MCP server | ✅ Ready |
 | **Cline** | MCP server | ✅ Ready |
 | **VS Code + Copilot** | Extension | ✅ Ready |
 | **Custom Agents** | Python/JS/Rust SDK | ✅ Ready |
+
+### 🔌 Claude Code Plugin (Recommended)
+
+Install the official Flowtrace plugin for Claude Code:
+
+```bash
+# Add the marketplace
+/plugin marketplace add sochdb/flowtrace-claude-plugin
+
+# Install the plugin
+/plugin install flowtrace@sochdb-flowtrace-claude-plugin
+```
+
+**Available Commands:**
+- `/flowtrace:dashboard` - Open dashboard
+- `/flowtrace:status` - Check server health
+- `/flowtrace:remember [query]` - Search memories
+- `/flowtrace:traces [count]` - List recent traces
+
+> See [flowtrace-claude-plugin](https://github.com/sochdb/flowtrace-claude-plugin) for full documentation.
 
 ### Powered by SochDB - Everything Built-In
 
