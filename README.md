@@ -2,7 +2,7 @@
 
 <div align="center">
 
-### 🖥️ Local-First Desktop Observability & AI Memory for Your Agents
+### 🖥️ Local-First Desktop Observability & AI Memory for Your Agents and Coding Tools.
 
 **No Docker. No servers. No cloud. Just run.**
 
@@ -100,28 +100,103 @@ Unlike tools that need Postgres, Redis, or cloud databases, Flowtrace uses **Soc
 
 ## ✨ Features
 
-### 🧠 AI Agent Memory
+### 🧠 AI Agent Memory (RAG Built-In)
 
 Give your coding agents **persistent, unlimited memory** that survives restarts:
 
+- **Semantic memory storage** - ingest content into vector-indexed collections
+- **Instant retrieval** - find relevant past conversations with similarity search
 - **Session continuity** - Claude Code remembers your entire project context
 - **Cross-session learning** - agents learn from past interactions
-- **Semantic search** - find relevant past conversations instantly
 - **No token limits** - store everything locally, retrieve what's relevant
+- **HNSW/Vamana indexes** - 95% recall with 32x memory compression
 
 ### 👁️ Full Observability
 
 See exactly what your AI agents are doing:
 
 - **Every tool call** traced with inputs, outputs, and timing
-- **Reasoning chains** visualized as interactive graphs
+- **Reasoning chains** visualized as causal graphs
 - **Token usage** tracked per model, session, and project
-- **Cost analytics** - know exactly what you're spending
+- **Cost analytics** - automatic pricing from LiteLLM registry
+- **OTLP ingestion** - accepts OpenTelemetry traces on ports 4317/4318
+
+### 🤖 Multi-Provider LLM Support
+
+Connect to any LLM provider from the desktop app:
+
+| Provider | Features | Status |
+|----------|----------|--------|
+| **OpenAI** | GPT-4o, GPT-4 Turbo, embeddings | ✅ Ready |
+| **Anthropic** | Claude 3.5 Sonnet/Haiku | ✅ Ready |
+| **Google** | Gemini Pro, embeddings | ✅ Ready |
+| **DeepSeek** | DeepSeek Chat/Coder | ✅ Ready |
+| **Ollama** | Local models, no API key | ✅ Ready |
+| **Mistral** | Mistral Large/Medium | ✅ Ready |
+
+### ⚖️ Model Comparison Engine
+
+Compare up to 3 models side-by-side on the same prompt:
+
+- **Parallel execution** - all models run simultaneously
+- **Independent streaming** - each model streams independently
+- **Cost comparison** - see cost per model from LiteLLM pricing
+- **Latency tracking** - fastest/slowest model identification
+- **Error isolation** - one model failing doesn't affect others
+
+### 📊 Evaluation Framework (20+ Evaluators)
+
+Built-in evaluation with no external dependencies:
+
+| Category | Evaluators |
+|----------|------------|
+| **Quality** | Hallucination detection, RAGAS, QAG faithfulness |
+| **Safety** | Toxicity detection, bias detection |
+| **Performance** | Latency benchmarks, cost analysis, trajectory efficiency |
+| **RAG** | Context precision, faithfulness, relevancy |
+
+**Evaluation Presets:**
+- 🔍 **RAG Quality** - context precision + faithfulness
+- 🔍 **RAG Deep** - QAG faithfulness with per-claim verdicts
+- 🤖 **Agent Performance** - trajectory optimization + tool usage
+- 🛡️ **Safety** - toxicity + compliance checks
+- ⏱️ **Latency** - p50/p95/p99 with cost analysis
+- 📋 **Comprehensive** - run all evaluators
+
+### 🔌 Plugin System
+
+Extend Flowtrace with custom evaluators and integrations:
+
+- **Install from directory/file** - local plugin development
+- **Dev mode** - hot-reload during development
+- **Plugin SDK** - Python, Rust, JavaScript
+- **Evaluator plugins** - add custom quality checks
+- **Bundle system** - package for Claude Code, Cursor, VS Code
+
+### 📈 Analytics & Dashboards
+
+Real-time metrics with DDSketch percentiles and HyperLogLog cardinality:
+
+- **Time-series metrics** - automatic rollup (minute/hour/day)
+- **True percentiles** - P50/P90/P95/P99 via DDSketch
+- **Unique counts** - sessions/agents via HyperLogLog (~0.81% error)
+- **Storage health** - MVCC stats, tombstone GC, write amplification
+- **Bloom filter monitoring** - per-level FPR configuration
+
+### 💾 Backup & Restore
+
+Protect your data with built-in backup features:
+
+- **One-click backup** - from Settings or CLI
+- **Export as ZIP** - portable backup files
+- **Import from ZIP** - restore from any backup
+- **Pre-restore safety** - automatic backup before restore
+- **Merge mode** - append traces without replacing
 
 ### Core Capabilities
 
 - **🚀 High-Performance Ingestion**
-  - Optimized for high-throughput trace ingestion
+  - 10,000 spans/minute rate limit with 50,000 burst
   - Sub-millisecond point query latency
   - Write-optimized LSM-tree storage
   - Lock-free reads for concurrent access
@@ -142,7 +217,7 @@ See exactly what your AI agents are doing:
 
 - **💰 Cost Intelligence**
   - Track costs per model, agent, session, and project
-  - Budget alerts with configurable thresholds
+  - LiteLLM pricing sync for accurate cost calculation
   - Historical cost analysis and forecasting
   - Input/output token separation for accurate pricing
 
@@ -169,6 +244,8 @@ The primary way to run Flowtrace - a native desktop app:
 - **Unlimited storage** - uses your local disk, no cloud limits
 - **10x faster** - native IPC vs HTTP
 - **System tray** - runs in background, always available
+- **Embedded HTTP server** - REST API on port 9600
+- **OTLP endpoints** - gRPC 4317, HTTP 4318
 
 ### 📦 SDKs & Integrations
 
