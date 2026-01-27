@@ -65,7 +65,7 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "category": "DeveloperTool",
     "copyright": "2025 Flowtrace Contributors",
     "linux": {
@@ -112,12 +112,12 @@
   },
   "plugins": {
     "updater": {
-      "active": false,
+      "active": true,
       "endpoints": [
         "https://github.com/sochdb/flowtrace/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAzRTk1MDQ3NjZDRkZCQkUKUldTKys4OW1SMURwQThwcExKeTc2UVcxYVBQdE9nN2ZHUUVUOUl6cDZjQzVxYmxIUk5pL3hCQzgK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZDQzY4Mjc0RTA0RDREMUMKUldRY1RVM2dkSUxHL1BtZG5jam03OFp3T1VOQ2tkTXprS1BSbUg0WnVXK1pwb1g3K3o1cnFDc0MK"
     }
   }
 }

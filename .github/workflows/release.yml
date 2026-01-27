@@ -95,6 +95,9 @@ jobs:
       - name: Build Tauri App
         working-directory: flowtrace-tauri
         run: cargo tauri build --target aarch64-apple-darwin
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
         run: |
@@ -179,6 +182,9 @@ jobs:
       - name: Build Tauri App
         working-directory: flowtrace-tauri
         run: cargo tauri build --target x86_64-apple-darwin
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
         run: |
@@ -273,6 +279,9 @@ jobs:
       - name: Build Tauri App
         working-directory: flowtrace-tauri
         run: cargo tauri build --target x86_64-unknown-linux-gnu
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
         run: |
@@ -376,6 +385,9 @@ jobs:
       - name: Build Tauri App
         working-directory: flowtrace-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
         shell: bash
