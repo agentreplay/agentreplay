@@ -21,8 +21,8 @@ version = "0.1.0"
 description = "A sample evaluator plugin that demonstrates how to create custom evaluators for Flowtrace"
 author = "Flowtrace Team"
 license = "MIT"
-homepage = "https://github.com/flowtrace/sample-evaluator"
-repository = "https://github.com/flowtrace/sample-evaluator"
+homepage = "https://github.com/sochdb/sample-evaluator"
+repository = "https://github.com/sochdb/sample-evaluator"
 keywords = ["evaluator", "sample", "demo"]
 categories = ["evaluators"]
 

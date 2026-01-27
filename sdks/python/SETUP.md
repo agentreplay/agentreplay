@@ -294,10 +294,10 @@ If queries timeout:
 
 - Read the [API Reference](API_REFERENCE.md)
 - Check out [Examples](examples/)
-- Join the community on [GitHub Discussions](https://github.com/flowtrace/flowtrace/discussions)
+- Join the community on [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
 
 ## Support
 
 - Documentation: https://docs.flowtrace.dev
-- GitHub Issues: https://github.com/flowtrace/flowtrace/issues
-- Discussions: https://github.com/flowtrace/flowtrace/discussions
+- GitHub Issues: https://github.com/sochdb/flowtrace/issues
+- Discussions: https://github.com/sochdb/flowtrace/discussions

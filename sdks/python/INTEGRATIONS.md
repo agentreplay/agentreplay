@@ -559,8 +559,8 @@ We welcome contributions! To add a new framework integration:
 
 - **Documentation**: https://docs.flowtrace.io
 - **Examples**: `examples/integrations/`
-- **Issues**: https://github.com/flowtrace/flowtrace/issues
-- **Discussions**: https://github.com/flowtrace/flowtrace/discussions
+- **Issues**: https://github.com/sochdb/flowtrace/issues
+- **Discussions**: https://github.com/sochdb/flowtrace/discussions
 
 ---
 

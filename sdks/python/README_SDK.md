@@ -266,6 +266,6 @@ MIT
 
 ## Links
 
-- [GitHub](https://github.com/flowtrace/flowtrace)
+- [GitHub](https://github.com/sochdb/flowtrace)
 - [Documentation](https://docs.flowtrace.dev)
 - [Backend Setup](../../README.md)

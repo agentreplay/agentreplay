@@ -5,7 +5,7 @@ High-performance observability SDK for LLM agents and AI applications.
 ## Installation
 
 ```bash
-go get github.com/flowtrace/flowtrace-go
+go get github.com/sochdb/flowtrace-go
 ```
 
 ## Quick Start
@@ -18,7 +18,7 @@ import (
     "fmt"
     "log"
 
-    flowtrace "github.com/flowtrace/flowtrace-go"
+    flowtrace "github.com/sochdb/flowtrace-go"
 )
 
 func main() {
@@ -190,7 +190,7 @@ if err != nil {
 ```go
 import (
     "github.com/sashabaranov/go-openai"
-    flowtrace "github.com/flowtrace/flowtrace-go"
+    flowtrace "github.com/sochdb/flowtrace-go"
 )
 
 func chat(client *openai.Client, ft *flowtrace.Client, messages []openai.ChatCompletionMessage) (string, error) {

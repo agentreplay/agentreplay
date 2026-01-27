@@ -36,7 +36,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Flowtrace Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/flowtrace/flowtrace"
+repository = "https://github.com/sochdb/flowtrace"
 
 [workspace.dependencies]
 # NOTE: tokio was removed - storage engine uses sync I/O (std::fs, std::thread)

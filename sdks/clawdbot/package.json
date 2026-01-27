@@ -26,11 +26,11 @@
   "homepage": "https://flowtrace.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/flowtrace/flowtrace.git",
+    "url": "https://github.com/sochdb/flowtrace.git",
     "directory": "sdks/clawdbot"
   },
   "bugs": {
-    "url": "https://github.com/flowtrace/flowtrace/issues"
+    "url": "https://github.com/sochdb/flowtrace/issues"
   },
   "keywords": [
     "clawdbot",

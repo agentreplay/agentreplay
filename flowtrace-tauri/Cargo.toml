@@ -18,7 +18,7 @@ version = "0.1.1"
 description = "Flowtrace Desktop - AgentFlow Database for AI Observability"
 authors = ["Flowtrace Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/flowtrace/flowtrace"
+repository = "https://github.com/sochdb/flowtrace"
 edition = "2021"
 rust-version = "1.77.2"
 

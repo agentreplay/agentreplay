@@ -52,7 +52,7 @@ flowtrace-plugin-build = "flowtrace_plugin.build:main"
 [project.urls]
 Homepage = "https://flowtrace.dev"
 Documentation = "https://docs.flowtrace.dev/plugins/python"
-Repository = "https://github.com/flowtrace/flowtrace"
+Repository = "https://github.com/sochdb/flowtrace"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flowtrace_plugin"]

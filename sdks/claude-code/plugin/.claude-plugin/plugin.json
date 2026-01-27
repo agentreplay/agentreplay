@@ -6,6 +6,6 @@
     "name": "Flowtrace",
     "url": "https://flowtrace.dev"
   },
-  "repository": "https://github.com/flowtrace/flowtrace",
+  "repository": "https://github.com/sochdb/flowtrace",
   "keywords": ["observability", "tracing", "monitoring", "llm", "genai"]
 }

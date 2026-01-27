@@ -32,10 +32,10 @@
   "homepage": "https://flowtrace.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/flowtrace/flowtrace.git",
+    "url": "https://github.com/sochdb/flowtrace.git",
     "directory": "sdks/claude-code"
   },
   "bugs": {
-    "url": "https://github.com/flowtrace/flowtrace/issues"
+    "url": "https://github.com/sochdb/flowtrace/issues"
   }
 }

@@ -280,8 +280,8 @@ Special thanks to:
 ## Support
 
 - **Documentation**: [USAGE.md](./USAGE.md)
-- **Issues**: [GitHub Issues](https://github.com/flowtrace/flowtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/flowtrace/flowtrace/discussions)
+- **Issues**: [GitHub Issues](https://github.com/sochdb/flowtrace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
 
 ---
 

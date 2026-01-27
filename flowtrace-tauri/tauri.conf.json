@@ -114,7 +114,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/flowtrace/flowtrace/releases/latest/download/latest.json"
+        "https://github.com/sochdb/flowtrace/releases/latest/download/latest.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAzRTk1MDQ3NjZDRkZCQkUKUldTKys4OW1SMURwQThwcExKeTc2UVcxYVBQdE9nN2ZHUUVUOUl6cDZjQzVxYmxIUk5pL3hCQzgK"
