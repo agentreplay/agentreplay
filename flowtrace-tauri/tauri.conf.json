@@ -65,7 +65,7 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "category": "DeveloperTool",
     "copyright": "2025 Flowtrace Contributors",
     "linux": {
@@ -112,7 +112,7 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
+      "active": false,
       "endpoints": [
         "https://github.com/sochdb/flowtrace/releases/latest/download/latest.json"
       ],
