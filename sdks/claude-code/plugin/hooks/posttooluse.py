@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PostToolUse hook for Flowtrace plugin.
+PostToolUse hook for Agentreplay plugin.
 Sends tool completion trace with output and duration.
 """
 

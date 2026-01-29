@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Setup script for flowtrace package with proper .pth file installation."""
+"""Setup script for agentreplay package with proper .pth file installation."""
 
 from setuptools import setup
 from setuptools.command.install import install
@@ -36,8 +36,8 @@ class PostInstallCommand(install):
             return
         
         # Copy .pth file to site-packages
-        pth_source = os.path.join(os.path.dirname(__file__), 'flowtrace-init.pth')
-        pth_dest = os.path.join(site_packages, 'flowtrace-init.pth')
+        pth_source = os.path.join(os.path.dirname(__file__), 'agentreplay-init.pth')
+        pth_dest = os.path.join(site_packages, 'agentreplay-init.pth')
         
         try:
             shutil.copy2(pth_source, pth_dest)

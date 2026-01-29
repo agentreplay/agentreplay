@@ -1,0 +1,87 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[package]
+name = "agentreplay-plugins"
+version = "0.1.0"
+edition = "2021"
+description = "Plugin system for Agentreplay - extensible evaluators, providers, and integrations"
+authors = ["Agentreplay Contributors"]
+license = "Apache-2.0"
+
+[dependencies]
+# Agentreplay crates
+agentreplay-core = { path = "../../agentreplay-core" }
+agentreplay-evals = { path = "../../agentreplay-evals" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Versioning
+semver = { version = "1.0", features = ["serde"] }
+
+# Async
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+
+# File system
+notify = { version = "6.0", default-features = false, features = ["macos_kqueue"] }
+tempfile = "3.8"
+walkdir = "2.4"
+
+# Hashing & security
+blake3 = "1.5"
+sha2 = "0.10"
+hex = "0.4"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+
+# Utilities
+parking_lot = "0.12"
+dashmap = "5.5"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Plugin execution (native for now, WASM can be added later)
+libloading = "0.8"
+
+# WASM runtime for polyglot plugins
+wasmtime = { version = "27.0", features = ["component-model", "async"] }
+wasmtime-wasi = "27.0"
+wit-bindgen = "0.36"
+
+# HTTP client for plugins
+reqwest = { version = "0.12", features = ["json"] }
+
+# Directory management
+dirs = "5.0"
+
+# Command detection for bundle plugins
+which = "6.0"
+
+[dev-dependencies]
+tempfile = "3.8"
+tokio-test = "0.4"
+
+[features]
+default = ["wasm"]
+wasm = []
+python = []

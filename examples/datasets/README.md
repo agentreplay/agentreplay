@@ -1,6 +1,6 @@
-# Flowtrace Example Datasets
+# Agentreplay Example Datasets
 
-This directory contains example datasets for common LLM evaluation use cases. These datasets can be used with Flowtrace's evaluation API to test and benchmark your AI agents.
+This directory contains example datasets for common LLM evaluation use cases. These datasets can be used with Agentreplay's evaluation API to test and benchmark your AI agents.
 
 ## Available Datasets
 
@@ -42,10 +42,10 @@ curl -X POST http://localhost:8000/api/v1/evals/datasets \
 ### Using Python SDK
 
 ```python
-from flowtrace import FlowtraceClient
+from agentreplay import AgentreplayClient
 import json
 
-client = FlowtraceClient(api_url="http://localhost:8000")
+client = AgentreplayClient(api_url="http://localhost:8000")
 
 # Load dataset
 with open("customer-support.json") as f:
@@ -76,9 +76,9 @@ python scripts/import_datasets.py --file customer-support.json
 ### Example: Customer Support Evaluation
 
 ```python
-from flowtrace import FlowtraceClient
+from agentreplay import AgentreplayClient
 
-client = FlowtraceClient(api_url="http://localhost:8000")
+client = AgentreplayClient(api_url="http://localhost:8000")
 
 # Create evaluation run
 run = client.create_eval_run(
@@ -196,4 +196,4 @@ To contribute new example datasets:
 
 ## License
 
-These example datasets are provided under the same license as Flowtrace.
+These example datasets are provided under the same license as Agentreplay.

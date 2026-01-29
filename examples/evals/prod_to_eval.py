@@ -133,7 +133,7 @@ class EvalDatasetManager:
     """
     Manages evaluation datasets.
     
-    In production, this would connect to Flowtrace API.
+    In production, this would connect to Agentreplay API.
     Here we simulate the workflow.
     """
     
@@ -187,7 +187,7 @@ class EvalDatasetManager:
         return self.datasets.get(dataset_id)
     
     def export_dataset(self, dataset_id: str) -> dict:
-        """Export dataset in Flowtrace format."""
+        """Export dataset in Agentreplay format."""
         if dataset_id not in self.datasets:
             raise ValueError(f"Dataset {dataset_id} not found")
         
@@ -358,7 +358,7 @@ def main():
    Next Steps:
    1. Review flagged traces for accuracy
    2. Add human corrections where needed
-   3. Import dataset to Flowtrace:
+   3. Import dataset to Agentreplay:
       curl -X POST http://localhost:8000/api/v1/evals/datasets \\
            -H "Content-Type: application/json" \\
            -d @{output_file}

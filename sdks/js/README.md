@@ -1,24 +1,24 @@
-# Flowtrace JavaScript/TypeScript SDK
+# Agentreplay JavaScript/TypeScript SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 
 ## Installation
 
 ```bash
-npm install @flowtrace/sdk
+npm install @agentreplay/sdk
 # or
-yarn add @flowtrace/sdk
+yarn add @agentreplay/sdk
 # or
-pnpm add @flowtrace/sdk
+pnpm add @agentreplay/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { FlowtraceClient, SpanType } from '@flowtrace/sdk';
+import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
 
 // Initialize the client
-const client = new FlowtraceClient({
+const client = new AgentreplayClient({
   url: 'http://localhost:8080',
   tenantId: 1,
   projectId: 0  // optional
@@ -118,7 +118,7 @@ await client.addToDataset(trace.edgeId, 'bad_responses', {
 ## Span Types
 
 ```typescript
-import { SpanType } from '@flowtrace/sdk';
+import { SpanType } from '@agentreplay/sdk';
 
 SpanType.Root        // 0 - Root span
 SpanType.Planning    // 1 - Planning phase
@@ -142,8 +142,8 @@ SpanType.Custom      // 255 - Custom types
 ## Configuration Options
 
 ```typescript
-interface FlowtraceClientOptions {
-  url: string;                      // Flowtrace server URL
+interface AgentreplayClientOptions {
+  url: string;                      // Agentreplay server URL
   tenantId: number;                 // Tenant identifier
   projectId?: number;               // Project identifier (default: 0)
   agentId?: number;                 // Default agent ID (default: 1)
@@ -159,10 +159,10 @@ interface FlowtraceClientOptions {
 
 ```typescript
 import OpenAI from 'openai';
-import { FlowtraceClient } from '@flowtrace/sdk';
+import { AgentreplayClient } from '@agentreplay/sdk';
 
 const openai = new OpenAI();
-const flowtrace = new FlowtraceClient({ url: '...', tenantId: 1 });
+const agentreplay = new AgentreplayClient({ url: '...', tenantId: 1 });
 
 async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
   const response = await openai.chat.completions.create({
@@ -172,7 +172,7 @@ async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
   });
 
   // Track the call
-  await flowtrace.createGenAITrace({
+  await agentreplay.createGenAITrace({
     agentId: 1,
     sessionId: Date.now(),
     model: response.model,
@@ -192,16 +192,16 @@ async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { FlowtraceClient, SpanType } from '@flowtrace/sdk';
+import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
 
-const flowtrace = new FlowtraceClient({ url: '...', tenantId: 1 });
+const agentreplay = new AgentreplayClient({ url: '...', tenantId: 1 });
 
 // Create a callback handler
-class FlowtraceHandler {
+class AgentreplayHandler {
   private sessionId = Date.now();
 
   async handleLLMStart(llm: any, prompts: string[]) {
-    return flowtrace.createTrace({
+    return agentreplay.createTrace({
       agentId: 1,
       sessionId: this.sessionId,
       spanType: SpanType.Generation,
@@ -210,7 +210,7 @@ class FlowtraceHandler {
   }
 
   async handleLLMEnd(output: any, runId: string) {
-    await flowtrace.updateTrace({
+    await agentreplay.updateTrace({
       edgeId: runId,
       sessionId: this.sessionId,
       tokenCount: output.llmOutput?.tokenUsage?.totalTokens
@@ -225,13 +225,13 @@ The SDK is written in TypeScript and provides full type definitions:
 
 ```typescript
 import type {
-  FlowtraceClientOptions,
+  AgentreplayClientOptions,
   QueryFilter,
   QueryResponse,
   TraceView,
   SpanInput,
   GenAIAttributes
-} from '@flowtrace/sdk';
+} from '@agentreplay/sdk';
 ```
 
 ## Error Handling
@@ -241,7 +241,7 @@ try {
   const trace = await client.createTrace({...});
 } catch (error) {
   if (error instanceof Error) {
-    console.error(`Flowtrace error: ${error.message}`);
+    console.error(`Agentreplay error: ${error.message}`);
   }
 }
 ```

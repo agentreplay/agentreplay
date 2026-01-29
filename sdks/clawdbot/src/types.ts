@@ -1,5 +1,5 @@
 /**
- * Span types matching Flowtrace SDK
+ * Span types matching Agentreplay SDK
  */
 export enum SpanType {
   Root = 0,

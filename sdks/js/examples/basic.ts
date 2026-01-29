@@ -13,22 +13,22 @@
 // limitations under the License.
 
 /**
- * Flowtrace SDK Basic Example
+ * Agentreplay SDK Basic Example
  *
- * Demonstrates core functionality of the Flowtrace JavaScript SDK.
+ * Demonstrates core functionality of the Agentreplay JavaScript SDK.
  */
 
-import { FlowtraceClient, SpanType } from '../src';
+import { AgentreplayClient, SpanType } from '../src';
 
 async function main() {
   // Initialize client
-  const client = new FlowtraceClient({
+  const client = new AgentreplayClient({
     url: 'http://localhost:8080',
     tenantId: 1,
     projectId: 0,
   });
 
-  console.log('Flowtrace SDK Example\n');
+  console.log('Agentreplay SDK Example\n');
 
   // Generate a session ID for this example
   const sessionId = Date.now();

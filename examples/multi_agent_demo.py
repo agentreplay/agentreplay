@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Flowtrace Multi-Agent Demo
+Agentreplay Multi-Agent Demo
 Creates nested spans to demonstrate the Execution Flow canvas
 """
 import os
@@ -21,13 +21,13 @@ import time
 from dotenv import load_dotenv
 load_dotenv()
 
-# Flowtrace initialization
-import flowtrace
-flowtrace.init_otel_instrumentation(
+# Agentreplay initialization
+import agentreplay
+agentreplay.init_otel_instrumentation(
     service_name="multi-agent-demo",
-    otlp_endpoint=os.getenv("FLOWTRACE_OTLP_ENDPOINT", "localhost:4317"),
+    otlp_endpoint=os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:4317"),
     project_id=46635,
-    tenant_id=int(os.getenv("FLOWTRACE_TENANT_ID", "1")),
+    tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     debug=True
 )
 

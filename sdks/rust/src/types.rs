@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Flowtrace SDK Types
+//! Agentreplay SDK Types
 //!
-//! Core type definitions for the Flowtrace observability platform.
+//! Core type definitions for the Agentreplay observability platform.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

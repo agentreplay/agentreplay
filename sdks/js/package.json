@@ -1,7 +1,7 @@
 {
-  "name": "flowtrace-client",
+  "name": "agentreplay-client",
   "version": "0.1.0",
-  "description": "Flowtrace SDK for JavaScript/TypeScript - High-performance observability for LLM agents",
+  "description": "Agentreplay SDK for JavaScript/TypeScript - High-performance observability for LLM agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -25,7 +25,7 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "flowtrace",
+    "agentreplay",
     "llm",
     "observability",
     "tracing",
@@ -35,13 +35,13 @@
   ],
   "author": "Sushanth (https://github.com/sushanthpy)",
   "license": "Apache-2.0",
-  "homepage": "https://flowtrace.dev",
+  "homepage": "https://agentreplay.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sochdb/flowtrace"
+    "url": "https://github.com/sochdb/agentreplay"
   },
   "bugs": {
-    "url": "https://github.com/sochdb/flowtrace/issues"
+    "url": "https://github.com/sochdb/agentreplay/issues"
   },
   "dependencies": {},
   "devDependencies": {

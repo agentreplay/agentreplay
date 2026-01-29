@@ -44,11 +44,11 @@ def check_content(path, substring, description):
         return False
 
 print("=" * 70)
-print("Flowtrace SDK Implementation Check")
+print("Agentreplay SDK Implementation Check")
 print("=" * 70)
 
 sdk_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(sdk_dir, 'src', 'flowtrace')
+src_dir = os.path.join(sdk_dir, 'src', 'agentreplay')
 
 # P0 Tasks
 print("\n📋 P0 - CRITICAL FIXES")
@@ -68,10 +68,10 @@ if check_file(openai_file, "openai.py"):
 
 # Task 2: .pth File
 print("\n2. .pth File for Auto-Initialization:")
-pth_file = os.path.join(sdk_dir, 'flowtrace-init.pth')
-if check_file(pth_file, "flowtrace-init.pth"):
-    check_content(pth_file, "flowtrace.bootstrap", "Bootstrap import")
-    check_content(pth_file, "FLOWTRACE_ENABLED", "Environment check")
+pth_file = os.path.join(sdk_dir, 'agentreplay-init.pth')
+if check_file(pth_file, "agentreplay-init.pth"):
+    check_content(pth_file, "agentreplay.bootstrap", "Bootstrap import")
+    check_content(pth_file, "AGENTREPLAY_ENABLED", "Environment check")
 
 # Task 3: Bootstrap Module
 print("\n3. Bootstrap Module:")
@@ -80,7 +80,7 @@ if check_file(bootstrap_file, "bootstrap.py"):
     check_content(bootstrap_file, "_auto_init", "Auto-init function")
     check_content(bootstrap_file, "_initialized", "Initialization guard")
     check_content(bootstrap_file, "init_otel_instrumentation", "OTEL initialization")
-    check_content(bootstrap_file, "FLOWTRACE_DEBUG", "Debug mode")
+    check_content(bootstrap_file, "AGENTREPLAY_DEBUG", "Debug mode")
 
 # Task 4: pyproject.toml updates
 print("\n4. pyproject.toml Configuration:")
@@ -111,7 +111,7 @@ print("\n7. OTLP Native Export:")
 otel_bridge_file = os.path.join(src_dir, 'otel_bridge.py')
 if check_file(otel_bridge_file, "otel_bridge.py"):
     check_content(otel_bridge_file, "OTLPSpanExporter", "Standard OTLP exporter")
-    check_content(otel_bridge_file, "x-flowtrace-tenant-id", "Tenant ID header")
+    check_content(otel_bridge_file, "x-agentreplay-tenant-id", "Tenant ID header")
     check_content(otel_bridge_file, "/v1/traces", "Standard OTLP endpoint")
 
 # Task 8: Tool Call Instrumentation
@@ -162,14 +162,14 @@ print("  1. Install dependencies:")
 print("     cd sdks/python")
 print("     pip install -e .")
 print()
-print("  2. Restart Flowtrace backend to ensure OTLP ports are open:")
-print("     pkill -f flowtrace-server")
+print("  2. Restart Agentreplay backend to ensure OTLP ports are open:")
+print("     pkill -f agentreplay-server")
 print("     ./start-web.sh")
 print()
 print("  3. Test with OpenAI:")
-print("     export FLOWTRACE_ENABLED=true")
+print("     export AGENTREPLAY_ENABLED=true")
 print("     export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true")
 print("     export OPENAI_API_KEY=your-key")
 print("     python3 examples/zero_code_example.py")
 print()
-print("  4. Check Flowtrace UI: http://localhost:5173")
+print("  4. Check Agentreplay UI: http://localhost:5173")

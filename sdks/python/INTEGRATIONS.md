@@ -1,10 +1,10 @@
-# Flowtrace Framework Integrations
+# Agentreplay Framework Integrations
 
-Comprehensive Python SDK integrations for popular AI agent frameworks with seamless Flowtrace observability.
+Comprehensive Python SDK integrations for popular AI agent frameworks with seamless Agentreplay observability.
 
 ## Overview
 
-Flowtrace provides production-ready integrations for all major AI agent frameworks, enabling automatic tracing, token tracking, cost calculation, and performance monitoring without requiring code changes to your existing agent workflows.
+Agentreplay provides production-ready integrations for all major AI agent frameworks, enabling automatic tracing, token tracking, cost calculation, and performance monitoring without requiring code changes to your existing agent workflows.
 
 ### Supported Frameworks
 
@@ -28,14 +28,14 @@ Flowtrace provides production-ready integrations for all major AI agent framewor
 ### Installation
 
 ```bash
-# Install Flowtrace SDK
-pip install flowtrace
+# Install Agentreplay SDK
+pip install agentreplay
 
 # Install framework integrations (optional dependencies)
-pip install flowtrace[langchain]      # LangChain support
-pip install flowtrace[llamaindex]     # LlamaIndex support
-pip install flowtrace[openai-agents]  # OpenAI Agents support
-pip install flowtrace[all-frameworks] # All frameworks
+pip install agentreplay[langchain]      # LangChain support
+pip install agentreplay[llamaindex]     # LlamaIndex support
+pip install agentreplay[openai-agents]  # OpenAI Agents support
+pip install agentreplay[all-frameworks] # All frameworks
 ```
 
 ### Basic Usage
@@ -43,7 +43,7 @@ pip install flowtrace[all-frameworks] # All frameworks
 All integrations follow a consistent pattern:
 
 ```python
-from flowtrace.integrations.{framework} import Wrapper/Handler
+from agentreplay.integrations.{framework} import Wrapper/Handler
 
 # Create integration wrapper/handler
 handler = Handler(
@@ -71,10 +71,10 @@ handler = Handler(
 from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
-from flowtrace.integrations.langchain import FlowtraceCallbackHandler
+from agentreplay.integrations.langchain import AgentreplayCallbackHandler
 
 # Create callback
-callback = FlowtraceCallbackHandler(
+callback = AgentreplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1,
     session_id=1001
@@ -86,18 +86,18 @@ prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
 chain = LLMChain(llm=llm, prompt=prompt, callbacks=[callback])
 
 result = chain.run(topic="AI agents")
-# ✓ Automatically tracked in Flowtrace
+# ✓ Automatically tracked in Agentreplay
 ```
 
 #### Wrapper Approach
 
 ```python
-from flowtrace.integrations.langchain import wrap_langchain_with_flowtrace
+from agentreplay.integrations.langchain import wrap_langchain_with_agentreplay
 
 # Wrap any LangChain component
-chain = wrap_langchain_with_flowtrace(
+chain = wrap_langchain_with_agentreplay(
     chain,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 ```
@@ -105,9 +105,9 @@ chain = wrap_langchain_with_flowtrace(
 #### LangGraph Workflows
 
 ```python
-from flowtrace.integrations.langchain import FlowtraceLangGraphTracer
+from agentreplay.integrations.langchain import AgentreplayLangGraphTracer
 
-tracer = FlowtraceLangGraphTracer(
+tracer = AgentreplayLangGraphTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -128,11 +128,11 @@ result = await tracer.trace_graph_async(graph_app, inputs)
 
 ```python
 from llama_index.core import VectorStoreIndex, Settings
-from flowtrace.integrations.llamaindex import create_callback_manager
+from agentreplay.integrations.llamaindex import create_callback_manager
 
 # Create callback manager
 callback_manager = create_callback_manager(
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1,
     session_id=2001
 )
@@ -143,16 +143,16 @@ Settings.callback_manager = callback_manager
 # Use as normal
 index = VectorStoreIndex.from_documents(documents)
 query_engine = index.as_query_engine()
-response = query_engine.query("What is Flowtrace?")
+response = query_engine.query("What is Agentreplay?")
 # ✓ Automatically tracked
 ```
 
 #### Workflow Observability
 
 ```python
-from flowtrace.integrations.llamaindex import FlowtraceWorkflowObserver
+from agentreplay.integrations.llamaindex import AgentreplayWorkflowObserver
 
-observer = FlowtraceWorkflowObserver(
+observer = AgentreplayWorkflowObserver(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -172,7 +172,7 @@ result = await observer.run_workflow(workflow, **inputs)
 
 ```python
 from openai_agents import Agent
-from flowtrace.integrations.openai_agents import FlowtraceAgentWrapper
+from agentreplay.integrations.openai_agents import AgentreplayAgentWrapper
 
 agent = Agent(
     name="assistant",
@@ -181,25 +181,25 @@ agent = Agent(
 )
 
 # Wrap agent
-wrapped = FlowtraceAgentWrapper(
+wrapped = AgentreplayAgentWrapper(
     agent=agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
 # Create session and run
 session = wrapped.create_session()
 response = wrapped.run(session, "Hello!")
-# ✓ Tracked in Flowtrace
+# ✓ Tracked in Agentreplay
 ```
 
 #### Session Manager
 
 ```python
-from flowtrace.integrations.openai_agents import FlowtraceSessionManager
+from agentreplay.integrations.openai_agents import AgentreplaySessionManager
 
-manager = FlowtraceSessionManager(
-    flowtrace_url="http://localhost:8080",
+manager = AgentreplaySessionManager(
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -217,7 +217,7 @@ response = manager.run_agent(agent, session, "Hello!")
 
 ```python
 from autogen import ConversableAgent
-from flowtrace.integrations.autogen import wrap_autogen_agent
+from agentreplay.integrations.autogen import wrap_autogen_agent
 
 # Create and wrap agent
 agent = ConversableAgent(
@@ -227,7 +227,7 @@ agent = ConversableAgent(
 
 agent = wrap_autogen_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -237,9 +237,9 @@ agent = wrap_autogen_agent(
 **Multi-Agent Workflows**:
 
 ```python
-from flowtrace.integrations.autogen import FlowtraceAutoGenTracer
+from agentreplay.integrations.autogen import AgentreplayAutoGenTracer
 
-tracer = FlowtraceAutoGenTracer(
+tracer = AgentreplayAutoGenTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -255,9 +255,9 @@ tracer.initiate_chat(user_proxy, assistant, "Hello!")
 
 ```python
 from semantic_kernel import Kernel
-from flowtrace.integrations.semantic_kernel import FlowtraceSemanticKernelTracer
+from agentreplay.integrations.semantic_kernel import AgentreplaySemanticKernelTracer
 
-tracer = FlowtraceSemanticKernelTracer(
+tracer = AgentreplaySemanticKernelTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -277,7 +277,7 @@ result = await kernel.invoke("MyPlugin", "MyFunction", input="test")
 
 ```python
 from crewai import Agent, Task, Crew
-from flowtrace.integrations.crewai import wrap_crewai_crew
+from agentreplay.integrations.crewai import wrap_crewai_crew
 
 # Create crew
 agent = Agent(role="Researcher", goal="Research", backstory="Expert")
@@ -287,7 +287,7 @@ crew = Crew(agents=[agent], tasks=[task])
 # Wrap with tracking
 crew = wrap_crewai_crew(
     crew,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -303,12 +303,12 @@ result = crew.kickoff()
 
 ```python
 from smolagents import CodeAgent
-from flowtrace.integrations.smolagents import wrap_smolagents_agent
+from agentreplay.integrations.smolagents import wrap_smolagents_agent
 
 agent = CodeAgent(tools=[], model=model)
 agent = wrap_smolagents_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -324,12 +324,12 @@ result = agent.run("Calculate fibonacci(10)")
 
 ```python
 from pydantic_ai import Agent
-from flowtrace.integrations.pydantic_ai import wrap_pydantic_ai_agent
+from agentreplay.integrations.pydantic_ai import wrap_pydantic_ai_agent
 
 agent = Agent("openai:gpt-4o-mini")
 agent = wrap_pydantic_ai_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -345,14 +345,14 @@ result = agent.run_sync("Hello!")
 
 ```python
 from strands import Agent, AgentConfig
-from flowtrace.integrations.strands import wrap_strands_agent
+from agentreplay.integrations.strands import wrap_strands_agent
 
 config = AgentConfig(model="anthropic.claude-3-sonnet", provider="bedrock")
 agent = Agent(config=config)
 
 agent = wrap_strands_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -367,12 +367,12 @@ result = agent.run("Process this request")
 
 ```python
 from google.adk import Agent
-from flowtrace.integrations.google_adk import wrap_google_adk_agent
+from agentreplay.integrations.google_adk import wrap_google_adk_agent
 
 agent = Agent(name="assistant", model="gemini-pro")
 agent = wrap_google_adk_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -411,18 +411,18 @@ result = agent.run(input_data)
 ### Environment Variables
 
 ```bash
-export FLOWTRACE_URL="http://localhost:8080"
-export FLOWTRACE_TENANT_ID="1"
-export FLOWTRACE_PROJECT_ID="0"
-export FLOWTRACE_AGENT_ID="1"
+export AGENTREPLAY_URL="http://localhost:8080"
+export AGENTREPLAY_TENANT_ID="1"
+export AGENTREPLAY_PROJECT_ID="0"
+export AGENTREPLAY_AGENT_ID="1"
 ```
 
 ### Programmatic Configuration
 
 ```python
-from flowtrace.config import FlowtraceConfig
+from agentreplay.config import AgentreplayConfig
 
-config = FlowtraceConfig(
+config = AgentreplayConfig(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0,
@@ -454,18 +454,18 @@ python examples/integrations/openai_agents_example.py
 
 ## Architecture
 
-All integrations follow the Flowtrace observability model:
+All integrations follow the Agentreplay observability model:
 
 ```
 Framework Code
      ↓
 Integration Layer (callbacks/wrappers)
      ↓
-Flowtrace Client
+Agentreplay Client
      ↓
 HTTP API (REST)
      ↓
-Flowtrace Server
+Agentreplay Server
      ↓
 LSM-Tree Storage + HNSW Index
 ```
@@ -494,7 +494,7 @@ editor = Handler(url=url, tenant_id=1, agent_id=3)
 ```
 
 ### 3. Error Handling
-Integrations are resilient to Flowtrace failures:
+Integrations are resilient to Agentreplay failures:
 
 ```python
 try:
@@ -508,7 +508,7 @@ except Exception as e:
 - Use environment variables for configuration
 - Enable connection pooling
 - Configure appropriate timeouts
-- Monitor Flowtrace server health
+- Monitor Agentreplay server health
 
 ---
 
@@ -521,13 +521,13 @@ except Exception as e:
 pip install {framework-name}
 
 # Integration not found
-pip install flowtrace[{framework}]
+pip install agentreplay[{framework}]
 ```
 
 ### Connection Issues
 
 ```python
-# Check Flowtrace server
+# Check Agentreplay server
 curl http://localhost:8080/health
 
 # Verify configuration
@@ -537,7 +537,7 @@ print(handler.client.url)
 ### Missing Traces
 
 - Verify `tenant_id` and `session_id`
-- Check Flowtrace server logs
+- Check Agentreplay server logs
 - Ensure API endpoints are accessible
 - Validate authentication if enabled
 
@@ -547,7 +547,7 @@ print(handler.client.url)
 
 We welcome contributions! To add a new framework integration:
 
-1. Create `src/flowtrace/integrations/{framework}.py`
+1. Create `src/agentreplay/integrations/{framework}.py`
 2. Implement handler/wrapper following existing patterns
 3. Add comprehensive examples
 4. Update this documentation
@@ -557,10 +557,10 @@ We welcome contributions! To add a new framework integration:
 
 ## Support
 
-- **Documentation**: https://docs.flowtrace.io
+- **Documentation**: https://docs.agentreplay.io
 - **Examples**: `examples/integrations/`
-- **Issues**: https://github.com/sochdb/flowtrace/issues
-- **Discussions**: https://github.com/sochdb/flowtrace/discussions
+- **Issues**: https://github.com/sochdb/agentreplay/issues
+- **Discussions**: https://github.com/sochdb/agentreplay/discussions
 
 ---
 

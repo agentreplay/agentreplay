@@ -15,10 +15,10 @@
 # limitations under the License.
 
 """
-Flowtrace Agent Evaluation Scenarios
+Agentreplay Agent Evaluation Scenarios
 
 Test cases for evaluating agent behavior with happy and unhappy paths.
-Based on metrics formulas from flowtrace-evals/src/evaluators.
+Based on metrics formulas from agentreplay-evals/src/evaluators.
 
 Usage:
     python examples/evals/agent_eval_scenarios.py
@@ -52,7 +52,7 @@ import argparse
 
 EPSILON = 1e-9
 
-# Default thresholds (matching flowtrace-evals defaults)
+# Default thresholds (matching agentreplay-evals defaults)
 DEFAULT_THRESHOLDS = {
     "tool_precision": 0.80,
     "tool_recall": 0.80,
@@ -65,7 +65,7 @@ DEFAULT_THRESHOLDS = {
 
 
 # =============================================================================
-# METRIC FORMULAS (matching flowtrace-evals/src/metrics/formulas.rs)
+# METRIC FORMULAS (matching agentreplay-evals/src/metrics/formulas.rs)
 # =============================================================================
 
 def tool_precision(correct_calls: int, total_calls: int) -> float:
@@ -837,7 +837,7 @@ def print_results(
     thresholds = run_data["thresholds"]
     
     print_separator()
-    print("           FLOWTRACE AGENT EVALUATION SCENARIOS")
+    print("           AGENTREPLAY AGENT EVALUATION SCENARIOS")
     print_separator()
     print()
     
@@ -968,7 +968,7 @@ def export_scenarios(scenarios: List[AgentScenario], filepath: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Flowtrace Agent Evaluation Scenarios")
+    parser = argparse.ArgumentParser(description="Agentreplay Agent Evaluation Scenarios")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed metrics")
     parser.add_argument("--export", metavar="FILE", help="Export scenarios to JSON file")
     parser.add_argument("--category", help="Run only specific category (e.g., happy_path, wrong_tool)")

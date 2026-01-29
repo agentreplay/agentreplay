@@ -1,6 +1,6 @@
 # Azure Pipelines Configuration
 
-This directory contains Azure Pipelines YAML configurations for the Flowtrace project.
+This directory contains Azure Pipelines YAML configurations for the Agentreplay project.
 
 ## Available Pipelines
 
@@ -18,7 +18,7 @@ This directory contains Azure Pipelines YAML configurations for the Flowtrace pr
 For each pipeline you want to use:
 
 1. Go to **Azure DevOps** → **Pipelines** → **New Pipeline**
-2. Select your repository (flowtrace)
+2. Select your repository (agentreplay)
 3. Choose **"Existing Azure Pipelines YAML file"**
 4. Select the appropriate YAML file:
    - For CI: select `azure-pipelines.yml` (root)

@@ -13,14 +13,14 @@
 # limitations under the License.
 
 [package]
-name = "flowtrace-client"
+name = "agentreplay-client"
 version = "0.1.0"
 edition = "2021"
-authors = ["Flowtrace"]
+authors = ["Agentreplay"]
 description = "High-performance observability SDK for LLM agents and AI applications"
 license = "MIT"
-repository = "https://github.com/sochdb/flowtrace"
-documentation = "https://docs.rs/flowtrace-client"
+repository = "https://github.com/sochdb/agentreplay"
+documentation = "https://docs.rs/agentreplay-client"
 readme = "README.md"
 keywords = ["llm", "observability", "tracing", "agents", "opentelemetry"]
 categories = ["development-tools::debugging", "api-bindings"]

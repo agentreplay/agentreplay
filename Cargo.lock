@@ -29,6 +29,351 @@ dependencies = [
 ]
 
 [[package]]
+name = "agentreplay-cli"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "agentreplay-index",
+ "agentreplay-plugins",
+ "agentreplay-query",
+ "agentreplay-storage",
+ "anyhow",
+ "chrono",
+ "clap",
+ "flate2",
+ "semver",
+ "serde",
+ "serde_json",
+ "tar",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "zip",
+]
+
+[[package]]
+name = "agentreplay-core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "blake3",
+ "byteorder",
+ "dashmap",
+ "futures",
+ "hex",
+ "parking_lot 0.12.5",
+ "proptest",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "agentreplay-evals"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "criterion",
+ "dashmap",
+ "futures",
+ "mockito",
+ "moka",
+ "opentelemetry 0.21.0",
+ "opentelemetry-semantic-conventions 0.13.0",
+ "parking_lot 0.12.5",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "serde_toon",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "agentreplay-experiments"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "parking_lot 0.12.5",
+ "rand 0.8.5",
+ "seahash",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "agentreplay-index"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "agentreplay-storage",
+ "async-trait",
+ "bincode",
+ "blake3",
+ "criterion",
+ "crossbeam-channel",
+ "dashmap",
+ "dirs 5.0.1",
+ "fastembed",
+ "flate2",
+ "half",
+ "lazy_static",
+ "llm",
+ "memmap2",
+ "ndarray 0.15.6",
+ "parking_lot 0.12.5",
+ "prometheus",
+ "proptest",
+ "rand 0.8.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "smallvec",
+ "sochdb",
+ "sochdb-index",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "agentreplay-observability"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "opentelemetry 0.24.0",
+ "opentelemetry-http",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions 0.16.0",
+ "opentelemetry_sdk",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "agentreplay-plugin-sdk"
+version = "0.1.0"
+dependencies = [
+ "reqwest 0.12.25",
+ "serde",
+ "serde_json",
+ "wit-bindgen 0.36.0",
+]
+
+[[package]]
+name = "agentreplay-plugins"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "agentreplay-evals",
+ "anyhow",
+ "async-trait",
+ "blake3",
+ "chrono",
+ "dashmap",
+ "dirs 5.0.1",
+ "hex",
+ "libloading",
+ "notify",
+ "parking_lot 0.12.5",
+ "reqwest 0.12.25",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-test",
+ "toml",
+ "tracing",
+ "uuid",
+ "walkdir",
+ "wasmtime",
+ "wasmtime-wasi",
+ "which",
+ "wit-bindgen 0.36.0",
+]
+
+[[package]]
+name = "agentreplay-prompts"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "parking_lot 0.12.5",
+ "rand 0.8.5",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "agentreplay-query"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "agentreplay-index",
+ "agentreplay-prompts",
+ "agentreplay-storage",
+ "anyhow",
+ "async-trait",
+ "dirs 5.0.1",
+ "moka",
+ "once_cell",
+ "parking_lot 0.12.5",
+ "rand 0.8.5",
+ "regex",
+ "semver",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "agentreplay-server"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "agentreplay-index",
+ "agentreplay-query",
+ "agentreplay-storage",
+ "anyhow",
+ "async-openai",
+ "async-stream",
+ "async-trait",
+ "axum",
+ "base64 0.21.7",
+ "blake3",
+ "bytes",
+ "clap",
+ "config",
+ "dashmap",
+ "dirs 5.0.1",
+ "flate2",
+ "futures",
+ "hex",
+ "http 1.4.0",
+ "jsonschema",
+ "jsonwebtoken",
+ "moka",
+ "opentelemetry-proto",
+ "parking_lot 0.12.5",
+ "prometheus",
+ "prost",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.11.27",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sochdb-index",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "toml",
+ "tonic",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "agentreplay-storage"
+version = "0.1.0"
+dependencies = [
+ "agentreplay-core",
+ "ahash 0.8.12",
+ "anyhow",
+ "bincode",
+ "blake3",
+ "byteorder",
+ "chrono",
+ "crc32fast",
+ "criterion",
+ "dashmap",
+ "hex",
+ "moka",
+ "nix 0.27.1",
+ "parking_lot 0.12.5",
+ "proptest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "similar",
+ "sochdb",
+ "sochdb-core",
+ "sochdb-storage",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "twox-hash 1.6.3",
+ "uuid",
+]
+
+[[package]]
+name = "agentreplay-telemetry"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "opentelemetry 0.24.0",
+ "opentelemetry-http",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "serde",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "ahash"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2162,351 +2507,6 @@ checksum = "bfe33edd8e85a12a67454e37f8c75e730830d83e313556ab9ebf9ee7fbeb3bfb"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
-]
-
-[[package]]
-name = "flowtrace-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "flate2",
- "flowtrace-core",
- "flowtrace-index",
- "flowtrace-plugins",
- "flowtrace-query",
- "flowtrace-storage",
- "semver",
- "serde",
- "serde_json",
- "tar",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "zip",
-]
-
-[[package]]
-name = "flowtrace-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bincode",
- "blake3",
- "byteorder",
- "dashmap",
- "futures",
- "hex",
- "parking_lot 0.12.5",
- "proptest",
- "rand 0.8.5",
- "regex",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "toml",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "flowtrace-evals"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "chrono",
- "criterion",
- "dashmap",
- "flowtrace-core",
- "futures",
- "mockito",
- "moka",
- "opentelemetry 0.21.0",
- "opentelemetry-semantic-conventions 0.13.0",
- "parking_lot 0.12.5",
- "rand 0.8.5",
- "regex",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "serde_toon",
- "thiserror 1.0.69",
- "tokio",
- "tokio-test",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "flowtrace-experiments"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "parking_lot 0.12.5",
- "rand 0.8.5",
- "seahash",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "flowtrace-index"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bincode",
- "blake3",
- "criterion",
- "crossbeam-channel",
- "dashmap",
- "dirs 5.0.1",
- "fastembed",
- "flate2",
- "flowtrace-core",
- "flowtrace-storage",
- "half",
- "lazy_static",
- "llm",
- "memmap2",
- "ndarray 0.15.6",
- "parking_lot 0.12.5",
- "prometheus",
- "proptest",
- "rand 0.8.5",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "smallvec",
- "sochdb",
- "sochdb-index",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "flowtrace-observability"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "opentelemetry 0.24.0",
- "opentelemetry-http",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions 0.16.0",
- "opentelemetry_sdk",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "tokio",
- "tokio-test",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "flowtrace-plugin-sdk"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.12.25",
- "serde",
- "serde_json",
- "wit-bindgen 0.36.0",
-]
-
-[[package]]
-name = "flowtrace-plugins"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "blake3",
- "chrono",
- "dashmap",
- "dirs 5.0.1",
- "flowtrace-core",
- "flowtrace-evals",
- "hex",
- "libloading",
- "notify",
- "parking_lot 0.12.5",
- "reqwest 0.12.25",
- "semver",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-test",
- "toml",
- "tracing",
- "uuid",
- "walkdir",
- "wasmtime",
- "wasmtime-wasi",
- "which",
- "wit-bindgen 0.36.0",
-]
-
-[[package]]
-name = "flowtrace-prompts"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "parking_lot 0.12.5",
- "rand 0.8.5",
- "semver",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "flowtrace-query"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "dirs 5.0.1",
- "flowtrace-core",
- "flowtrace-index",
- "flowtrace-prompts",
- "flowtrace-storage",
- "moka",
- "once_cell",
- "parking_lot 0.12.5",
- "rand 0.8.5",
- "regex",
- "semver",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "flowtrace-server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-openai",
- "async-stream",
- "async-trait",
- "axum",
- "base64 0.21.7",
- "blake3",
- "bytes",
- "clap",
- "config",
- "dashmap",
- "dirs 5.0.1",
- "flate2",
- "flowtrace-core",
- "flowtrace-index",
- "flowtrace-query",
- "flowtrace-storage",
- "futures",
- "hex",
- "http 1.4.0",
- "jsonschema",
- "jsonwebtoken",
- "moka",
- "opentelemetry-proto",
- "parking_lot 0.12.5",
- "prometheus",
- "prost",
- "rand 0.8.5",
- "regex",
- "reqwest 0.11.27",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
- "sha2",
- "sochdb-index",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "toml",
- "tonic",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "flowtrace-storage"
-version = "0.1.0"
-dependencies = [
- "ahash 0.8.12",
- "anyhow",
- "bincode",
- "blake3",
- "byteorder",
- "chrono",
- "crc32fast",
- "criterion",
- "dashmap",
- "flowtrace-core",
- "hex",
- "moka",
- "nix 0.27.1",
- "parking_lot 0.12.5",
- "proptest",
- "serde",
- "serde_json",
- "sha2",
- "similar",
- "sochdb",
- "sochdb-core",
- "sochdb-storage",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "twox-hash 1.6.3",
- "uuid",
-]
-
-[[package]]
-name = "flowtrace-telemetry"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "opentelemetry 0.24.0",
- "opentelemetry-http",
- "opentelemetry-otlp",
- "opentelemetry_sdk",
- "serde",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
 ]
 
 [[package]]

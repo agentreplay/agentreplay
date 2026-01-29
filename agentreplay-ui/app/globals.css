@@ -1,0 +1,182 @@
+/* 
+ * Copyright 2025 Sushanth (https://github.com/sushanthpy)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* "Cash App" Light Theme - Cool Neutrals */
+    --background: 200 10% 96%;
+    /* #f4f6f7 */
+    --foreground: 220 8% 21%;
+    /* #32353b */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 8% 21%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 8% 21%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 11% 90%;
+    /* #e3e6ea (Neutral 100) */
+    --secondary-foreground: 220 8% 21%;
+
+    --muted: 210 11% 90%;
+    /* #e3e6ea */
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 220 8% 21%;
+    /* #32353b (Dark for accent in light mode) */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 100% 67%;
+    /* #ff6b6b (Red 100) */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 11% 90%;
+    --input: 210 11% 90%;
+    --ring: 210 10% 82%;
+    /* #cbd1d6 */
+
+    --radius: 0.5rem;
+
+    /* Agentreplay custom colors */
+    --surface: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
+    --surface-hover: 210 11% 93%;
+
+    --text-primary: 220 8% 21%;
+    --text-secondary: 215 16% 47%;
+    --text-tertiary: 215 16% 60%;
+
+    --success: 108 42% 68%;
+    /* #91cb80 */
+    --warning: 45 96% 63%;
+    /* #fbcd44 */
+    --error: 0 94% 64%;
+    /* #f94b4b */
+  }
+
+  .dark {
+    /* "Cash App" Dark Theme - Deep Gunmetal */
+    --background: 218 11% 15%;
+    /* #22252a */
+    --foreground: 0 0% 100%;
+    /* #ffffff */
+
+    --card: 218 11% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 218 11% 15%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 9% 27%;
+    /* #3f434b */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 9% 27%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 0 0% 100%;
+    /* White accent in dark mode */
+    --accent-foreground: 218 11% 15%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 9% 27%;
+    /* Neutral 800 */
+    --input: 220 9% 27%;
+    --ring: 215 16% 47%;
+
+    /* Agentreplay custom colors - dark mode */
+    --surface: 218 11% 18%;
+    --surface-elevated: 218 11% 21%;
+    --surface-hover: 218 11% 24%;
+
+    --text-primary: 0 0% 100%;
+    --text-secondary: 215 20% 75%;
+    --text-tertiary: 215 20% 55%;
+
+    --success: 108 42% 68%;
+    --warning: 45 96% 63%;
+    --error: 0 94% 64%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Animation for slide-in effect */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Dash animation for animated edges */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.animate-dash {
+  stroke-dasharray: 5 5;
+  animation: dash 0.5s linear infinite;
+}

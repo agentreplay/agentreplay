@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="AgentReplay mark" style="color:#111">
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="512" cy="512" r="330" stroke-width="92" opacity="0.95"/>
+    <path d="M318 256 L362 190 L382 280 Z" fill="currentColor" stroke="none"/>
+    <path d="M404 388 L540 512 L404 636" stroke-width="92"/>
+    <path d="M574 636 H740" stroke-width="92"/>
+    <circle cx="728" cy="392" r="26" fill="currentColor" stroke="none"/>
+  </g>
+</svg>

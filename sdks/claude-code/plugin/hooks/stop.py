@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stop hook for Flowtrace plugin.
+Stop hook for Agentreplay plugin.
 Sends session end trace when Claude Code stops.
 """
 

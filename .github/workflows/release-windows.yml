@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -33,25 +33,25 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         shell: bash
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0"
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -60,10 +60,10 @@ jobs:
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-x86_64-pc-windows-msvc
+          name: Agentreplay-x86_64-pc-windows-msvc
           path: |
-            flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           if-no-files-found: error
 
       - name: Upload to Release
@@ -71,7 +71,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-            flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

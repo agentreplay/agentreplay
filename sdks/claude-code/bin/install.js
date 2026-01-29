@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Flowtrace Claude Code Plugin Installer
+ * Agentreplay Claude Code Plugin Installer
  * 
- * Copies the plugin to ~/.claude/plugins/flowtrace
+ * Copies the plugin to ~/.claude/plugins/agentreplay
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const PLUGIN_NAME = 'flowtrace';
+const PLUGIN_NAME = 'agentreplay';
 
 function copyRecursive(src, dest) {
   const stats = fs.statSync(src);
@@ -40,7 +40,7 @@ function install() {
     process.exit(1);
   }
   
-  console.log('📦 Installing Flowtrace plugin for Claude Code...');
+  console.log('📦 Installing Agentreplay plugin for Claude Code...');
   console.log(`   Source: ${srcDir}`);
   console.log(`   Destination: ${destDir}`);
   
@@ -59,12 +59,12 @@ function install() {
     copyRecursive(srcDir, destDir);
     
     console.log('');
-    console.log('✅ Flowtrace plugin installed successfully!');
+    console.log('✅ Agentreplay plugin installed successfully!');
     console.log('');
     console.log('📊 Configuration (via environment variables):');
-    console.log('   FLOWTRACE_URL=http://localhost:9600');
-    console.log('   FLOWTRACE_TENANT_ID=1');
-    console.log('   FLOWTRACE_PROJECT_ID=1');
+    console.log('   AGENTREPLAY_URL=http://localhost:9600');
+    console.log('   AGENTREPLAY_TENANT_ID=1');
+    console.log('   AGENTREPLAY_PROJECT_ID=1');
     console.log('');
     console.log('🚀 Start Claude Code to begin tracing!');
     console.log('');

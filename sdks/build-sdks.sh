@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Flowtrace SDK Build Script
+# Agentreplay SDK Build Script
 # Builds and packages all SDK distributions
 
 set -e  # Exit on error
@@ -102,8 +102,8 @@ build_python() {
     fi
     
     # Update version in __init__.py if exists
-    if [ -f "src/flowtrace/__init__.py" ]; then
-        sed -i.bak "s/__version__ = \".*\"/__version__ = \"$version\"/" src/flowtrace/__init__.py && rm -f src/flowtrace/__init__.py.bak
+    if [ -f "src/agentreplay/__init__.py" ]; then
+        sed -i.bak "s/__version__ = \".*\"/__version__ = \"$version\"/" src/agentreplay/__init__.py && rm -f src/agentreplay/__init__.py.bak
     fi
     
     # Clean previous builds
@@ -341,7 +341,7 @@ set_version() {
 
 # Show usage
 usage() {
-    echo "Flowtrace SDK Build Script"
+    echo "Agentreplay SDK Build Script"
     echo ""
     echo "Usage: $0 [OPTIONS] [SDK...]"
     echo ""
@@ -421,7 +421,7 @@ main() {
         sdks=("all")
     fi
     
-    print_header "Flowtrace SDK Builder"
+    print_header "Agentreplay SDK Builder"
     echo "Version: $(get_version)"
     echo "Building: ${sdks[*]}"
     

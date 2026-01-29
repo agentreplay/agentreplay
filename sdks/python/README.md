@@ -1,42 +1,42 @@
-# Flowtrace Python SDK
+# Agentreplay Python SDK
 
-Python SDK for Flowtrace - A purpose-built agent trace engine for LLM agents.
+Python SDK for Agentreplay - A purpose-built agent trace engine for LLM agents.
 
 ## Installation
 
 ```bash
-pip install flowtrace-client
+pip install agentreplay
 ```
 
 ### With Framework Integrations
 
 ```bash
 # Install specific framework integrations
-pip install flowtrace-client[langchain]      # LangChain / LangGraph
-pip install flowtrace-client[llamaindex]     # LlamaIndex
-pip install flowtrace-client[openai-agents]  # OpenAI Agents SDK
-pip install flowtrace-client[autogen]        # Microsoft AutoGen
-pip install flowtrace-client[semantic-kernel] # Semantic Kernel
-pip install flowtrace-client[crewai]         # CrewAI
-pip install flowtrace-client[smolagents]     # Hugging Face smolagents
-pip install flowtrace-client[pydantic-ai]    # PydanticAI
-pip install flowtrace-client[strands]        # AWS Strands Agents
-pip install flowtrace-client[google-adk]     # Google ADK
+pip install agentreplay[langchain]      # LangChain / LangGraph
+pip install agentreplay[llamaindex]     # LlamaIndex
+pip install agentreplay[openai-agents]  # OpenAI Agents SDK
+pip install agentreplay[autogen]        # Microsoft AutoGen
+pip install agentreplay[semantic-kernel] # Semantic Kernel
+pip install agentreplay[crewai]         # CrewAI
+pip install agentreplay[smolagents]     # Hugging Face smolagents
+pip install agentreplay[pydantic-ai]    # PydanticAI
+pip install agentreplay[strands]        # AWS Strands Agents
+pip install agentreplay[google-adk]     # Google ADK
 
 # Or install all framework integrations at once
-pip install flowtrace-client[all-frameworks]
+pip install agentreplay[all-frameworks]
 
 # For development (includes all frameworks + dev tools)
-pip install flowtrace-client[all]
+pip install agentreplay[all]
 ```
 
 ## Quick Start
 
 ```python
-from flowtrace import FlowtraceClient, SpanType
+from agentreplay import AgentreplayClient, SpanType
 
 # Initialize client
-client = FlowtraceClient(
+client = AgentreplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0
@@ -72,32 +72,32 @@ ancestors = client.get_ancestors(edge_id)
 
 ## Framework Integrations
 
-Flowtrace provides seamless integrations for all major AI agent frameworks:
+Agentreplay provides seamless integrations for all major AI agent frameworks:
 
 ### Supported Frameworks
 
 | Framework | Install | Documentation |
 |-----------|---------|---------------|
-| **LangChain / LangGraph** | `pip install flowtrace-client[langchain]` | Chains, agents, workflows |
-| **LlamaIndex** | `pip install flowtrace-client[llamaindex]` | Query engines, agents, workflows |
-| **OpenAI Agents SDK** | `pip install flowtrace-client[openai-agents]` | Agent wrappers, sessions |
-| **Microsoft AutoGen** | `pip install flowtrace-client[autogen]` | Multi-agent conversations |
-| **Semantic Kernel** | `pip install flowtrace-client[semantic-kernel]` | Kernel functions, planners |
-| **CrewAI** | `pip install flowtrace-client[crewai]` | Crews, tasks, collaboration |
-| **Hugging Face smolagents** | `pip install flowtrace-client[smolagents]` | Code agents, tool calling |
-| **PydanticAI** | `pip install flowtrace-client[pydantic-ai]` | Type-safe agents |
-| **Strands Agents** | `pip install flowtrace-client[strands]` | AWS agents, multi-provider |
-| **Google ADK** | `pip install flowtrace-client[google-adk]` | Gemini agents |
+| **LangChain / LangGraph** | `pip install agentreplay[langchain]` | Chains, agents, workflows |
+| **LlamaIndex** | `pip install agentreplay[llamaindex]` | Query engines, agents, workflows |
+| **OpenAI Agents SDK** | `pip install agentreplay[openai-agents]` | Agent wrappers, sessions |
+| **Microsoft AutoGen** | `pip install agentreplay[autogen]` | Multi-agent conversations |
+| **Semantic Kernel** | `pip install agentreplay[semantic-kernel]` | Kernel functions, planners |
+| **CrewAI** | `pip install agentreplay[crewai]` | Crews, tasks, collaboration |
+| **Hugging Face smolagents** | `pip install agentreplay[smolagents]` | Code agents, tool calling |
+| **PydanticAI** | `pip install agentreplay[pydantic-ai]` | Type-safe agents |
+| **Strands Agents** | `pip install agentreplay[strands]` | AWS agents, multi-provider |
+| **Google ADK** | `pip install agentreplay[google-adk]` | Gemini agents |
 
 ### Quick Integration Examples
 
 #### LangChain
 
 ```python
-from flowtrace.integrations.langchain import FlowtraceCallbackHandler
+from agentreplay.integrations.langchain import AgentreplayCallbackHandler
 from langchain.chains import LLMChain
 
-callback = FlowtraceCallbackHandler(
+callback = AgentreplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -109,11 +109,11 @@ result = chain.run("What is the weather?")
 #### LlamaIndex
 
 ```python
-from flowtrace.integrations.llamaindex import create_callback_manager
+from agentreplay.integrations.llamaindex import create_callback_manager
 from llama_index.core import VectorStoreIndex
 
 callback_manager = create_callback_manager(
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -126,13 +126,13 @@ index = VectorStoreIndex.from_documents(
 #### OpenAI Agents SDK
 
 ```python
-from flowtrace.integrations.openai_agents import FlowtraceAgentWrapper
+from agentreplay.integrations.openai_agents import AgentreplayAgentWrapper
 from openai_agents import Agent
 
 agent = Agent(name="assistant", instructions="You are helpful")
-wrapped = FlowtraceAgentWrapper(
+wrapped = AgentreplayAgentWrapper(
     agent=agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -143,13 +143,13 @@ response = wrapped.run(session, "Hello!")
 #### PydanticAI
 
 ```python
-from flowtrace.integrations.pydantic_ai import wrap_pydantic_ai_agent
+from agentreplay.integrations.pydantic_ai import wrap_pydantic_ai_agent
 from pydantic_ai import Agent
 
 agent = Agent("openai:gpt-4")
 agent = wrap_pydantic_ai_agent(
     agent,
-    flowtrace_url="http://localhost:8080",
+    agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
 
@@ -179,7 +179,7 @@ result = agent.run_sync("Process this request")
 
 - **Quick Start**: See above and [examples/](examples/)
 - **Framework Integrations**: [INTEGRATIONS.md](INTEGRATIONS.md)
-- **Full API Documentation**: https://docs.flowtrace.dev/python-sdk
+- **Full API Documentation**: https://docs.agentreplay.dev/python-sdk
 - **Examples**:
   - [LangChain/LangGraph](examples/integrations/langchain_langgraph_example.py)
   - [LlamaIndex](examples/integrations/llamaindex_example.py)

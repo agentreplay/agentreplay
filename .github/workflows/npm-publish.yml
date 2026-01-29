@@ -16,7 +16,7 @@
 # Triggered on releases or manual workflow dispatch
 #
 # Prerequisites:
-# 1. Package name 'flowtrace-client' must be registered on npm
+# 1. Package name 'agentreplay-client' must be registered on npm
 # 2. NPM_TOKEN secret must be configured in repository settings
 #    OR use npm provenance with trusted publishing
 

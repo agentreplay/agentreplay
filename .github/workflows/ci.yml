@@ -67,25 +67,25 @@ jobs:
       - name: Cache node modules
         uses: actions/cache@v4
         with:
-          path: flowtrace-ui/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('flowtrace-ui/bun.lockb', 'flowtrace-ui/package.json') }}
+          path: agentreplay-ui/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('agentreplay-ui/bun.lockb', 'agentreplay-ui/package.json') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: bun install
 
       - name: Type check
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: bun run type-check
 
       - name: Lint
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: bun run lint || echo "Lint script not configured, skipping"
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: bun run build
 
 

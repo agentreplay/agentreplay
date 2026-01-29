@@ -19,11 +19,11 @@ LangGraph multi-agent example with ZERO CODE CHANGES.
 Just set environment variables (or use .env file) and run - that's it!
 
 Setup:
-    1. Install: pip install flowtrace
+    1. Install: pip install agentreplay
     2. Create .env file with:
-       FLOWTRACE_ENABLED=true
-       FLOWTRACE_PROJECT_ID=11635
-       FLOWTRACE_OTLP_ENDPOINT=localhost:4317
+       AGENTREPLAY_ENABLED=true
+       AGENTREPLAY_PROJECT_ID=11635
+       AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
        AZURE_OPENAI_API_KEY=your-key
        AZURE_OPENAI_ENDPOINT=your-endpoint
        AZURE_OPENAI_DEPLOYMENT=gpt-4.1
@@ -37,17 +37,17 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# ✨ EXPLICIT FLOWTRACE INITIALIZATION ✨
+# ✨ EXPLICIT AGENTREPLAY INITIALIZATION ✨
 # (The .pth file approach requires proper installation; explicit init works reliably)
-import flowtrace
-flowtrace.init_otel_instrumentation(
-    service_name=os.getenv("FLOWTRACE_SERVICE_NAME", "langgraph-demo"),
-    otlp_endpoint=os.getenv("FLOWTRACE_OTLP_ENDPOINT", "localhost:4317"),
-    project_id=int(os.getenv("FLOWTRACE_PROJECT_ID", "27986")),
-    tenant_id=int(os.getenv("FLOWTRACE_TENANT_ID", "1")),
+import agentreplay
+agentreplay.init_otel_instrumentation(
+    service_name=os.getenv("AGENTREPLAY_SERVICE_NAME", "langgraph-demo"),
+    otlp_endpoint=os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:4317"),
+    project_id=int(os.getenv("AGENTREPLAY_PROJECT_ID", "27986")),
+    tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     debug=True  # Show initialization logs
 )
-print("[Flowtrace] ✓ Initialized")
+print("[Agentreplay] ✓ Initialized")
 
 from typing import Annotated, TypedDict
 from langchain_openai import AzureChatOpenAI
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         print(result["messages"][-1].content)
         print("-" * 60)
         
-        print("\n✅ Complete! Check Flowtrace UI:")
+        print("\n✅ Complete! Check Agentreplay UI:")
         print("   http://localhost:5173")
         print("\nYou should see:")
         print("   - 2 agents: researcher → writer")

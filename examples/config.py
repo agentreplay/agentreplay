@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Flowtrace Examples Configuration
+Agentreplay Examples Configuration
 
 Centralized configuration for all example scripts.
 Modify these values in one place to affect all examples.
@@ -22,20 +22,20 @@ Modify these values in one place to affect all examples.
 import os
 
 # ============================================================================
-# Flowtrace Server Configuration
+# Agentreplay Server Configuration
 # ============================================================================
 
-# Flowtrace server URL
-FLOWTRACE_URL = os.getenv("FLOWTRACE_URL", "http://localhost:8080")
+# Agentreplay server URL
+AGENTREPLAY_URL = os.getenv("AGENTREPLAY_URL", "http://localhost:8080")
 
 # Alternative port for some examples
-FLOWTRACE_PORT_9600 = os.getenv("FLOWTRACE_URL", "http://localhost:9600")
+AGENTREPLAY_PORT_9600 = os.getenv("AGENTREPLAY_URL", "http://localhost:9600")
 
 # Tenant ID (default: 1)
-TENANT_ID = int(os.getenv("FLOWTRACE_TENANT_ID", "1"))
+TENANT_ID = int(os.getenv("AGENTREPLAY_TENANT_ID", "1"))
 
 # Project ID (default: 0 for no project, or use specific project)
-PROJECT_ID = int(os.getenv("FLOWTRACE_PROJECT_ID", "17444"))
+PROJECT_ID = int(os.getenv("AGENTREPLAY_PROJECT_ID", "17444"))
 
 # ============================================================================
 # LLM API Configuration
@@ -57,29 +57,29 @@ ANTHROPIC_MAX_TOKENS = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
 # ============================================================================
 
 # Service name for auto-instrumentation
-SERVICE_NAME = os.getenv("FLOWTRACE_SERVICE_NAME", "flowtrace-examples")
+SERVICE_NAME = os.getenv("AGENTREPLAY_SERVICE_NAME", "agentreplay-examples")
 
 # Frameworks to auto-instrument (None = all)
 AUTO_INSTRUMENT_FRAMEWORKS = None  # ["openai", "anthropic", "langgraph", "langchain"]
 
 # Sampling rate (0.0 to 1.0)
-SAMPLE_RATE = float(os.getenv("FLOWTRACE_SAMPLE_RATE", "1.0"))
+SAMPLE_RATE = float(os.getenv("AGENTREPLAY_SAMPLE_RATE", "1.0"))
 
 # Capture full content (prompts/responses)
-CAPTURE_CONTENT = os.getenv("FLOWTRACE_CAPTURE_CONTENT", "true").lower() == "true"
+CAPTURE_CONTENT = os.getenv("AGENTREPLAY_CAPTURE_CONTENT", "true").lower() == "true"
 
 # Capture token usage
-CAPTURE_TOKEN_USAGE = os.getenv("FLOWTRACE_CAPTURE_TOKEN_USAGE", "true").lower() == "true"
+CAPTURE_TOKEN_USAGE = os.getenv("AGENTREPLAY_CAPTURE_TOKEN_USAGE", "true").lower() == "true"
 
 # ============================================================================
 # Example-Specific Configuration
 # ============================================================================
 
 # Batch size for batching client
-BATCH_SIZE = int(os.getenv("FLOWTRACE_BATCH_SIZE", "10"))
+BATCH_SIZE = int(os.getenv("AGENTREPLAY_BATCH_SIZE", "10"))
 
 # Flush interval for batching (seconds)
-FLUSH_INTERVAL = float(os.getenv("FLOWTRACE_FLUSH_INTERVAL", "5.0"))
+FLUSH_INTERVAL = float(os.getenv("AGENTREPLAY_FLUSH_INTERVAL", "5.0"))
 
 # ============================================================================
 # Helper Functions
@@ -89,7 +89,7 @@ def get_auto_instrument_config():
     """Get configuration dict for auto_instrument()."""
     return {
         "service_name": SERVICE_NAME,
-        "flowtrace_url": FLOWTRACE_URL,
+        "agentreplay_url": AGENTREPLAY_URL,
         "tenant_id": TENANT_ID,
         "frameworks": AUTO_INSTRUMENT_FRAMEWORKS,
         "sample_rate": SAMPLE_RATE,
@@ -98,19 +98,19 @@ def get_auto_instrument_config():
     }
 
 
-def get_flowtrace_client_config():
-    """Get configuration dict for FlowtraceClient()."""
+def get_agentreplay_client_config():
+    """Get configuration dict for AgentreplayClient()."""
     return {
-        "url": FLOWTRACE_URL,
+        "url": AGENTREPLAY_URL,
         "tenant_id": TENANT_ID,
         "project_id": PROJECT_ID,
     }
 
 
 def get_batching_client_config():
-    """Get configuration dict for BatchingFlowtraceClient()."""
+    """Get configuration dict for BatchingAgentreplayClient()."""
     return {
-        "base_url": FLOWTRACE_URL,
+        "base_url": AGENTREPLAY_URL,
         "api_key": "your-api-key",  # Placeholder
         "batch_size": BATCH_SIZE,
         "flush_interval": FLUSH_INTERVAL,
@@ -120,9 +120,9 @@ def get_batching_client_config():
 def print_config():
     """Print current configuration."""
     print("=" * 80)
-    print("Flowtrace Examples Configuration")
+    print("Agentreplay Examples Configuration")
     print("=" * 80)
-    print(f"Flowtrace URL:      {FLOWTRACE_URL}")
+    print(f"Agentreplay URL:      {AGENTREPLAY_URL}")
     print(f"Tenant ID:          {TENANT_ID}")
     print(f"Project ID:         {PROJECT_ID}")
     print(f"Service Name:       {SERVICE_NAME}")
@@ -141,14 +141,14 @@ def validate_config():
     """Validate configuration and return list of issues."""
     issues = []
     
-    # Check Flowtrace URL
+    # Check Agentreplay URL
     import requests
     try:
-        response = requests.get(f"{FLOWTRACE_URL}/health", timeout=2)
+        response = requests.get(f"{AGENTREPLAY_URL}/health", timeout=2)
         if response.status_code != 200:
-            issues.append(f"Flowtrace server at {FLOWTRACE_URL} returned status {response.status_code}")
+            issues.append(f"Agentreplay server at {AGENTREPLAY_URL} returned status {response.status_code}")
     except requests.exceptions.RequestException:
-        issues.append(f"Cannot connect to Flowtrace server at {FLOWTRACE_URL}")
+        issues.append(f"Cannot connect to Agentreplay server at {AGENTREPLAY_URL}")
     
     # Check API keys if needed
     if not OPENAI_API_KEY:

@@ -15,15 +15,15 @@
  */
 
 /**
- * Flowtrace Client
+ * Agentreplay Client
  *
- * High-performance client for the Flowtrace observability platform.
+ * High-performance client for the Agentreplay observability platform.
  */
 
 import {
   SpanType,
   SensitivityFlags,
-  FlowtraceClientOptions,
+  AgentreplayClientOptions,
   QueryFilter,
   QueryResponse,
   TraceView,
@@ -53,11 +53,11 @@ function nowMicroseconds(): number {
 }
 
 /**
- * FlowtraceClient - Main client for interacting with Flowtrace.
+ * AgentreplayClient - Main client for interacting with Agentreplay.
  *
  * @example
  * ```typescript
- * const client = new FlowtraceClient({
+ * const client = new AgentreplayClient({
  *   url: 'http://localhost:8080',
  *   tenantId: 1,
  *   projectId: 0
@@ -83,7 +83,7 @@ function nowMicroseconds(): number {
  * });
  * ```
  */
-export class FlowtraceClient {
+export class AgentreplayClient {
   private readonly url: string;
   private readonly tenantId: number;
   private readonly projectId: number;
@@ -93,7 +93,7 @@ export class FlowtraceClient {
   private readonly fetchFn: typeof fetch;
   private sessionCounter = 0;
 
-  constructor(options: FlowtraceClientOptions) {
+  constructor(options: AgentreplayClientOptions) {
     this.url = options.url.replace(/\/$/, '');
     this.tenantId = options.tenantId;
     this.projectId = options.projectId ?? 0;
@@ -108,7 +108,7 @@ export class FlowtraceClient {
   }
 
   /**
-   * Make an HTTP request to the Flowtrace server.
+   * Make an HTTP request to the Agentreplay server.
    */
   private async request<T>(
     method: string,
@@ -144,7 +144,7 @@ export class FlowtraceClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Flowtrace API error (${response.status}): ${errorText}`);
+        throw new Error(`Agentreplay API error (${response.status}): ${errorText}`);
       }
 
       return await response.json() as T;
@@ -636,7 +636,7 @@ export class FlowtraceClient {
 // Re-export types
 export { SpanType, SensitivityFlags };
 export type {
-  FlowtraceClientOptions,
+  AgentreplayClientOptions,
   QueryFilter,
   QueryResponse,
   TraceView,

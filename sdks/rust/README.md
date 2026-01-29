@@ -1,4 +1,4 @@
-# Flowtrace Rust SDK
+# Agentreplay Rust SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 
@@ -8,14 +8,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flowtrace-client = "0.1"
+agentreplay-client = "0.1"
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
 ```
 
 ## Quick Start
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig, SpanType, CreateTraceOptions};
+use agentreplay_client::{AgentreplayClient, ClientConfig, SpanType, CreateTraceOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_project_id(0)
         .with_agent_id(1);
 
-    let client = FlowtraceClient::new(config);
+    let client = AgentreplayClient::new(config);
 
     // Create a basic trace
     let trace = client.create_trace(CreateTraceOptions {
@@ -45,12 +45,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 The SDK supports OpenTelemetry GenAI semantic conventions:
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig, CreateGenAITraceOptions, Message};
+use agentreplay_client::{AgentreplayClient, ClientConfig, CreateGenAITraceOptions, Message};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     let trace = client.create_genai_trace(CreateGenAITraceOptions {
         agent_id: 1,
@@ -82,12 +82,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Tracking Tool Calls
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig, CreateToolTraceOptions};
+use agentreplay_client::{AgentreplayClient, ClientConfig, CreateToolTraceOptions};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     let trace = client.create_tool_trace(CreateToolTraceOptions {
         agent_id: 1,
@@ -116,12 +116,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Querying Traces
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig, QueryFilter};
+use agentreplay_client::{AgentreplayClient, ClientConfig, QueryFilter};
 use chrono::Utc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     // Query traces with filters
     let results = client.query_traces(Some(&QueryFilter {
@@ -152,12 +152,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## User Feedback
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig};
+use agentreplay_client::{AgentreplayClient, ClientConfig};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     // Submit feedback
     client.submit_feedback("trace_id", 1).await?;  // thumbs up
@@ -178,7 +178,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Span Types
 
 ```rust
-use flowtrace_client::SpanType;
+use agentreplay_client::SpanType;
 
 SpanType::Root         // 0 - Root span
 SpanType::Planning     // 1 - Planning phase
@@ -202,7 +202,7 @@ SpanType::Custom       // 255 - Custom types
 ## Configuration Options
 
 ```rust
-use flowtrace_client::ClientConfig;
+use agentreplay_client::ClientConfig;
 use std::time::Duration;
 
 let config = ClientConfig::new("http://localhost:8080", 1)
@@ -214,11 +214,11 @@ let config = ClientConfig::new("http://localhost:8080", 1)
 ## Error Handling
 
 ```rust
-use flowtrace_client::{FlowtraceClient, ClientConfig, FlowtraceError, CreateTraceOptions, SpanType};
+use agentreplay_client::{AgentreplayClient, ClientConfig, AgentreplayError, CreateTraceOptions, SpanType};
 
 #[tokio::main]
 async fn main() {
-    let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     match client.create_trace(CreateTraceOptions {
         agent_id: 1,
@@ -226,7 +226,7 @@ async fn main() {
         ..Default::default()
     }).await {
         Ok(trace) => println!("Created: {}", trace.edge_id),
-        Err(FlowtraceError::ApiError { status, message }) => {
+        Err(AgentreplayError::ApiError { status, message }) => {
             eprintln!("API error ({}): {}", status, message);
         }
         Err(e) => eprintln!("Error: {}", e),
@@ -237,7 +237,7 @@ async fn main() {
 ## Message Helper Methods
 
 ```rust
-use flowtrace_client::Message;
+use agentreplay_client::Message;
 
 // Using helper constructors
 let system_msg = Message::system("You are a helpful assistant.");

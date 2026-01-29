@@ -21,7 +21,7 @@ import os
 import tempfile
 import shutil
 
-wheel_path = "dist/flowtrace-0.1.0-py3-none-any.whl"
+wheel_path = "dist/agentreplay-0.1.0-py3-none-any.whl"
 
 print(f"🔧 Fixing wheel: {wheel_path}")
 
@@ -32,15 +32,15 @@ with tempfile.TemporaryDirectory() as tmpdir:
         zip_ref.extractall(tmpdir)
     
     # Find and move the .pth file
-    pth_source = os.path.join(tmpdir, "flowtrace-0.1.0.data", "data", "flowtrace-init.pth")
-    pth_dest = os.path.join(tmpdir, "flowtrace-init.pth")
+    pth_source = os.path.join(tmpdir, "agentreplay-0.1.0.data", "data", "agentreplay-init.pth")
+    pth_dest = os.path.join(tmpdir, "agentreplay-init.pth")
     
     if os.path.exists(pth_source):
         shutil.move(pth_source, pth_dest)
         print(f"✅ Moved .pth file to root")
         
         # Remove empty data directory
-        data_dir = os.path.join(tmpdir, "flowtrace-0.1.0.data")
+        data_dir = os.path.join(tmpdir, "agentreplay-0.1.0.data")
         if os.path.exists(data_dir) and not os.listdir(os.path.join(data_dir, "data")):
             shutil.rmtree(data_dir)
             print(f"✅ Removed empty data directory")

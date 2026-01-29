@@ -4,23 +4,23 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "component": "flowtrace",
+      "component": "agentreplay",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         {
           "type": "json",
-          "path": "flowtrace-tauri/tauri.conf.json",
+          "path": "agentreplay-tauri/tauri.conf.json",
           "jsonpath": "$.version"
         },
         {
           "type": "toml",
-          "path": "flowtrace-tauri/Cargo.toml",
+          "path": "agentreplay-tauri/Cargo.toml",
           "glob": "version = \"*\""
         },
         {
           "type": "json",
-          "path": "flowtrace-ui/package.json",
+          "path": "agentreplay-ui/package.json",
           "jsonpath": "$.version"
         },
         {

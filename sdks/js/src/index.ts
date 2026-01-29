@@ -15,15 +15,15 @@
  */
 
 /**
- * Flowtrace SDK for JavaScript/TypeScript
+ * Agentreplay SDK for JavaScript/TypeScript
  *
  * High-performance observability for LLM agents.
  *
  * @example
  * ```typescript
- * import { FlowtraceClient, SpanType } from '@flowtrace/sdk';
+ * import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
  *
- * const client = new FlowtraceClient({
+ * const client = new AgentreplayClient({
  *   url: 'http://localhost:8080',
  *   tenantId: 1
  * });
@@ -50,7 +50,7 @@
  * @packageDocumentation
  */
 
-export { FlowtraceClient } from './client';
+export { AgentreplayClient } from './client';
 
 export {
   SpanType,
@@ -58,7 +58,7 @@ export {
 } from './types';
 
 export type {
-  FlowtraceClientOptions,
+  AgentreplayClientOptions,
   QueryFilter,
   QueryResponse,
   TraceView,

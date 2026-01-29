@@ -1,6 +1,6 @@
-# Contributing to Flowtrace
+# Contributing to Agentreplay
 
-Thank you for your interest in contributing to Flowtrace! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Agentreplay! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
@@ -39,12 +39,12 @@ Before contributing, ensure you have the following installed:
 1. Fork the repository on GitHub
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/flowtrace.git
-   cd flowtrace
+   git clone https://github.com/YOUR_USERNAME/agentreplay.git
+   cd agentreplay
    ```
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/sochdb/flowtrace.git
+   git remote add upstream https://github.com/sochdb/agentreplay.git
    ```
 
 ## Development Setup
@@ -82,7 +82,7 @@ pip install -e ".[dev,langchain,openai,llama-index]"
 pytest tests/
 
 # Type checking
-mypy src/flowtrace
+mypy src/agentreplay
 ```
 
 ### JavaScript/TypeScript SDK
@@ -121,7 +121,7 @@ go build ./...
 ### Desktop Application (Tauri)
 
 ```bash
-cd flowtrace-desktop
+cd agentreplay-desktop
 
 # Install frontend dependencies
 npm install
@@ -136,14 +136,14 @@ npm run tauri build
 ## Project Structure
 
 ```
-flowtrace/
-├── flowtrace-core/       # Core data structures (AgentFlowEdge, HLC)
-├── flowtrace-storage/    # LSM-tree storage engine
-├── flowtrace-index/      # Vector and causal indexing
-├── flowtrace-query/      # Query engine and aggregations
-├── flowtrace-server/     # REST API and WebSocket server
-├── flowtrace-evals/      # Evaluation framework
-├── flowtrace-desktop/    # Tauri desktop application
+agentreplay/
+├── agentreplay-core/       # Core data structures (AgentFlowEdge, HLC)
+├── agentreplay-storage/    # LSM-tree storage engine
+├── agentreplay-index/      # Vector and causal indexing
+├── agentreplay-query/      # Query engine and aggregations
+├── agentreplay-server/     # REST API and WebSocket server
+├── agentreplay-evals/      # Evaluation framework
+├── agentreplay-desktop/    # Tauri desktop application
 ├── sdks/
 │   ├── python/           # Python SDK
 │   ├── js/               # JavaScript/TypeScript SDK
@@ -156,17 +156,17 @@ flowtrace/
 ### Crate Dependencies
 
 ```
-flowtrace-core (foundation)
+agentreplay-core (foundation)
     ↓
-flowtrace-storage (uses core)
+agentreplay-storage (uses core)
     ↓
-flowtrace-index (uses core, query)
+agentreplay-index (uses core, query)
     ↓
-flowtrace-query (uses core, storage, index)
+agentreplay-query (uses core, storage, index)
     ↓
-flowtrace-server (uses all)
+agentreplay-server (uses all)
     ↓
-flowtrace-evals (uses core, query)
+agentreplay-evals (uses core, query)
 ```
 
 ## Making Changes
@@ -231,7 +231,7 @@ The client now retries with exponential backoff on timeout errors.
 cargo test --workspace
 
 # Run specific crate tests
-cargo test -p flowtrace-storage
+cargo test -p agentreplay-storage
 
 # Run with output
 cargo test -- --nocapture
@@ -244,13 +244,13 @@ cargo bench
 
 ```bash
 # Start test server
-cargo run --release -p flowtrace-server &
+cargo run --release -p agentreplay-server &
 
 # Run integration tests
 cargo test --test integration_tests
 
 # Stop server
-pkill flowtrace-server
+pkill agentreplay-server
 ```
 
 ### Python SDK Tests
@@ -260,7 +260,7 @@ cd sdks/python
 pytest tests/ -v
 
 # With coverage
-pytest tests/ --cov=src/flowtrace --cov-report=html
+pytest tests/ --cov=src/agentreplay --cov-report=html
 ```
 
 ### JavaScript SDK Tests
@@ -331,7 +331,7 @@ black src/ tests/
 isort src/ tests/
 
 # Type check
-mypy src/flowtrace
+mypy src/agentreplay
 ```
 
 ### JavaScript/TypeScript
@@ -407,7 +407,7 @@ Releases are managed by maintainers:
 
 - **Questions**: Open a GitHub Discussion
 - **Bugs**: Open a GitHub Issue
-- **Security**: Email security@flowtrace.dev (do not open public issues)
+- **Security**: Email security@agentreplay.dev (do not open public issues)
 
 ## Recognition
 
@@ -416,4 +416,4 @@ Contributors are recognized in:
 - GitHub contributors page
 - Project README (for significant contributions)
 
-Thank you for contributing to Flowtrace! 🎉
+Thank you for contributing to Agentreplay! 🎉

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # Flowtrace SDK for Rust
+//! # Agentreplay SDK for Rust
 //!
 //! High-performance observability SDK for LLM agents and AI applications.
 //!
 //! ## Quick Start
 //!
 //! ```no_run
-//! use flowtrace::{FlowtraceClient, ClientConfig, SpanType, CreateTraceOptions};
+//! use agentreplay::{AgentreplayClient, ClientConfig, SpanType, CreateTraceOptions};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,7 +28,7 @@
 //!         .with_project_id(0)
 //!         .with_agent_id(1);
 //!
-//!     let client = FlowtraceClient::new(config);
+//!     let client = AgentreplayClient::new(config);
 //!
 //!     // Create a trace
 //!     let trace = client.create_trace(CreateTraceOptions {
@@ -46,10 +46,10 @@
 //! ## Tracking LLM Calls
 //!
 //! ```no_run
-//! use flowtrace::{FlowtraceClient, ClientConfig, CreateGenAITraceOptions, Message};
+//! use agentreplay::{AgentreplayClient, ClientConfig, CreateGenAITraceOptions, Message};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = FlowtraceClient::new(ClientConfig::new("http://localhost:8080", 1));
+//! let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 //!
 //! let trace = client.create_genai_trace(CreateGenAITraceOptions {
 //!     agent_id: 1,
@@ -75,5 +75,5 @@
 mod client;
 mod types;
 
-pub use client::{ClientConfig, Result, FlowtraceClient, FlowtraceError};
+pub use client::{ClientConfig, Result, AgentreplayClient, AgentreplayError};
 pub use types::*;

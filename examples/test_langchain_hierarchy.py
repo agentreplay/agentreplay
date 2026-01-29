@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Test Flowtrace's LangChain callback handler with hierarchical traces.
+Test Agentreplay's LangChain callback handler with hierarchical traces.
 
 This creates synthetic spans to test parent-child relationships without
 needing actual LLM credentials.
@@ -21,21 +21,21 @@ needing actual LLM credentials.
 
 import time
 import os
-os.environ["FLOWTRACE_PROJECT_ID"] = "11635"
+os.environ["AGENTREPLAY_PROJECT_ID"] = "11635"
 os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4317"
 
-# Initialize Flowtrace instrumentation FIRST
-import flowtrace.auto_instrument
+# Initialize Agentreplay instrumentation FIRST
+import agentreplay.auto_instrument
 
-from flowtrace.langchain_tracer import FlowtraceCallbackHandler
+from agentreplay.langchain_tracer import AgentreplayCallbackHandler
 from uuid import uuid4
 from langchain_core.outputs import LLMResult, Generation
 
-print("🚀 Testing Flowtrace LangChain Tracer")
+print("🚀 Testing Agentreplay LangChain Tracer")
 print("=" * 60)
 
 # Create callback handler
-handler = FlowtraceCallbackHandler()
+handler = AgentreplayCallbackHandler()
 
 # Simulate a chain execution with nested LLM calls
 print("\n📊 Simulating: Chain → LLM calls (parent-child)")
@@ -157,7 +157,7 @@ print(f"✓ Chain completed")
 
 print("\n" + "=" * 60)
 print("✅ Test complete! Spans have been sent to OTLP.")
-print("   Check Flowtrace UI at http://localhost:5173")
+print("   Check Agentreplay UI at http://localhost:5173")
 print("   Expected hierarchy:")
 print("   1. MyChain → LLM (gpt-4)")
 print("   2. ToolChain → Tool (get_weather) + LLM (gpt-4)")

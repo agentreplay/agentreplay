@@ -57,8 +57,8 @@ def build_wheel_with_pth():
             zf.extractall(tmpdir)
         
         # Copy .pth file to root of wheel
-        pth_source = "flowtrace-init.pth"
-        pth_dest = os.path.join(tmpdir, "flowtrace-init.pth")
+        pth_source = "agentreplay-init.pth"
+        pth_dest = os.path.join(tmpdir, "agentreplay-init.pth")
         shutil.copy2(pth_source, pth_dest)
         print(f"✅ Added .pth file")
         
@@ -72,7 +72,7 @@ def build_wheel_with_pth():
         
         if record_file:
             with open(record_file, 'a') as f:
-                f.write("flowtrace-init.pth,,\n")
+                f.write("agentreplay-init.pth,,\n")
             print(f"✅ Updated RECORD")
         
         # Recreate wheel
@@ -91,7 +91,7 @@ def build_wheel_with_pth():
     with zipfile.ZipFile(wheel_file, 'r') as zf:
         has_pth = False
         for name in zf.namelist():
-            if name == "flowtrace-init.pth":
+            if name == "agentreplay-init.pth":
                 has_pth = True
                 print(f"   ✓ {name}")
         

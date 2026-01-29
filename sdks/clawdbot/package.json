@@ -1,7 +1,7 @@
 {
-  "name": "@sochdb/flowtrace-clawdbot",
+  "name": "@sochdb/agentreplay-clawdbot",
   "version": "0.1.0",
-  "description": "Flowtrace observability plugin for Clawdbot - automatic tracing of agent activities, tool calls, and memory operations",
+  "description": "Agentreplay observability plugin for Clawdbot - automatic tracing of agent activities, tool calls, and memory operations",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,20 +22,20 @@
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",
-  "author": "Flowtrace",
-  "homepage": "https://flowtrace.dev",
+  "author": "Agentreplay",
+  "homepage": "https://agentreplay.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sochdb/flowtrace.git",
+    "url": "https://github.com/sochdb/agentreplay.git",
     "directory": "sdks/clawdbot"
   },
   "bugs": {
-    "url": "https://github.com/sochdb/flowtrace/issues"
+    "url": "https://github.com/sochdb/agentreplay/issues"
   },
   "keywords": [
     "clawdbot",
     "plugin",
-    "flowtrace",
+    "agentreplay",
     "observability",
     "tracing",
     "llm",

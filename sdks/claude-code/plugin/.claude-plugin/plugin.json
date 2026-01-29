@@ -1,11 +1,11 @@
 {
-  "name": "flowtrace",
+  "name": "agentreplay",
   "version": "0.1.0",
-  "description": "Flowtrace observability plugin for Claude Code - automatic tracing of all agent activities, tool calls, and conversations",
+  "description": "Agentreplay observability plugin for Claude Code - automatic tracing of all agent activities, tool calls, and conversations",
   "author": {
-    "name": "Flowtrace",
-    "url": "https://flowtrace.dev"
+    "name": "Agentreplay",
+    "url": "https://agentreplay.dev"
   },
-  "repository": "https://github.com/sochdb/flowtrace",
+  "repository": "https://github.com/sochdb/agentreplay",
   "keywords": ["observability", "tracing", "monitoring", "llm", "genai"]
 }

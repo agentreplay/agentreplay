@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Flowtrace Tauri Runner
+# Agentreplay Tauri Runner
 # This script runs the Tauri app while avoiding snap library conflicts
 
 set -e
 
 cd "$(dirname "$0")"
 
-echo "🚀 Starting Flowtrace Tauri Application..."
+echo "🚀 Starting Agentreplay Tauri Application..."
 echo ""
 
 # Kill any existing processes
@@ -31,15 +31,15 @@ lsof -ti :9601 | xargs kill -9 2>/dev/null || true  # MCP Server port
 lsof -ti :5173 | xargs kill -9 2>/dev/null || true
 lsof -ti :4317 | xargs kill -9 2>/dev/null || true
 pkill -f "cargo run --no-default-features" 2>/dev/null || true
-pkill -f "flowtrace" 2>/dev/null || true
+pkill -f "agentreplay" 2>/dev/null || true
 pkill -f "vite" 2>/dev/null || true
 sleep 1
 echo "✅ Cleanup complete"
 echo ""
 
 # Set config file path for Tauri app
-export FLOWTRACE_CONFIG_PATH="$(pwd)/flowtrace-server-config.toml"
-echo "📝 Using config: $FLOWTRACE_CONFIG_PATH"
+export AGENTREPLAY_CONFIG_PATH="$(pwd)/agentreplay-server-config.toml"
+echo "📝 Using config: $AGENTREPLAY_CONFIG_PATH"
 echo ""
 echo "📡 Servers that will start:"
 echo "   • HTTP API:    http://localhost:9600"
@@ -62,15 +62,15 @@ unset SNAP_NAME
 unset SNAP_REVISION
 unset SNAP_VERSION
 
-# Run tauri dev using local binary from flowtrace-ui/node_modules
-# This runs from the project root so it can find flowtrace-tauri/
+# Run tauri dev using local binary from agentreplay-ui/node_modules
+# This runs from the project root so it can find agentreplay-tauri/
 echo "🔨 Building and running Tauri app..."
 echo ""
 
-if [ -f "flowtrace-ui/node_modules/.bin/tauri" ]; then
+if [ -f "agentreplay-ui/node_modules/.bin/tauri" ]; then
     # Start the Vite dev server in the background
     echo "🌐 Starting Vite dev server..."
-    cd flowtrace-ui
+    cd agentreplay-ui
     npm run dev &
     VITE_PID=$!
     cd ..
@@ -88,9 +88,9 @@ if [ -f "flowtrace-ui/node_modules/.bin/tauri" ]; then
     # Trap to cleanup Vite on exit
     trap "kill $VITE_PID 2>/dev/null || true" EXIT
     
-    cd flowtrace-tauri
-    env -u GTK_MODULES -u GTK_PATH -u GTK3_MODULES -u GIO_MODULE_DIR -u XDG_DATA_HOME -u XDG_DATA_DIRS FLOWTRACE_CONFIG_PATH="$FLOWTRACE_CONFIG_PATH" ../flowtrace-ui/node_modules/.bin/tauri dev
+    cd agentreplay-tauri
+    env -u GTK_MODULES -u GTK_PATH -u GTK3_MODULES -u GIO_MODULE_DIR -u XDG_DATA_HOME -u XDG_DATA_DIRS AGENTREPLAY_CONFIG_PATH="$AGENTREPLAY_CONFIG_PATH" ../agentreplay-ui/node_modules/.bin/tauri dev
 else
-    echo "❌ Local Tauri CLI not found. Please run 'cd flowtrace-ui && npm install' first."
+    echo "❌ Local Tauri CLI not found. Please run 'cd agentreplay-ui && npm install' first."
     exit 1
 fi

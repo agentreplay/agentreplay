@@ -15,9 +15,9 @@
  */
 
 /**
- * Flowtrace SDK Types
+ * Agentreplay SDK Types
  *
- * Core type definitions for the Flowtrace observability platform.
+ * Core type definitions for the Agentreplay observability platform.
  */
 
 /**
@@ -83,7 +83,7 @@ export type Environment = 'development' | 'staging' | 'production';
 
 /**
  * AgentFlowEdge - represents one step in agent execution.
- * This is the fundamental unit of data in Flowtrace.
+ * This is the fundamental unit of data in Agentreplay.
  */
 export interface AgentFlowEdge {
   /** Unique edge identifier */
@@ -293,8 +293,8 @@ export interface TraceTreeNode {
 /**
  * Client configuration options.
  */
-export interface FlowtraceClientOptions {
-  /** Base URL of Flowtrace server */
+export interface AgentreplayClientOptions {
+  /** Base URL of Agentreplay server */
   url: string;
   /** Tenant identifier */
   tenantId: number;

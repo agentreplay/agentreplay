@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Example: Using Flowtrace with AutoGen.
+"""Example: Using Agentreplay with AutoGen.
 
 This example demonstrates how to automatically log AutoGen multi-agent
-conversations to Flowtrace.
+conversations to Agentreplay.
 """
 
 import os
 from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 
-from flowtrace.integrations.autogen import (
-    FlowtraceAgentWrapper,
-    FlowtraceGroupChatManager,
+from agentreplay.integrations.autogen import (
+    AgentreplayAgentWrapper,
+    AgentreplayGroupChatManager,
     wrap_autogen_function,
 )
-from flowtrace.client import FlowtraceClient
+from agentreplay.client import AgentreplayClient
 
 
 def example_basic_conversation():
@@ -52,8 +52,8 @@ def example_basic_conversation():
         max_consecutive_auto_reply=1,
     )
 
-    # Wrap assistant with Flowtrace tracking
-    wrapped_assistant = FlowtraceAgentWrapper(
+    # Wrap assistant with Agentreplay tracking
+    wrapped_assistant = AgentreplayAgentWrapper(
         agent=assistant,
         url="http://localhost:8080",
         tenant_id=1,
@@ -67,7 +67,7 @@ def example_basic_conversation():
         message="What are the three laws of robotics?",
     )
 
-    print("\nConversation logged to Flowtrace!\n")
+    print("\nConversation logged to Agentreplay!\n")
 
 
 def example_group_chat():
@@ -113,8 +113,8 @@ def example_group_chat():
 
     manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
 
-    # Wrap with Flowtrace tracking
-    chronicle_manager = FlowtraceGroupChatManager(
+    # Wrap with Agentreplay tracking
+    chronicle_manager = AgentreplayGroupChatManager(
         manager=manager,
         url="http://localhost:8080",
         tenant_id=1,
@@ -127,7 +127,7 @@ def example_group_chat():
         message="Write a brief article about sustainable energy.",
     )
 
-    print("\nGroup chat logged to Flowtrace!\n")
+    print("\nGroup chat logged to Agentreplay!\n")
 
 
 def example_function_calling():
@@ -155,8 +155,8 @@ def example_function_calling():
         ],
     }
 
-    # Create Flowtrace client
-    client = FlowtraceClient(
+    # Create Agentreplay client
+    client = AgentreplayClient(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=3,
@@ -168,7 +168,7 @@ def example_function_calling():
         # Simulate API call
         return f"Weather in {location}: Sunny, 72°F"
 
-    # Wrap function with Flowtrace tracking
+    # Wrap function with Agentreplay tracking
     wrapped_get_weather = wrap_autogen_function(
         get_weather,
         client=client,
@@ -183,7 +183,7 @@ def example_function_calling():
     )
 
     # Wrap agent
-    wrapped_assistant = FlowtraceAgentWrapper(
+    wrapped_assistant = AgentreplayAgentWrapper(
         agent=assistant,
         url="http://localhost:8080",
         tenant_id=1,
@@ -208,14 +208,14 @@ def example_function_calling():
         message="What's the weather like in San Francisco?",
     )
 
-    print("\nFunction calls logged to Flowtrace!\n")
+    print("\nFunction calls logged to Agentreplay!\n")
 
 
 def example_query_traces():
-    """Example: Query logged traces from Flowtrace."""
+    """Example: Query logged traces from Agentreplay."""
     print("=== Query Traces Example ===\n")
 
-    client = FlowtraceClient(
+    client = AgentreplayClient(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=1,
@@ -267,4 +267,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error querying traces: {e}\n")
 
-    print("Examples complete! Check Flowtrace for logged traces.")
+    print("Examples complete! Check Agentreplay for logged traces.")

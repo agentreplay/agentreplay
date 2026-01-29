@@ -1,4 +1,4 @@
-# Flowtrace
+# Agentreplay
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 🎯 Why Flowtrace?
+## 🎯 Why Agentreplay?
 
 <table>
 <tr>
@@ -45,29 +45,29 @@
 </tr>
 </table>
 
-> **Built for AI coding agents** - Flowtrace gives your tools like Claude Code, Cursor, and VS Code agents persistent memory and full observability without cloud dependencies.
+> **Built for AI coding agents** - Agentreplay gives your tools like Claude Code, Cursor, and VS Code agents persistent memory and full observability without cloud dependencies.
 
 ---
 
 ## 🚀 Quick Start
 
-### Download Flowtrace Desktop
+### Download Agentreplay Desktop
 
 | Platform | Download | Architecture |
 |----------|----------|--------------|
-| **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
-| **macOS** | [Flowtrace.dmg](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64.dmg) | Intel |
-| **Windows** | [Flowtrace.exe](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64-setup.exe) | x64 (NSIS Installer) |
-| **Windows** | [Flowtrace.msi](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_x64.msi) | x64 (MSI Installer) |
-| **Linux** | [Flowtrace.AppImage](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.AppImage) | x64 |
-| **Linux** | [Flowtrace.deb](https://github.com/sochdb/flowtrace/releases/latest/download/Flowtrace_amd64.deb) | Debian/Ubuntu |
+| **macOS** | [Agentreplay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
+| **macOS** | [Agentreplay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64.dmg) | Intel |
+| **Windows** | [Agentreplay.exe](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64-setup.exe) | x64 (NSIS Installer) |
+| **Windows** | [Agentreplay.msi](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64.msi) | x64 (MSI Installer) |
+| **Linux** | [Agentreplay.AppImage](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_amd64.AppImage) | x64 |
+| **Linux** | [Agentreplay.deb](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_amd64.deb) | Debian/Ubuntu |
 
 ### Or Build from Source
 
 ```bash
 # Clone and run (that's it!)
-git clone https://github.com/sochdb/flowtrace.git
-cd flowtrace
+git clone https://github.com/sochdb/agentreplay.git
+cd agentreplay
 ./run-tauri.sh
 ```
 
@@ -77,7 +77,7 @@ cd flowtrace
 
 ## 🎯 Overview
 
-Flowtrace is a **local-first desktop application** that gives your AI agents and coding tools:
+Agentreplay is a **local-first desktop application** that gives your AI agents and coding tools:
 
 - **🧠 Unlimited persistent memory** - stored on your machine, not in the cloud
 - **👁️ Full observability** - see every decision, tool call, and reasoning step
@@ -88,7 +88,7 @@ Flowtrace is a **local-first desktop application** that gives your AI agents and
 
 | Tool | Integration | Status |
 |------|-------------|--------|
-| **Claude Code** | [Native Plugin](https://github.com/sochdb/flowtrace-claude-plugin) | ✅ Ready |
+| **Claude Code** | [Native Plugin](https://github.com/sochdb/agentreplay-claude-plugin) | ✅ Ready |
 | **Cursor** | MCP + Extension | ✅ Ready |
 | **Windsurf** | MCP server | ✅ Ready |
 | **Cline** | MCP server | ✅ Ready |
@@ -97,27 +97,27 @@ Flowtrace is a **local-first desktop application** that gives your AI agents and
 
 ### 🔌 Claude Code Plugin (Recommended)
 
-Install the official Flowtrace plugin for Claude Code:
+Install the official Agentreplay plugin for Claude Code:
 
 ```bash
 # Add the marketplace
-/plugin marketplace add sochdb/flowtrace-claude-plugin
+/plugin marketplace add sochdb/agentreplay-claude-plugin
 
 # Install the plugin
-/plugin install flowtrace@sochdb-flowtrace-claude-plugin
+/plugin install agentreplay@sochdb-agentreplay-claude-plugin
 ```
 
 **Available Commands:**
-- `/flowtrace:dashboard` - Open dashboard
-- `/flowtrace:status` - Check server health
-- `/flowtrace:remember [query]` - Search memories
-- `/flowtrace:traces [count]` - List recent traces
+- `/agentreplay:dashboard` - Open dashboard
+- `/agentreplay:status` - Check server health
+- `/agentreplay:remember [query]` - Search memories
+- `/agentreplay:traces [count]` - List recent traces
 
-> See [flowtrace-claude-plugin](https://github.com/sochdb/flowtrace-claude-plugin) for full documentation.
+> See [agentreplay-claude-plugin](https://github.com/sochdb/agentreplay-claude-plugin) for full documentation.
 
 ### Powered by SochDB - Everything Built-In
 
-Unlike tools that need Postgres, Redis, or cloud databases, Flowtrace uses **SochDB** - a high-performance embedded database that lives inside the app:
+Unlike tools that need Postgres, Redis, or cloud databases, Agentreplay uses **SochDB** - a high-performance embedded database that lives inside the app:
 
 | Feature | Benefit |
 |---------|---------|
@@ -217,7 +217,7 @@ Git-like version control for your prompts:
 
 ### 🔌 Plugin System
 
-Extend Flowtrace with custom evaluators and integrations:
+Extend Agentreplay with custom evaluators and integrations:
 
 - **Install from directory/file** - local plugin development
 - **Dev mode** - hot-reload during development
@@ -288,7 +288,7 @@ Protect your data with built-in backup features:
 
 ### 🖥️ Desktop-First Architecture
 
-The primary way to run Flowtrace - a native desktop app:
+The primary way to run Agentreplay - a native desktop app:
 
 - **Double-click to run** - no terminal, no commands
 - **Everything embedded** - database, UI, API server all inside
@@ -348,8 +348,8 @@ The primary way to run Flowtrace - a native desktop app:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sochdb/flowtrace.git
-cd flowtrace
+git clone https://github.com/sochdb/agentreplay.git
+cd agentreplay
 
 # Install frontend dependencies
 cd ui
@@ -360,9 +360,9 @@ npm run tauri dev
 ```
 
 The desktop app will launch with a local database at:
-- **Windows**: `C:\Users\<User>\AppData\Roaming\Flowtrace\database`
-- **macOS**: `~/Library/Application Support/Flowtrace/database`
-- **Linux**: `~/.local/share/Flowtrace/database`
+- **Windows**: `C:\Users\<User>\AppData\Roaming\Agentreplay\database`
+- **macOS**: `~/Library/Application Support/Agentreplay/database`
+- **Linux**: `~/.local/share/Agentreplay/database`
 
 ### Option 2: Server Deployment
 
@@ -372,10 +372,10 @@ The desktop app will launch with a local database at:
 
 ```bash
 # Build the server
-cargo build --release -p flowtrace-server
+cargo build --release -p agentreplay-server
 
 # Run with default configuration
-./target/release/flowtrace-server
+./target/release/agentreplay-server
 
 # Or use Docker
 docker-compose up -d
@@ -383,27 +383,27 @@ docker-compose up -d
 
 The server will start on `http://localhost:8080` by default.
 
-**Configuration**: Edit `flowtrace-server-config.toml` or set environment variables.
+**Configuration**: Edit `agentreplay-server-config.toml` or set environment variables.
 
 ### Option 3: Python SDK
 
 ```bash
 # Install from PyPI
-pip install flowtrace-client
+pip install agentreplay-client
 
 # Or with framework integrations
-pip install flowtrace-client[langchain]      # LangChain/LangGraph
-pip install flowtrace-client[llamaindex]     # LlamaIndex
-pip install flowtrace-client[all-frameworks] # All integrations
+pip install agentreplay-client[langchain]      # LangChain/LangGraph
+pip install agentreplay-client[llamaindex]     # LlamaIndex
+pip install agentreplay-client[all-frameworks] # All integrations
 ```
 
 **Basic Usage:**
 
 ```python
-from flowtrace import FlowtraceClient, SpanType
+from agentreplay import AgentreplayClient, SpanType
 
 # Initialize client
-client = FlowtraceClient(
+client = AgentreplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0
@@ -440,10 +440,10 @@ ancestors = client.get_ancestors(edge_id)
 **Framework Integration Example (LangChain):**
 
 ```python
-from flowtrace.integrations.langchain import FlowtraceCallbackHandler
+from agentreplay.integrations.langchain import AgentreplayCallbackHandler
 from langchain.chains import LLMChain
 
-callback = FlowtraceCallbackHandler(
+callback = AgentreplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -457,7 +457,7 @@ result = chain.run("What is the weather?")
 
 ## 🏗️ Architecture
 
-Flowtrace is built as a modular Rust workspace with 8 specialized crates:
+Agentreplay is built as a modular Rust workspace with 8 specialized crates:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -475,23 +475,23 @@ Flowtrace is built as a modular Rust workspace with 8 specialized crates:
        └──────────┬──────────────┘
                   ▼
       ┌───────────────────────┐
-      │  flowtrace-server    │  ← REST API, Auth, WebSocket
+      │  agentreplay-server    │  ← REST API, Auth, WebSocket
       └──────────┬────────────┘
                  ▼
       ┌───────────────────────┐
-      │  flowtrace-query     │  ← Query Engine, Aggregations
+      │  agentreplay-query     │  ← Query Engine, Aggregations
       └──────────┬────────────┘
                  │
         ┌────────┴────────┐
         ▼                 ▼
 ┌───────────────┐  ┌──────────────────┐
-│ flowtrace-   │  │ flowtrace-      │
+│ agentreplay-   │  │ agentreplay-      │
 │   index       │  │   evals          │
 └───────┬───────┘  └──────────────────┘
         │          ↓ Evaluation Framework
         ▼
 ┌──────────────────────────────────────┐
-│      flowtrace-storage              │  ← SochDB Backend
+│      agentreplay-storage              │  ← SochDB Backend
 │                                      │
 │  ┌─────────────────────────────────┐│
 │  │           SochDB                ││
@@ -511,7 +511,7 @@ Flowtrace is built as a modular Rust workspace with 8 specialized crates:
 └─────────────────────────────────────┘
         ▼
 ┌───────────────────────┐
-│  flowtrace-core      │  ← Edge format, data structures
+│  agentreplay-core      │  ← Edge format, data structures
 └───────────────────────┘
 ```
 
@@ -520,22 +520,22 @@ Flowtrace is built as a modular Rust workspace with 8 specialized crates:
 
 | Crate | Purpose | Key Features |
 |-------|---------|--------------|
-| **flowtrace-core** | Foundational types | 128-byte AgentFlowEdge, span types, validation |
-| **flowtrace-storage** | SochDB integration | Unified storage layer, columnar projection, key encoding |
-| **flowtrace-index** | Indexing layer | HNSW, Vamana with Product Quantization (32x compression), Bloom filters, causal graph, temporal index |
-| **flowtrace-query** | Query engine | Temporal queries, causal traversal, aggregations |
-| **flowtrace-server** | HTTP API | REST endpoints, auth, multi-tenancy, WebSocket |
-| **flowtrace-cli** | Command-line tool | Server management, DB inspection, benchmarks |
-| **flowtrace-observability** | O11y integrations | OpenTelemetry, Prometheus, Jaeger export |
-| **flowtrace-evals** | Evaluation framework | 20+ evaluators, LLM-as-judge, dataset management |
+| **agentreplay-core** | Foundational types | 128-byte AgentFlowEdge, span types, validation |
+| **agentreplay-storage** | SochDB integration | Unified storage layer, columnar projection, key encoding |
+| **agentreplay-index** | Indexing layer | HNSW, Vamana with Product Quantization (32x compression), Bloom filters, causal graph, temporal index |
+| **agentreplay-query** | Query engine | Temporal queries, causal traversal, aggregations |
+| **agentreplay-server** | HTTP API | REST endpoints, auth, multi-tenancy, WebSocket |
+| **agentreplay-cli** | Command-line tool | Server management, DB inspection, benchmarks |
+| **agentreplay-observability** | O11y integrations | OpenTelemetry, Prometheus, Jaeger export |
+| **agentreplay-evals** | Evaluation framework | 20+ evaluators, LLM-as-judge, dataset management |
 
 ### SochDB Storage Architecture
 
-Flowtrace's storage layer is built on **SochDB**, providing:
+Agentreplay's storage layer is built on **SochDB**, providing:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    FlowTraceStorage                             │
+│                    AgentReplayStorage                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
 │  │ Trace Store  │  │ Payload Store│  │ Metrics Store│           │
 │  │ (edges)      │  │ (blobs)      │  │ (aggregates) │           │
@@ -559,7 +559,7 @@ Flowtrace's storage layer is built on **SochDB**, providing:
 
 ### The AgentFlowEdge Format
 
-At the heart of Flowtrace is the **128-byte fixed-size edge format**:
+At the heart of Agentreplay is the **128-byte fixed-size edge format**:
 
 ```rust
 pub struct AgentFlowEdge {
@@ -594,7 +594,7 @@ pub struct AgentFlowEdge {
 
 ### Benchmark Results
 
-Tested against a real Flowtrace server with **240K+ traces** in the database:
+Tested against a real Agentreplay server with **240K+ traces** in the database:
 
 #### Write Performance
 
@@ -626,7 +626,7 @@ Tested against a real Flowtrace server with **240K+ traces** in the database:
 
 ### Vamana + Product Quantization: Scaling to 10M+ Vectors
 
-Flowtrace now includes the **Vamana index** with **Product Quantization (PQ)** for massive vector scaling:
+Agentreplay now includes the **Vamana index** with **Product Quantization (PQ)** for massive vector scaling:
 
 **Memory Efficiency at Scale:**
 
@@ -681,20 +681,20 @@ let results = index.search(query, k=10)?;
 
 ## 📚 Documentation
 
-📖 **Full Documentation**: [sochdb.github.io/flowtrace](https://sochdb.github.io/flowtrace)
+📖 **Full Documentation**: [sochdb.github.io/agentreplay](https://sochdb.github.io/agentreplay)
 
 ### Quick Links
 
 | Guide | Description |
 |-------|-------------|
-| [Getting Started](https://sochdb.github.io/flowtrace/docs/getting-started/) | Installation and first trace |
-| [Python SDK](https://sochdb.github.io/flowtrace/docs/python-sdk/) | Python client with framework integrations |
-| [JavaScript SDK](https://sochdb.github.io/flowtrace/docs/javascript-sdk/) | TypeScript/JavaScript client |
-| [Rust SDK](https://sochdb.github.io/flowtrace/docs/rust-sdk/) | Rust client library |
-| [Go SDK](https://sochdb.github.io/flowtrace/docs/go-sdk/) | Go client library |
-| [API Reference](https://sochdb.github.io/flowtrace/docs/api-reference/) | REST API documentation |
-| [Architecture](https://sochdb.github.io/flowtrace/docs/architecture/) | System design overview |
-| [Evaluation Framework](https://sochdb.github.io/flowtrace/docs/evaluation/) | 20+ built-in evaluators |
+| [Getting Started](https://sochdb.github.io/agentreplay/docs/getting-started/) | Installation and first trace |
+| [Python SDK](https://sochdb.github.io/agentreplay/docs/python-sdk/) | Python client with framework integrations |
+| [JavaScript SDK](https://sochdb.github.io/agentreplay/docs/javascript-sdk/) | TypeScript/JavaScript client |
+| [Rust SDK](https://sochdb.github.io/agentreplay/docs/rust-sdk/) | Rust client library |
+| [Go SDK](https://sochdb.github.io/agentreplay/docs/go-sdk/) | Go client library |
+| [API Reference](https://sochdb.github.io/agentreplay/docs/api-reference/) | REST API documentation |
+| [Architecture](https://sochdb.github.io/agentreplay/docs/architecture/) | System design overview |
+| [Evaluation Framework](https://sochdb.github.io/agentreplay/docs/evaluation/) | 20+ built-in evaluators |
 
 ### In-Repo Documentation
 
@@ -745,7 +745,7 @@ curl -X POST http://localhost:8080/api/v1/experiments \
 ### 4. Quality Monitoring
 Automated evaluation with hallucination detection:
 ```python
-from flowtrace_evals import HallucinationDetector
+from agentreplay_evals import HallucinationDetector
 
 detector = HallucinationDetector()
 result = await detector.evaluate(trace)
@@ -764,22 +764,22 @@ stats = client.get_latency_stats(agent_id="my-agent")
 Zero-code integration with popular frameworks:
 ```python
 # LangChain
-callback = FlowtraceCallbackHandler(url="http://localhost:8080")
+callback = AgentreplayCallbackHandler(url="http://localhost:8080")
 chain = LLMChain(llm=llm, callbacks=[callback])
 
 # LlamaIndex
-callback_manager = create_callback_manager(flowtrace_url="...")
+callback_manager = create_callback_manager(agentreplay_url="...")
 index = VectorStoreIndex.from_documents(docs, callback_manager=callback_manager)
 
 # OpenAI Agents
-agent = FlowtraceAgentWrapper(agent=openai_agent, flowtrace_url="...")
+agent = AgentreplayAgentWrapper(agent=openai_agent, agentreplay_url="...")
 ```
 
 ---
 
 ## 🔧 Configuration
 
-### Server Configuration (`flowtrace-server-config.toml`)
+### Server Configuration (`agentreplay-server-config.toml`)
 
 ```toml
 [server]
@@ -788,7 +788,7 @@ port = 8080
 workers = 8
 
 [database]
-path = "./data/flowtrace.db"
+path = "./data/agentreplay.db"
 max_memtable_size = 67108864  # 64 MB
 enable_wal = true
 enable_compression = true
@@ -815,16 +815,16 @@ tracing_endpoint = "http://localhost:4317"
 
 ```bash
 # Server
-export FLOWTRACE_HOST="0.0.0.0"
-export FLOWTRACE_PORT=8080
-export FLOWTRACE_DB_PATH="./data/flowtrace.db"
+export AGENTREPLAY_HOST="0.0.0.0"
+export AGENTREPLAY_PORT=8080
+export AGENTREPLAY_DB_PATH="./data/agentreplay.db"
 
 # Authentication
-export FLOWTRACE_REQUIRE_AUTH=true
-export FLOWTRACE_API_KEY="your-api-key"
+export AGENTREPLAY_REQUIRE_AUTH=true
+export AGENTREPLAY_API_KEY="your-api-key"
 
 # Observability
-export FLOWTRACE_ENABLE_METRICS=true
+export AGENTREPLAY_ENABLE_METRICS=true
 export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 ```
 
@@ -840,15 +840,15 @@ export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 
 ```bash
 # Clone repository
-git clone https://github.com/sochdb/flowtrace.git
-cd flowtrace
+git clone https://github.com/sochdb/agentreplay.git
+cd agentreplay
 
 # Build all components
 cargo build --release
 
 # Build specific component
-cargo build --release -p flowtrace-server
-cargo build --release -p flowtrace-cli
+cargo build --release -p agentreplay-server
+cargo build --release -p agentreplay-cli
 
 # Build desktop app
 cd ui && npm install && npm run tauri build
@@ -861,31 +861,31 @@ cd ui && npm install && npm run tauri build
 cargo test --workspace
 
 # Run tests for specific crate
-cargo test -p flowtrace-storage
+cargo test -p agentreplay-storage
 
 # Run benchmarks
-cargo bench -p flowtrace-storage
+cargo bench -p agentreplay-storage
 ```
 
 ### Project Structure
 
 ```
-flowtrace/
-├── flowtrace-core/          # Core data structures
-├── flowtrace-storage/       # LSM-tree storage engine
-├── flowtrace-index/         # Indexing layer
-├── flowtrace-query/         # Query engine
-├── flowtrace-server/        # HTTP API server
-├── flowtrace-cli/           # Command-line interface
-├── flowtrace-observability/ # O11y integrations
-├── flowtrace-evals/         # Evaluation framework
-├── flowtrace-plugins/       # Plugin system
+agentreplay/
+├── agentreplay-core/          # Core data structures
+├── agentreplay-storage/       # LSM-tree storage engine
+├── agentreplay-index/         # Indexing layer
+├── agentreplay-query/         # Query engine
+├── agentreplay-server/        # HTTP API server
+├── agentreplay-cli/           # Command-line interface
+├── agentreplay-observability/ # O11y integrations
+├── agentreplay-evals/         # Evaluation framework
+├── agentreplay-plugins/       # Plugin system
 │   ├── core/                # Plugin runtime
 │   ├── sdk/                 # Plugin development SDKs
 │   ├── examples/            # Example plugins
 │   └── templates/           # Plugin templates
-├── flowtrace-ui/            # Web UI (React)
-├── flowtrace-tauri/         # Tauri desktop app
+├── agentreplay-ui/            # Web UI (React)
+├── agentreplay-tauri/         # Tauri desktop app
 ├── sdks/
 │   └── python/              # Python SDK
 ├── examples/                # Example code
@@ -896,7 +896,7 @@ flowtrace/
 
 ## 💾 Backup & Restore
 
-Flowtrace includes comprehensive backup and restore features to protect your data. Both the Desktop App and CLI support full backup operations.
+Agentreplay includes comprehensive backup and restore features to protect your data. Both the Desktop App and CLI support full backup operations.
 
 ### Desktop App Backup
 
@@ -917,32 +917,32 @@ The CLI provides the same backup functionality for automation and scripting:
 
 ```bash
 # List all backups
-flowtrace --db-path <path> backup list
+agentreplay --db-path <path> backup list
 
 # Create a new backup
-flowtrace --db-path <path> backup create [--name <name>]
+agentreplay --db-path <path> backup create [--name <name>]
 
 # Restore from a backup (creates pre-restore backup automatically)
-flowtrace --db-path <path> backup restore <backup_id> [-y]
+agentreplay --db-path <path> backup restore <backup_id> [-y]
 
 # Delete a backup
-flowtrace --db-path <path> backup delete <backup_id> [-y]
+agentreplay --db-path <path> backup delete <backup_id> [-y]
 
 # Export backup as ZIP file
-flowtrace --db-path <path> backup export <backup_id> [-o <output.zip>]
+agentreplay --db-path <path> backup export <backup_id> [-o <output.zip>]
 
 # Import backup from ZIP file
-flowtrace --db-path <path> backup import <path.zip>
+agentreplay --db-path <path> backup import <path.zip>
 ```
 
 **Example Workflow:**
 
 ```bash
 # Create a backup before making changes
-flowtrace --db-path ./flowtrace-data backup create --name "before-experiment"
+agentreplay --db-path ./agentreplay-data backup create --name "before-experiment"
 
 # List all backups
-flowtrace --db-path ./flowtrace-data backup list
+agentreplay --db-path ./agentreplay-data backup list
 # Output:
 # Backups (3):
 # ============================================================
@@ -951,21 +951,21 @@ flowtrace --db-path ./flowtrace-data backup list
 #   backup_1769455267 - 2026-01-26 11:21:07 (120432 bytes)
 
 # Export backup for archival or sharing
-flowtrace --db-path ./flowtrace-data backup export before-experiment \
-  -o ~/backups/flowtrace_backup_20260126.zip
+agentreplay --db-path ./agentreplay-data backup export before-experiment \
+  -o ~/backups/agentreplay_backup_20260126.zip
 
 # Restore from backup (with confirmation prompt)
-flowtrace --db-path ./flowtrace-data backup restore before-experiment
+agentreplay --db-path ./agentreplay-data backup restore before-experiment
 
 # Or skip confirmation in scripts
-flowtrace --db-path ./flowtrace-data backup restore before-experiment -y
+agentreplay --db-path ./agentreplay-data backup restore before-experiment -y
 ```
 
 **JSON Output for Automation:**
 
 ```bash
 # Get machine-readable JSON output
-flowtrace --db-path ./flowtrace-data --json backup list
+agentreplay --db-path ./agentreplay-data --json backup list
 # Output:
 # {"backups": [{"backup_id": "before-experiment", "created_at": 1737889200, ...}], "total": 3}
 ```
@@ -991,8 +991,8 @@ We welcome contributions! Here's how to get started:
 ### Quick Start
 
 ```bash
-git clone https://github.com/sochdb/flowtrace.git
-cd flowtrace
+git clone https://github.com/sochdb/agentreplay.git
+cd agentreplay
 cargo build --workspace
 cargo test --workspace
 ```
@@ -1011,10 +1011,10 @@ cargo test --workspace
 
 | You are... | Start with... |
 |-----------|---------------|
-| New to the project | [Good First Issues](https://github.com/sochdb/flowtrace/labels/good%20first%20issue) |
-| Experienced in Rust | [Help Wanted](https://github.com/sochdb/flowtrace/labels/help%20wanted) |
-| Interested in storage | `flowtrace-storage` crate |
-| Interested in ML/vectors | `flowtrace-index` crate |
+| New to the project | [Good First Issues](https://github.com/sochdb/agentreplay/labels/good%20first%20issue) |
+| Experienced in Rust | [Help Wanted](https://github.com/sochdb/agentreplay/labels/help%20wanted) |
+| Interested in storage | `agentreplay-storage` crate |
+| Interested in ML/vectors | `agentreplay-index` crate |
 | Interested in SDKs | `sdks/` directory |
 
 ### Code Style
@@ -1028,7 +1028,7 @@ cargo test --workspace
 
 ## � Related Projects
 
-Flowtrace is part of the SochDB ecosystem:
+Agentreplay is part of the SochDB ecosystem:
 
 | Project | Description | Link |
 |---------|-------------|------|
@@ -1041,17 +1041,17 @@ Flowtrace is part of the SochDB ecosystem:
 
 ## �📄 License
 
-Flowtrace is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+Agentreplay is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
 
 ### Third-Party Licenses
 
-Flowtrace uses several open-source libraries. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
+Agentreplay uses several open-source libraries. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Flowtrace builds on research and insights from:
+Agentreplay builds on research and insights from:
 
 - **Observability**: OpenTelemetry
 - **LLM Frameworks**: LangChain, LlamaIndex, Hugging Face, OpenAI
@@ -1062,28 +1062,28 @@ Special thanks to the open-source community and all contributors.
 
 ## 🔗 Links
 
-- **GitHub**: [github.com/sochdb/flowtrace](https://github.com/sochdb/flowtrace)
-- **Documentation**: [sochdb.github.io/flowtrace](https://sochdb.github.io/flowtrace)
-- **Python SDK**: [PyPI](https://pypi.org/project/flowtrace-client/)
-- **JavaScript SDK**: [npm](https://www.npmjs.com/package/flowtrace-client)
-- **Rust SDK**: [crates.io](https://crates.io/crates/flowtrace-client)
-- **Issues**: [Bug reports & feature requests](https://github.com/sochdb/flowtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
+- **GitHub**: [github.com/sochdb/agentreplay](https://github.com/sochdb/agentreplay)
+- **Documentation**: [sochdb.github.io/agentreplay](https://sochdb.github.io/agentreplay)
+- **Python SDK**: [PyPI](https://pypi.org/project/agentreplay-client/)
+- **JavaScript SDK**: [npm](https://www.npmjs.com/package/agentreplay-client)
+- **Rust SDK**: [crates.io](https://crates.io/crates/agentreplay-client)
+- **Issues**: [Bug reports & feature requests](https://github.com/sochdb/agentreplay/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
 
 ---
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/sochdb/flowtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
-- **Email**: support@flowtrace.dev (coming soon)
+- **Issues**: [GitHub Issues](https://github.com/sochdb/agentreplay/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
+- **Email**: support@agentreplay.dev (coming soon)
 
 ---
 
 <div align="center">
 
-**⭐ Star us on GitHub if you find Flowtrace useful! ⭐**
+**⭐ Star us on GitHub if you find Agentreplay useful! ⭐**
 
-Made with ❤️ by the Flowtrace team
+Made with ❤️ by the Agentreplay team
 
 </div>

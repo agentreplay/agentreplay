@@ -1,7 +1,7 @@
-# Requirements for Flowtrace Framework Examples
+# Requirements for Agentreplay Framework Examples
 
-# Core Flowtrace
-flowtrace>=0.1.0
+# Core Agentreplay
+agentreplay>=0.1.0
 
 # LangGraph (Project 31696)
 langgraph>=0.0.40

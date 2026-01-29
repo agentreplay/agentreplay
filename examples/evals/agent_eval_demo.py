@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """
-Flowtrace Agent Evaluation Examples
+Agentreplay Agent Evaluation Examples
 
 Runnable examples showing agent evaluation with happy and unhappy paths.
 No external dependencies required - uses mock data.
@@ -30,7 +30,7 @@ from enum import Enum
 import json
 
 # =============================================================================
-# METRIC FORMULAS (matching flowtrace-evals/src/metrics/formulas.rs)
+# METRIC FORMULAS (matching agentreplay-evals/src/metrics/formulas.rs)
 # =============================================================================
 
 EPSILON = 1e-9
@@ -398,7 +398,7 @@ def run_demo():
     }
     
     print_separator()
-    print("           FLOWTRACE AGENT EVALUATION DEMO")
+    print("           AGENTREPLAY AGENT EVALUATION DEMO")
     print_separator()
     print()
     

@@ -26,7 +26,7 @@ DEBUG=true
 echo -e "${BLUE}🚀 Starting ChronoLake (Web Mode)${NC}"
 
 # Check if release binary exists
-if [ ! -f "./target/release/flowtrace-server" ]; then
+if [ ! -f "./target/release/agentreplay-server" ]; then
     echo -e "${RED}❌ Server binary not found. Building...${NC}"
     cargo build --release
     if [ $? -ne 0 ]; then
@@ -37,7 +37,7 @@ fi
 
 # Create logs directory
 mkdir -p logs
-LOG_FILE="logs/flowtrace-server-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="logs/agentreplay-server-$(date +%Y%m%d-%H%M%S).log"
 
 # Kill any existing processes
 echo -e "${BLUE}Cleaning up existing processes...${NC}"
@@ -48,9 +48,9 @@ lsof -ti :4317 | xargs kill -9 2>/dev/null || true
 sleep 1
 
 # Start backend server in background with logging
-echo -e "${GREEN}Starting Flowtrace server on port 9600...${NC}"
+echo -e "${GREEN}Starting Agentreplay server on port 9600...${NC}"
 echo -e "${BLUE}📝 Logging to: ${LOG_FILE}${NC}"
-RUST_LOG=info,flowtrace_server=debug ./target/release/flowtrace-server --config flowtrace-server-config.toml > "${LOG_FILE}" 2>&1 &
+RUST_LOG=info,agentreplay_server=debug ./target/release/agentreplay-server --config agentreplay-server-config.toml > "${LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to be ready
@@ -99,14 +99,14 @@ done
 # Start Vite dev server
 echo -e "${GREEN}Starting Vite dev server on port 5173...${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}Flowtrace is running:${NC}"
+echo -e "${YELLOW}Agentreplay is running:${NC}"
 echo -e "${YELLOW}  HTTP API:    http://localhost:9600${NC}"
 echo -e "${YELLOW}  MCP Server:  http://localhost:9601${NC}"
 echo -e "${YELLOW}  OTLP gRPC:   localhost:4317${NC}"
 echo -e "${YELLOW}  UI:          http://localhost:5173${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-cd flowtrace-ui && npm run dev
+cd agentreplay-ui && npm run dev
 
 # Cleanup on exit (when Vite is stopped with Ctrl+C)
 echo -e "${BLUE}Shutting down server...${NC}"

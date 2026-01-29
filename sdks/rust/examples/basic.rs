@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Flowtrace SDK Basic Example
+//! Agentreplay SDK Basic Example
 //!
-//! Demonstrates core functionality of the Flowtrace Rust SDK.
+//! Demonstrates core functionality of the Agentreplay Rust SDK.
 
 use std::collections::HashMap;
-use flowtrace_client::{
+use agentreplay_client::{
     ClientConfig, CreateGenAITraceOptions, CreateToolTraceOptions, CreateTraceOptions, Message,
-    SpanType, UpdateTraceOptions, FlowtraceClient,
+    SpanType, UpdateTraceOptions, AgentreplayClient,
 };
 
 #[tokio::main]
@@ -29,11 +29,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_project_id(0)
         .with_agent_id(1);
 
-    let client = FlowtraceClient::new(config);
+    let client = AgentreplayClient::new(config);
 
     let session_id = chrono::Utc::now().timestamp_millis();
 
-    println!("Flowtrace Rust SDK Example\n");
+    println!("Agentreplay Rust SDK Example\n");
 
     // 1. Create a root trace
     println!("1. Creating root trace...");

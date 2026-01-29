@@ -15,39 +15,39 @@
 # limitations under the License.
 
 #
-# Flowtrace Environment-Based Tracing - Quick Start
+# Agentreplay Environment-Based Tracing - Quick Start
 #
-# This script demonstrates how to use Flowtrace with environment variables
+# This script demonstrates how to use Agentreplay with environment variables
 # for automatic tracing across all frameworks.
 #
 
 set -e
 
 echo "=============================================================================="
-echo "🚀 Flowtrace Environment-Based Auto-Instrumentation"
+echo "🚀 Agentreplay Environment-Based Auto-Instrumentation"
 echo "=============================================================================="
 echo ""
 
-# Set Flowtrace environment variables
-export FLOWTRACE_ENABLED=1
-export FLOWTRACE_URL=${FLOWTRACE_URL:-http://localhost:8080}
-export FLOWTRACE_TENANT_ID=${FLOWTRACE_TENANT_ID:-1}
-export FLOWTRACE_PROJECT_ID=${FLOWTRACE_PROJECT_ID:-0}
-export FLOWTRACE_SERVICE_NAME=${FLOWTRACE_SERVICE_NAME:-quickstart-env}
-export FLOWTRACE_FRAMEWORKS=${FLOWTRACE_FRAMEWORKS:-all}
-export FLOWTRACE_SAMPLE_RATE=${FLOWTRACE_SAMPLE_RATE:-1.0}
-export FLOWTRACE_CAPTURE_CONTENT=${FLOWTRACE_CAPTURE_CONTENT:-true}
-export FLOWTRACE_LOG_LEVEL=${FLOWTRACE_LOG_LEVEL:-INFO}
+# Set Agentreplay environment variables
+export AGENTREPLAY_ENABLED=1
+export AGENTREPLAY_URL=${AGENTREPLAY_URL:-http://localhost:8080}
+export AGENTREPLAY_TENANT_ID=${AGENTREPLAY_TENANT_ID:-1}
+export AGENTREPLAY_PROJECT_ID=${AGENTREPLAY_PROJECT_ID:-0}
+export AGENTREPLAY_SERVICE_NAME=${AGENTREPLAY_SERVICE_NAME:-quickstart-env}
+export AGENTREPLAY_FRAMEWORKS=${AGENTREPLAY_FRAMEWORKS:-all}
+export AGENTREPLAY_SAMPLE_RATE=${AGENTREPLAY_SAMPLE_RATE:-1.0}
+export AGENTREPLAY_CAPTURE_CONTENT=${AGENTREPLAY_CAPTURE_CONTENT:-true}
+export AGENTREPLAY_LOG_LEVEL=${AGENTREPLAY_LOG_LEVEL:-INFO}
 
 echo "Environment Configuration:"
-echo "  FLOWTRACE_ENABLED=$FLOWTRACE_ENABLED"
-echo "  FLOWTRACE_URL=$FLOWTRACE_URL"
-echo "  FLOWTRACE_TENANT_ID=$FLOWTRACE_TENANT_ID"
-echo "  FLOWTRACE_PROJECT_ID=$FLOWTRACE_PROJECT_ID"
-echo "  FLOWTRACE_SERVICE_NAME=$FLOWTRACE_SERVICE_NAME"
-echo "  FLOWTRACE_FRAMEWORKS=$FLOWTRACE_FRAMEWORKS"
-echo "  FLOWTRACE_SAMPLE_RATE=$FLOWTRACE_SAMPLE_RATE"
-echo "  FLOWTRACE_CAPTURE_CONTENT=$FLOWTRACE_CAPTURE_CONTENT"
+echo "  AGENTREPLAY_ENABLED=$AGENTREPLAY_ENABLED"
+echo "  AGENTREPLAY_URL=$AGENTREPLAY_URL"
+echo "  AGENTREPLAY_TENANT_ID=$AGENTREPLAY_TENANT_ID"
+echo "  AGENTREPLAY_PROJECT_ID=$AGENTREPLAY_PROJECT_ID"
+echo "  AGENTREPLAY_SERVICE_NAME=$AGENTREPLAY_SERVICE_NAME"
+echo "  AGENTREPLAY_FRAMEWORKS=$AGENTREPLAY_FRAMEWORKS"
+echo "  AGENTREPLAY_SAMPLE_RATE=$AGENTREPLAY_SAMPLE_RATE"
+echo "  AGENTREPLAY_CAPTURE_CONTENT=$AGENTREPLAY_CAPTURE_CONTENT"
 echo ""
 
 # Check if API keys are set
@@ -77,18 +77,18 @@ python env_based_tracing_example.py
 
 echo ""
 echo "=============================================================================="
-echo "✅ Complete! View traces at: $FLOWTRACE_URL"
+echo "✅ Complete! View traces at: $AGENTREPLAY_URL"
 echo "=============================================================================="
 echo ""
 echo "Usage in your own scripts:"
 echo ""
 echo "  # 1. Set environment variables:"
-echo "  export FLOWTRACE_ENABLED=1"
-echo "  export FLOWTRACE_URL=http://localhost:8080"
-echo "  export FLOWTRACE_SERVICE_NAME=my-app"
+echo "  export AGENTREPLAY_ENABLED=1"
+echo "  export AGENTREPLAY_URL=http://localhost:8080"
+echo "  export AGENTREPLAY_SERVICE_NAME=my-app"
 echo ""
 echo "  # 2. In your Python script:"
-echo "  import flowtrace.env_init  # Auto-instruments based on env vars"
+echo "  import agentreplay.env_init  # Auto-instruments based on env vars"
 echo "  from openai import OpenAI   # Now traced automatically!"
 echo ""
 echo "  # 3. Run your script:"

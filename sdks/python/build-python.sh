@@ -77,14 +77,14 @@ fi
 
 cd "$SCRIPT_DIR"
 
-echo "🐍 Building Flowtrace Python SDK v$VERSION..."
+echo "🐍 Building Agentreplay Python SDK v$VERSION..."
 
 # Update version in pyproject.toml
 sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml && rm -f pyproject.toml.bak
 
 # Update version in __init__.py if exists
-if [ -f "src/flowtrace/__init__.py" ]; then
-    sed -i.bak "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/flowtrace/__init__.py && rm -f src/flowtrace/__init__.py.bak
+if [ -f "src/agentreplay/__init__.py" ]; then
+    sed -i.bak "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/agentreplay/__init__.py && rm -f src/agentreplay/__init__.py.bak
 fi
 
 # Clean previous builds
@@ -134,7 +134,7 @@ echo ""
 echo "🎉 Python SDK v$VERSION build complete!"
 echo ""
 echo "To install locally:"
-echo "  pip install dist/flowtrace-$VERSION-py3-none-any.whl"
+echo "  pip install dist/agentreplay-$VERSION-py3-none-any.whl"
 echo ""
 echo "To publish to PyPI:"
 echo "  ./build-python.sh --publish"

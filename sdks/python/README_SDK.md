@@ -1,8 +1,8 @@
-# Flowtrace Python SDK
+# Agentreplay Python SDK
 
 **Zero-code instrumentation for LLM applications with agent context tracking.**
 
-Flowtrace automatically captures traces from OpenAI, Anthropic, and other LLM providers using OpenTelemetry, with zero code changes required.
+Agentreplay automatically captures traces from OpenAI, Anthropic, and other LLM providers using OpenTelemetry, with zero code changes required.
 
 ## Features
 
@@ -19,14 +19,14 @@ Flowtrace automatically captures traces from OpenAI, Anthropic, and other LLM pr
 ### 1. Install
 
 ```bash
-pip install flowtrace
+pip install agentreplay
 ```
 
 ### 2. Set Environment Variables
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_URL=http://localhost:9600
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_URL=http://localhost:9600
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
 
@@ -52,39 +52,39 @@ response = client.chat.completions.create(
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `FLOWTRACE_ENABLED` | Enable auto-instrumentation | `false` |
-| `FLOWTRACE_URL` | Flowtrace server URL | `http://localhost:9600` |
-| `FLOWTRACE_TENANT_ID` | Tenant ID | `1` |
-| `FLOWTRACE_PROJECT_ID` | Project ID | `0` |
-| `FLOWTRACE_DEBUG` | Enable debug logging | `false` |
+| `AGENTREPLAY_ENABLED` | Enable auto-instrumentation | `false` |
+| `AGENTREPLAY_URL` | Agentreplay server URL | `http://localhost:9600` |
+| `AGENTREPLAY_TENANT_ID` | Tenant ID | `1` |
+| `AGENTREPLAY_PROJECT_ID` | Project ID | `0` |
+| `AGENTREPLAY_DEBUG` | Enable debug logging | `false` |
 | `OTEL_SERVICE_NAME` | Service name for traces | Script name |
 | `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | Capture prompts/responses | `false` |
-| `FLOWTRACE_MAX_CONTENT_LENGTH` | Max characters per message (0 = unlimited) | `10000` |
-| `FLOWTRACE_MAX_MESSAGES` | Max messages to capture (0 = all) | `0` |
-| `FLOWTRACE_TRUNCATE_CONTENT` | Enable truncation | `true` |
+| `AGENTREPLAY_MAX_CONTENT_LENGTH` | Max characters per message (0 = unlimited) | `10000` |
+| `AGENTREPLAY_MAX_MESSAGES` | Max messages to capture (0 = all) | `0` |
+| `AGENTREPLAY_TRUNCATE_CONTENT` | Enable truncation | `true` |
 
 ### Configuration Presets
 
 **Development (Full Capture)**
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-export FLOWTRACE_MAX_MESSAGES=0
-export FLOWTRACE_TRUNCATE_CONTENT=false
+export AGENTREPLAY_MAX_MESSAGES=0
+export AGENTREPLAY_TRUNCATE_CONTENT=false
 ```
 
 **Production (Privacy-Safe)**
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-export FLOWTRACE_MAX_MESSAGES=5
-export FLOWTRACE_TRUNCATE_CONTENT=true
-export FLOWTRACE_MAX_CONTENT_LENGTH=500
+export AGENTREPLAY_MAX_MESSAGES=5
+export AGENTREPLAY_TRUNCATE_CONTENT=true
+export AGENTREPLAY_MAX_CONTENT_LENGTH=500
 ```
 
 **Compliance (No Content)**
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
 ```
 
@@ -95,7 +95,7 @@ export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
 Track which agent made which LLM call in multi-agent systems:
 
 ```python
-from flowtrace.context import AgentContext
+from agentreplay.context import AgentContext
 from openai import OpenAI
 
 client = OpenAI()
@@ -144,11 +144,11 @@ for chunk in stream:
 If you prefer not to use auto-initialization:
 
 ```python
-from flowtrace import init_otel_instrumentation
+from agentreplay import init_otel_instrumentation
 
 init_otel_instrumentation(
     service_name="my-app",
-    flowtrace_url="http://localhost:9600",
+    agentreplay_url="http://localhost:9600",
     tenant_id=1,
     project_id=0,
     capture_content=True
@@ -168,14 +168,14 @@ init_otel_instrumentation(
 ## How It Works
 
 1. **`.pth` File**: Installed to site-packages during `pip install`, automatically imports bootstrap module when Python starts
-2. **Bootstrap**: Checks `FLOWTRACE_ENABLED` env var and initializes OpenTelemetry if enabled
+2. **Bootstrap**: Checks `AGENTREPLAY_ENABLED` env var and initializes OpenTelemetry if enabled
 3. **Monkey Patching**: Wraps OpenAI/Anthropic methods to inject tracing
 4. **Stream Wrapping**: Wraps streaming responses to collect telemetry without consuming the stream
-5. **OTLP Export**: Uses standard OpenTelemetry Protocol to send traces to Flowtrace backend
+5. **OTLP Export**: Uses standard OpenTelemetry Protocol to send traces to Agentreplay backend
 
 ## Backend Setup
 
-Start the Flowtrace backend:
+Start the Agentreplay backend:
 
 ```bash
 cd /path/to/chronolake
@@ -194,13 +194,13 @@ The backend runs on:
 
 1. Check environment variables:
    ```bash
-   echo $FLOWTRACE_ENABLED  # Should be "true"
-   echo $FLOWTRACE_URL      # Should be "http://localhost:9600"
+   echo $AGENTREPLAY_ENABLED  # Should be "true"
+   echo $AGENTREPLAY_URL      # Should be "http://localhost:9600"
    ```
 
 2. Enable debug mode:
    ```bash
-   export FLOWTRACE_DEBUG=true
+   export AGENTREPLAY_DEBUG=true
    python your_app.py
    ```
 
@@ -239,7 +239,7 @@ See `examples/zero_code_example.py` for a complete example demonstrating:
 
 Run it:
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 export OPENAI_API_KEY=your-key-here
 python examples/zero_code_example.py
@@ -266,6 +266,6 @@ MIT
 
 ## Links
 
-- [GitHub](https://github.com/sochdb/flowtrace)
-- [Documentation](https://docs.flowtrace.dev)
+- [GitHub](https://github.com/sochdb/agentreplay)
+- [Documentation](https://docs.agentreplay.dev)
 - [Backend Setup](../../README.md)

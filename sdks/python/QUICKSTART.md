@@ -1,21 +1,21 @@
-# Flowtrace Python SDK - Quick Start
+# Agentreplay Python SDK - Quick Start
 
 ## Zero-Code Instrumentation 🚀
 
-Flowtrace provides **true zero-code observability** - just like LangSmith!
+Agentreplay provides **true zero-code observability** - just like LangSmith!
 
 ### Installation
 
 ```bash
-pip install flowtrace
+pip install agentreplay
 ```
 
 ### Setup (One-Time)
 
 ```bash
 # Set environment variables
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_PROJECT_ID=your-project-id
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_PROJECT_ID=your-project-id
 ```
 
 ### Usage
@@ -28,10 +28,10 @@ python your_app.py  # ✅ Automatically traced!
 
 ## How It Works
 
-Flowtrace uses Python's `.pth` file mechanism to automatically instrument your code **before it runs**:
+Agentreplay uses Python's `.pth` file mechanism to automatically instrument your code **before it runs**:
 
 1. Install SDK → `.pth` file added to site-packages
-2. Set `FLOWTRACE_ENABLED=true`
+2. Set `AGENTREPLAY_ENABLED=true`
 3. Run your code → Auto-instrumented!
 
 **No imports. No decorators. No code changes.**
@@ -39,7 +39,7 @@ Flowtrace uses Python's `.pth` file mechanism to automatically instrument your c
 ## Example: Pure OpenAI Code
 
 ```python
-# your_app.py - NO FLOWTRACE IMPORTS!
+# your_app.py - NO AGENTREPLAY IMPORTS!
 from openai import AzureOpenAI
 import os
 
@@ -60,14 +60,14 @@ print(response.choices[0].message.content)
 **Run it:**
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_PROJECT_ID=my-project
-python your_app.py  # ✅ Traces automatically appear in Flowtrace!
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_PROJECT_ID=my-project
+python your_app.py  # ✅ Traces automatically appear in Agentreplay!
 ```
 
 ## Supported Frameworks
 
-Flowtrace automatically instruments:
+Agentreplay automatically instruments:
 
 - ✅ **OpenAI** - Direct API calls
 - ✅ **LangChain** - Chains, agents, tools
@@ -84,20 +84,20 @@ Flowtrace automatically instruments:
 ### Required
 
 ```bash
-export FLOWTRACE_ENABLED=true  # Enable auto-instrumentation
+export AGENTREPLAY_ENABLED=true  # Enable auto-instrumentation
 ```
 
 ### Optional
 
 ```bash
-export FLOWTRACE_OTLP_ENDPOINT=localhost:4317  # Default: localhost:4317
-export FLOWTRACE_PROJECT_ID=0                  # Default: 0
-export FLOWTRACE_TENANT_ID=1                   # Default: 1
-export FLOWTRACE_SERVICE_NAME=my-app           # Default: python-app
-export FLOWTRACE_LOG_LEVEL=DEBUG               # Default: INFO
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317  # Default: localhost:4317
+export AGENTREPLAY_PROJECT_ID=0                  # Default: 0
+export AGENTREPLAY_TENANT_ID=1                   # Default: 1
+export AGENTREPLAY_SERVICE_NAME=my-app           # Default: python-app
+export AGENTREPLAY_LOG_LEVEL=DEBUG               # Default: INFO
 ```
 
-## Comparison: Flowtrace vs Others
+## Comparison: Agentreplay vs Others
 
 ### LangSmith
 
@@ -107,15 +107,15 @@ export LANGCHAIN_TRACING_V2=true
 python app.py  # ✅ Auto-traces
 ```
 
-### Flowtrace
+### Agentreplay
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_OTLP_ENDPOINT=localhost:4317
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
 python app.py  # ✅ Auto-traces (SAME UX!)
 ```
 
-| Feature | Flowtrace | LangSmith | Manual OTEL |
+| Feature | Agentreplay | LangSmith | Manual OTEL |
 |---------|-----------|-----------|-------------|
 | **Zero code changes** | ✅ | ✅ | ❌ |
 | **Local deployment** | ✅ | ❌ | ✅ |
@@ -128,7 +128,7 @@ python app.py  # ✅ Auto-traces (SAME UX!)
 ### LangGraph Multi-Agent
 
 ```python
-# langgraph_agent.py - ZERO FLOWTRACE IMPORTS!
+# langgraph_agent.py - ZERO AGENTREPLAY IMPORTS!
 from typing import TypedDict, Annotated
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -155,7 +155,7 @@ workflow.add_edge("tools", "agent")
 
 graph = workflow.compile()
 
-# Run - NO FLOWTRACE CODE!
+# Run - NO AGENTREPLAY CODE!
 result = graph.invoke({
     "messages": [("user", "What's the weather in SF?")]
 })
@@ -165,8 +165,8 @@ print(result["messages"][-1].content)
 **Run it:**
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_PROJECT_ID=my-project
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_PROJECT_ID=my-project
 python langgraph_agent.py  # ✅ All agents automatically traced!
 ```
 
@@ -214,7 +214,7 @@ print(result)
 **Run it:**
 
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 python existing_crewai_app.py  # ✅ All agents traced!
 ```
 
@@ -223,7 +223,7 @@ python existing_crewai_app.py  # ✅ All agents traced!
 ### 1. Check Installation
 
 ```bash
-python -c "import site; import os; pkg = site.getsitepackages()[0]; print(f'Installed: {os.path.exists(os.path.join(pkg, \"flowtrace-init.pth\"))}')"
+python -c "import site; import os; pkg = site.getsitepackages()[0]; print(f'Installed: {os.path.exists(os.path.join(pkg, \"agentreplay-init.pth\"))}')"
 ```
 
 **Expected:** `Installed: True`
@@ -231,24 +231,24 @@ python -c "import site; import os; pkg = site.getsitepackages()[0]; print(f'Inst
 ### 2. Test Auto-Init
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_LOG_LEVEL=DEBUG
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_LOG_LEVEL=DEBUG
 python -c "print('Test')"
 ```
 
 **Expected:**
 
 ```
-[flowtrace.env_init] INFO: 🚀 Initializing Flowtrace
-[flowtrace.env_init] INFO: ✅ Flowtrace auto-instrumentation enabled
+[agentreplay.env_init] INFO: 🚀 Initializing Agentreplay
+[agentreplay.env_init] INFO: ✅ Agentreplay auto-instrumentation enabled
 Test
 ```
 
 ### 3. Test with OpenAI
 
 ```bash
-export FLOWTRACE_ENABLED=true
-export FLOWTRACE_PROJECT_ID=my-project
+export AGENTREPLAY_ENABLED=true
+export AGENTREPLAY_PROJECT_ID=my-project
 export OPENAI_API_KEY=xxx
 
 python -c "
@@ -279,11 +279,11 @@ print(response.choices[0].message.content)
 ```
 Python Startup
     ↓
-Loads flowtrace-init.pth (from site-packages)
+Loads agentreplay-init.pth (from site-packages)
     ↓
-Imports flowtrace.env_init
+Imports agentreplay.env_init
     ↓
-Checks FLOWTRACE_ENABLED
+Checks AGENTREPLAY_ENABLED
     ↓
 Calls auto_instrument()
     ↓
@@ -303,12 +303,12 @@ Program Exits → atexit flushes spans
     ↓
 Spans sent to server via OTLP
     ↓
-✅ Visible in Flowtrace UI!
+✅ Visible in Agentreplay UI!
 ```
 
 ### Pure OpenTelemetry
 
-Flowtrace uses **official OpenTelemetry instrumentations**:
+Agentreplay uses **official OpenTelemetry instrumentations**:
 
 - `opentelemetry-instrumentation-openai`
 - `opentelemetry-instrumentation-anthropic`
@@ -331,22 +331,22 @@ Flowtrace uses **official OpenTelemetry instrumentations**:
 
 1. **Check if enabled:**
    ```bash
-   echo $FLOWTRACE_ENABLED  # Should print: true
+   echo $AGENTREPLAY_ENABLED  # Should print: true
    ```
 
 2. **Enable debug logging:**
    ```bash
-   export FLOWTRACE_LOG_LEVEL=DEBUG
+   export AGENTREPLAY_LOG_LEVEL=DEBUG
    python your_app.py
    
    # Should see:
-   # [flowtrace.env_init] INFO: 🚀 Initializing Flowtrace
-   # [flowtrace.env_init] INFO: ✅ Flowtrace auto-instrumentation enabled
+   # [agentreplay.env_init] INFO: 🚀 Initializing Agentreplay
+   # [agentreplay.env_init] INFO: ✅ Agentreplay auto-instrumentation enabled
    ```
 
 3. **Check server is running:**
    ```bash
-   lsof -i:4317  # Should show flowtrace-server listening
+   lsof -i:4317  # Should show agentreplay-server listening
    ```
 
 4. **View server logs:**
@@ -362,11 +362,11 @@ Flowtrace uses **official OpenTelemetry instrumentations**:
 ```bash
 # Check if installed
 python -c "import site; print(site.getsitepackages())"
-ls /path/to/site-packages/flowtrace-init.pth
+ls /path/to/site-packages/agentreplay-init.pth
 
 # Reinstall if missing
-pip uninstall flowtrace -y
-pip install flowtrace
+pip uninstall agentreplay -y
+pip install agentreplay
 ```
 
 ### Spans not flushing
@@ -388,13 +388,13 @@ provider.force_flush(timeout_millis=5000)
 If you want manual control:
 
 ```bash
-export FLOWTRACE_AUTO_INIT=false
+export AGENTREPLAY_AUTO_INIT=false
 ```
 
 Then in your code:
 
 ```python
-from flowtrace.auto_instrument import setup_instrumentation
+from agentreplay.auto_instrument import setup_instrumentation
 
 setup_instrumentation(
     service_name="my-app",
@@ -405,18 +405,18 @@ setup_instrumentation(
 ### Custom Service Name
 
 ```bash
-export FLOWTRACE_SERVICE_NAME=my-cool-app
+export AGENTREPLAY_SERVICE_NAME=my-cool-app
 ```
 
 ### Multiple Projects
 
 ```bash
 # Project A
-export FLOWTRACE_PROJECT_ID=project-a
+export AGENTREPLAY_PROJECT_ID=project-a
 python app_a.py
 
 # Project B
-export FLOWTRACE_PROJECT_ID=project-b
+export AGENTREPLAY_PROJECT_ID=project-b
 python app_b.py
 ```
 
@@ -429,15 +429,15 @@ python app_b.py
 
 ## Getting Help
 
-1. **Enable debug logging**: `export FLOWTRACE_LOG_LEVEL=DEBUG`
+1. **Enable debug logging**: `export AGENTREPLAY_LOG_LEVEL=DEBUG`
 2. **Check server logs**: `./view-logs.sh all`
 3. **Verify installation**: See "Verification" section above
 4. **Open an issue**: Include debug logs and example code
 
 ## Next Steps
 
-- ✅ Install SDK: `pip install flowtrace`
-- ✅ Set env vars: `export FLOWTRACE_ENABLED=true`
+- ✅ Install SDK: `pip install agentreplay`
+- ✅ Set env vars: `export AGENTREPLAY_ENABLED=true`
 - ✅ Run your code: `python your_app.py`
 - ✅ View traces: `http://localhost:5173`
 

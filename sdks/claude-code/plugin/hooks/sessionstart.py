@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SessionStart hook for Flowtrace plugin.
+SessionStart hook for Agentreplay plugin.
 Creates a root trace when a Claude Code session starts.
 """
 
@@ -46,7 +46,7 @@ def main():
 
         # Return system message about tracing (optional)
         result = {
-            "systemMessage": f"📊 Flowtrace: Tracing to {config['url']}"
+            "systemMessage": f"📊 Agentreplay: Tracing to {config['url']}"
         }
         print(json.dumps(result))
 

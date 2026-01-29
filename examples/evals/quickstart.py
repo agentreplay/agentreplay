@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """
-Flowtrace Evals Quick Start
+Agentreplay Evals Quick Start
 
 A complete example showing the full evaluation workflow:
 1. Create a dataset
@@ -66,7 +66,7 @@ def api_request(method: str, path: str, data: dict = None) -> dict:
 
 
 def check_server():
-    """Check if Flowtrace server is running."""
+    """Check if Agentreplay server is running."""
     try:
         api_request("GET", "/health")
         return True
@@ -79,7 +79,7 @@ def create_sample_dataset():
     
     dataset_data = {
         "name": f"Quick Start Dataset {datetime.now().strftime('%H:%M:%S')}",
-        "description": "Sample dataset for Flowtrace evals quick start",
+        "description": "Sample dataset for Agentreplay evals quick start",
         "test_cases": [
             {
                 "input": "What is 2 + 2?",
@@ -163,15 +163,15 @@ def run_quickstart():
     """Run the quick start demo."""
     
     print("=" * 60)
-    print("🚀 Flowtrace Evals Quick Start")
+    print("🚀 Agentreplay Evals Quick Start")
     print("=" * 60)
     
     # Check server
-    print("\n1️⃣  Checking Flowtrace server...")
+    print("\n1️⃣  Checking Agentreplay server...")
     if not check_server():
         print("   ❌ Server not running at", API_URL)
         print("\n   To start the server:")
-        print("   cargo run --bin flowtrace-server")
+        print("   cargo run --bin agentreplay-server")
         print("\n   Or run in demo mode without server (see below)")
         demo_mode = True
     else:

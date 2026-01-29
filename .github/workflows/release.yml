@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -64,7 +64,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'flowtrace-tauri -> target'
+          workspaces: 'agentreplay-tauri -> target'
           cache-targets: true
 
       - name: Cache Cargo bin
@@ -74,18 +74,18 @@ jobs:
           key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: |
@@ -94,7 +94,7 @@ jobs:
           fi
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target aarch64-apple-darwin
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Rename artifacts for consistency
         run: |
-          cd flowtrace-tauri/target/aarch64-apple-darwin/release/bundle/dmg
+          cd agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/dmg
           dmg_count=$(ls -1 *.dmg 2>/dev/null | wc -l)
           if [ "$dmg_count" -eq 0 ]; then
             echo "ERROR: No DMG files found!"
@@ -112,8 +112,8 @@ jobs:
           fi
           for f in *.dmg; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_aarch64.dmg"
-              echo "Renamed $f to Flowtrace_aarch64.dmg"
+              mv "$f" "Agentreplay_aarch64.dmg"
+              echo "Renamed $f to Agentreplay_aarch64.dmg"
               break
             fi
           done
@@ -121,8 +121,8 @@ jobs:
       - name: Upload macOS ARM DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-macos-aarch64
-          path: flowtrace-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          name: Agentreplay-macos-aarch64
+          path: agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
   # ============================================
@@ -142,7 +142,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -152,7 +152,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'flowtrace-tauri -> target'
+          workspaces: 'agentreplay-tauri -> target'
           cache-targets: true
 
       - name: Cache Cargo bin
@@ -162,18 +162,18 @@ jobs:
           key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: |
@@ -182,7 +182,7 @@ jobs:
           fi
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-apple-darwin
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -190,7 +190,7 @@ jobs:
 
       - name: Rename artifacts for consistency
         run: |
-          cd flowtrace-tauri/target/x86_64-apple-darwin/release/bundle/dmg
+          cd agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/dmg
           dmg_count=$(ls -1 *.dmg 2>/dev/null | wc -l)
           if [ "$dmg_count" -eq 0 ]; then
             echo "ERROR: No DMG files found!"
@@ -200,8 +200,8 @@ jobs:
           fi
           for f in *.dmg; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_x64.dmg"
-              echo "Renamed $f to Flowtrace_x64.dmg"
+              mv "$f" "Agentreplay_x64.dmg"
+              echo "Renamed $f to Agentreplay_x64.dmg"
               break
             fi
           done
@@ -209,8 +209,8 @@ jobs:
       - name: Upload macOS Intel DMG
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-macos-x64
-          path: flowtrace-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+          name: Agentreplay-macos-x64
+          path: agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
   # ============================================
@@ -230,7 +230,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -240,7 +240,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'flowtrace-tauri -> target'
+          workspaces: 'agentreplay-tauri -> target'
           cache-targets: true
 
       - name: Cache Cargo bin
@@ -260,18 +260,18 @@ jobs:
             patchelf
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: |
@@ -280,7 +280,7 @@ jobs:
           fi
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-unknown-linux-gnu
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -289,7 +289,7 @@ jobs:
       - name: Rename artifacts for consistency
         run: |
           # Rename AppImage
-          cd flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage
+          cd agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage
           appimage_count=$(ls -1 *.AppImage 2>/dev/null | wc -l)
           if [ "$appimage_count" -eq 0 ]; then
             echo "ERROR: No AppImage files found!"
@@ -297,8 +297,8 @@ jobs:
           fi
           for f in *.AppImage; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_amd64.AppImage"
-              echo "Renamed $f to Flowtrace_amd64.AppImage"
+              mv "$f" "Agentreplay_amd64.AppImage"
+              echo "Renamed $f to Agentreplay_amd64.AppImage"
               break
             fi
           done
@@ -312,8 +312,8 @@ jobs:
           fi
           for f in *.deb; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_amd64.deb"
-              echo "Renamed $f to Flowtrace_amd64.deb"
+              mv "$f" "Agentreplay_amd64.deb"
+              echo "Renamed $f to Agentreplay_amd64.deb"
               break
             fi
           done
@@ -321,15 +321,15 @@ jobs:
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-linux-appimage
-          path: flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+          name: Agentreplay-linux-appimage
+          path: agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
           if-no-files-found: error
 
       - name: Upload Linux Deb
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-linux-deb
-          path: flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+          name: Agentreplay-linux-deb
+          path: agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
           if-no-files-found: error
 
   # ============================================
@@ -349,7 +349,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -359,7 +359,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'flowtrace-tauri -> target'
+          workspaces: 'agentreplay-tauri -> target'
           cache-targets: true
 
       - name: Cache Cargo bin
@@ -369,25 +369,25 @@ jobs:
           key: ${{ runner.os }}-cargo-bin-tauri-2.0
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         shell: bash
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0"
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -397,7 +397,7 @@ jobs:
         shell: bash
         run: |
           # Rename EXE
-          cd flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis
+          cd agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis
           exe_count=$(ls -1 *.exe 2>/dev/null | wc -l)
           if [ "$exe_count" -eq 0 ]; then
             echo "ERROR: No EXE files found!"
@@ -405,8 +405,8 @@ jobs:
           fi
           for f in *.exe; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_x64-setup.exe"
-              echo "Renamed $f to Flowtrace_x64-setup.exe"
+              mv "$f" "Agentreplay_x64-setup.exe"
+              echo "Renamed $f to Agentreplay_x64-setup.exe"
               break
             fi
           done
@@ -420,8 +420,8 @@ jobs:
           fi
           for f in *.msi; do
             if [ -f "$f" ]; then
-              mv "$f" "Flowtrace_x64.msi"
-              echo "Renamed $f to Flowtrace_x64.msi"
+              mv "$f" "Agentreplay_x64.msi"
+              echo "Renamed $f to Agentreplay_x64.msi"
               break
             fi
           done
@@ -429,15 +429,15 @@ jobs:
       - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-windows-exe
-          path: flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          name: Agentreplay-windows-exe
+          path: agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           if-no-files-found: error
 
       - name: Upload Windows MSI
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-windows-msi
-          path: flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          name: Agentreplay-windows-msi
+          path: agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
           if-no-files-found: error
 
   # ============================================
@@ -467,12 +467,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/Flowtrace-macos-aarch64/*.dmg
-            artifacts/Flowtrace-macos-x64/*.dmg
-            artifacts/Flowtrace-linux-appimage/*.AppImage
-            artifacts/Flowtrace-linux-deb/*.deb
-            artifacts/Flowtrace-windows-exe/*.exe
-            artifacts/Flowtrace-windows-msi/*.msi
+            artifacts/Agentreplay-macos-aarch64/*.dmg
+            artifacts/Agentreplay-macos-x64/*.dmg
+            artifacts/Agentreplay-linux-appimage/*.AppImage
+            artifacts/Agentreplay-linux-deb/*.deb
+            artifacts/Agentreplay-windows-exe/*.exe
+            artifacts/Agentreplay-windows-msi/*.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -481,15 +481,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.version }}
-          name: Flowtrace v${{ github.event.inputs.version }}
+          name: Agentreplay v${{ github.event.inputs.version }}
           draft: true
           generate_release_notes: true
           files: |
-            artifacts/Flowtrace-macos-aarch64/*.dmg
-            artifacts/Flowtrace-macos-x64/*.dmg
-            artifacts/Flowtrace-linux-appimage/*.AppImage
-            artifacts/Flowtrace-linux-deb/*.deb
-            artifacts/Flowtrace-windows-exe/*.exe
-            artifacts/Flowtrace-windows-msi/*.msi
+            artifacts/Agentreplay-macos-aarch64/*.dmg
+            artifacts/Agentreplay-macos-x64/*.dmg
+            artifacts/Agentreplay-linux-appimage/*.AppImage
+            artifacts/Agentreplay-linux-deb/*.deb
+            artifacts/Agentreplay-windows-exe/*.exe
+            artifacts/Agentreplay-windows-msi/*.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

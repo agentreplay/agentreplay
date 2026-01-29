@@ -72,7 +72,7 @@ rebuild: clean build dev
 
 # Run embedded HTTP server standalone (for testing)
 run-server:
-    cd flowtrace-server && cargo run
+    cd agentreplay-server && cargo run
 
 # Kill processes on ports 5173 and 9432 (useful for cleanup)
 kill-ports:
@@ -131,7 +131,7 @@ info:
     @echo ""
     @echo "📦 Frontend: React + TypeScript + Vite"
     @echo "🦀 Backend: Rust + Tauri + Axum"
-    @echo "💾 Database: FlowTrace (Temporal Database)"
+    @echo "💾 Database: AgentReplay (Temporal Database)"
     @echo "🏗️  Build System: Bun + Just + Cargo"
     @echo ""
     @echo "💡 Common commands:"

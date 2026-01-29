@@ -1,0 +1,65 @@
+# Copyright 2025 Sushanth (https://github.com/sushanthpy)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[package]
+name = "agentreplay-evals"
+version = "0.1.0"
+edition = "2021"
+authors = ["Agentreplay Team"]
+description = "Evaluation framework for Agentreplay agent traces"
+license = "Apache-2.0"
+
+[dependencies]
+# Core dependencies
+agentreplay-core = { path = "../agentreplay-core" }
+async-trait = "0.1"
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+anyhow = "1.0"
+
+# HTTP client for LLM-as-judge
+reqwest = { version = "0.11", features = ["json"] }
+
+# Concurrency control
+futures = "0.3"
+parking_lot = "0.12"
+rand = { workspace = true }
+
+# Regex for pattern matching
+regex = "1.10"
+
+# Caching
+moka = { version = "0.12", features = ["future"] }
+
+# UUID generation
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Date/time handling
+chrono = { workspace = true }
+
+# TOON - Token-efficient JSON alternative for LLM prompts (~50% token reduction)
+serde_toon = "0.2"
+
+# OpenTelemetry semantic conventions
+opentelemetry = { version = "0.21", features = ["trace"] }
+opentelemetry-semantic-conventions = "0.13"
+dashmap.workspace = true
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockito = "1.2"
+criterion = "0.5"

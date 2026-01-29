@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Install flowtrace-init.pth to site-packages for auto-initialization."""
+"""Install agentreplay-init.pth to site-packages for auto-initialization."""
 
 import os
 import sys
@@ -33,14 +33,14 @@ def install_pth():
     
     # Source .pth file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    source_pth = os.path.join(script_dir, 'flowtrace-init.pth')
+    source_pth = os.path.join(script_dir, 'agentreplay-init.pth')
     
     if not os.path.exists(source_pth):
         print(f"❌ Source .pth file not found: {source_pth}")
         return False
     
     # Destination
-    dest_pth = os.path.join(site_packages, 'flowtrace-init.pth')
+    dest_pth = os.path.join(site_packages, 'agentreplay-init.pth')
     
     try:
         shutil.copy2(source_pth, dest_pth)
@@ -48,7 +48,7 @@ def install_pth():
         print(f"\n📋 Content:")
         with open(dest_pth) as f:
             print(f"   {f.read()}")
-        print(f"\n🎉 Flowtrace will now auto-initialize when FLOWTRACE_ENABLED=true")
+        print(f"\n🎉 Agentreplay will now auto-initialize when AGENTREPLAY_ENABLED=true")
         print(f"   Restart Python for changes to take effect.")
         return True
     except Exception as e:

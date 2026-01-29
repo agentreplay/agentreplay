@@ -14,18 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Helper script to monitor Flowtrace server logs
+# Helper script to monitor Agentreplay server logs
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${BLUE}📝 Flowtrace Log Viewer${NC}"
+echo -e "${BLUE}📝 Agentreplay Log Viewer${NC}"
 echo "=================================="
 
 # Find the most recent log file
-LATEST_LOG=$(ls -t logs/flowtrace-server-*.log 2>/dev/null | head -1)
+LATEST_LOG=$(ls -t logs/agentreplay-server-*.log 2>/dev/null | head -1)
 
 if [ -z "$LATEST_LOG" ]; then
     echo -e "${YELLOW}No log files found in logs/ directory${NC}"
@@ -48,7 +48,7 @@ case "$1" in
         ;;
     "projects")
         echo -e "${BLUE}📁 Filtering for project operations...${NC}"
-        grep -E "project_[0-9]+|project=|Opening Flowtrace" "$LATEST_LOG" | tail -50
+        grep -E "project_[0-9]+|project=|Opening Agentreplay" "$LATEST_LOG" | tail -50
         ;;
     "live")
         echo -e "${BLUE}📡 Live tail (Ctrl+C to stop)...${NC}"

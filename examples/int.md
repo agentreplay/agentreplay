@@ -1,23 +1,23 @@
-# Flowtrace + LangGraph Testing Plan
+# Agentreplay + LangGraph Testing Plan
 
 ## Executive Summary
-This plan outlines a systematic approach to testing Flowtrace's observability capabilities using LangGraph as the traced application. The goal is to validate that Flowtrace correctly captures, stores, and queries agentic workflow traces from real LangGraph applications.
+This plan outlines a systematic approach to testing Agentreplay's observability capabilities using LangGraph as the traced application. The goal is to validate that Agentreplay correctly captures, stores, and queries agentic workflow traces from real LangGraph applications.
 
 ---
 
 ## Phase 1: Environment Setup (Days 1-2)
 
-### 1.1 Flowtrace Setup
+### 1.1 Agentreplay Setup
 ```bash
-# Build Flowtrace from source
-cd flowtrace
+# Build Agentreplay from source
+cd agentreplay
 cargo build --release
 
 # Initialize test database
-./target/release/flowtrace -d ./test-data init
+./target/release/agentreplay -d ./test-data init
 
 # Start server (if using HTTP API)
-cd flowtrace-server
+cd agentreplay-server
 cargo run --release -- --port 8080 --db-path ../test-data
 ```
 
@@ -29,13 +29,13 @@ source venv-langgraph/bin/activate
 
 # Install LangGraph and dependencies
 pip install langgraph langchain langchain-openai langchain-anthropic
-pip install httpx requests  # For sending traces to Flowtrace
+pip install httpx requests  # For sending traces to Agentreplay
 pip install python-dotenv  # For API keys
 ```
 
-### 1.3 Create Flowtrace Python Client
+### 1.3 Create Agentreplay Python Client
 ```python
-# flowtrace_client.py
+# agentreplay_client.py
 import httpx
 import time
 from typing import Optional, Dict, Any
@@ -50,7 +50,7 @@ class SpanType(Enum):
     CHAIN = 5
     EMBEDDING = 6
 
-class FlowtraceClient:
+class AgentreplayClient:
     def __init__(self, base_url: str = "http://localhost:8080", 
                  tenant_id: int = 1, project_id: int = 0):
         self.base_url = base_url
@@ -61,7 +61,7 @@ class FlowtraceClient:
     def create_trace(self, agent_id: int, session_id: int, 
                      span_type: SpanType, parent_id: Optional[int] = None,
                      metadata: Optional[Dict[str, Any]] = None) -> Dict:
-        """Create a new trace/span in Flowtrace"""
+        """Create a new trace/span in Agentreplay"""
         payload = {
             "tenant_id": self.tenant_id,
             "project_id": self.project_id,
@@ -114,14 +114,14 @@ class FlowtraceClient:
 ## Phase 2: LangGraph Test Applications (Days 3-5)
 
 ### 2.1 Simple Agent Test (Baseline)
-Test Flowtrace with a basic single-agent LangGraph workflow.
+Test Agentreplay with a basic single-agent LangGraph workflow.
 
 ```python
 # test_01_simple_agent.py
 from langgraph.graph import StateGraph, END
 from langchain_anthropic import ChatAnthropic
 from typing import TypedDict
-from flowtrace_client import FlowtraceClient, SpanType
+from agentreplay_client import AgentreplayClient, SpanType
 import time
 
 class AgentState(TypedDict):
@@ -129,14 +129,14 @@ class AgentState(TypedDict):
     session_id: int
     trace_id: str
 
-# Initialize Flowtrace client
-cl_client = FlowtraceClient()
+# Initialize Agentreplay client
+cl_client = AgentreplayClient()
 
 def create_agent_node(name: str, agent_id: int):
     def agent_function(state: AgentState):
         start_time = time.time()
         
-        # Create trace in Flowtrace
+        # Create trace in Agentreplay
         trace = cl_client.create_trace(
             agent_id=agent_id,
             session_id=state["session_id"],
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     print(f"Session ID: {session_id}")
     print(f"Trace ID: {result['trace_id']}")
     
-    # Query traces from Flowtrace
+    # Query traces from Agentreplay
     traces = cl_client.query_traces(
         start_ts=session_id * 1_000_000,
         end_ts=int(time.time() * 1_000_000),
@@ -204,14 +204,14 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool
 from typing import TypedDict, Literal
-from flowtrace_client import FlowtraceClient, SpanType
+from agentreplay_client import AgentreplayClient, SpanType
 import time
 
 @tool
 def search_web(query: str) -> str:
     """Search the web for information"""
     # Simulate search with trace
-    cl_client = FlowtraceClient()
+    cl_client = AgentreplayClient()
     start = time.time()
     trace = cl_client.create_trace(
         agent_id=99,
@@ -255,7 +255,7 @@ app = workflow.compile()
 
 ### 2.3 LangGraph Examples to Integrate
 
-Use these official LangGraph examples and add Flowtrace instrumentation:
+Use these official LangGraph examples and add Agentreplay instrumentation:
 
 1. **ReAct Agent** - https://github.com/langchain-ai/langgraph/tree/main/examples/react-agent
    - Test: Single agent with tool calls
@@ -357,8 +357,8 @@ def test_parent_child_relationships():
 # test_tenant_isolation.py
 def test_tenant_isolation():
     """Verify that tenant data is properly isolated"""
-    tenant1_client = FlowtraceClient(tenant_id=1)
-    tenant2_client = FlowtraceClient(tenant_id=2)
+    tenant1_client = AgentreplayClient(tenant_id=1)
+    tenant2_client = AgentreplayClient(tenant_id=2)
     
     session_id = int(time.time())
     
@@ -437,7 +437,7 @@ def test_concurrent_writes():
     traces_per_worker = 1000
     
     def worker(worker_id):
-        client = FlowtraceClient()
+        client = AgentreplayClient()
         start = time.time()
         
         for i in range(traces_per_worker):
@@ -554,7 +554,7 @@ class CustomerSupportState(TypedDict):
 def build_support_bot():
     workflow = StateGraph(CustomerSupportState)
     
-    # Add nodes with Flowtrace instrumentation
+    # Add nodes with Agentreplay instrumentation
     workflow.add_node("classify_intent", traced_node(classify_intent, 1))
     workflow.add_node("retrieve_knowledge", traced_node(retrieve_docs, 2))
     workflow.add_node("generate_response", traced_node(generate_response, 3))
@@ -585,7 +585,7 @@ def test_e2e_workflow():
         state["messages"].append(msg)
         state = bot.invoke(state)
     
-    # Verify complete trace in Flowtrace
+    # Verify complete trace in Agentreplay
     traces = cl_client.query_traces(
         start_ts=session_id * 1_000_000,
         end_ts=int(time.time() * 1_000_000),
@@ -607,7 +607,7 @@ def test_e2e_workflow():
 ```python
 # test_checkpoint_recovery.py
 def test_workflow_resume():
-    """Test that workflows can resume from Flowtrace traces"""
+    """Test that workflows can resume from Agentreplay traces"""
     session_id = int(time.time())
     
     # Start workflow
@@ -616,7 +616,7 @@ def test_workflow_resume():
     # Simulate crash/restart
     del app
     
-    # Reconstruct state from Flowtrace traces
+    # Reconstruct state from Agentreplay traces
     traces = cl_client.query_traces(
         start_ts=session_id * 1_000_000,
         end_ts=int(time.time() * 1_000_000),
@@ -734,10 +734,10 @@ def test_compression_ratio():
 
 ### 7.1 Create Testing Documentation
 ```markdown
-# Flowtrace Testing Guide
+# Agentreplay Testing Guide
 
 ## Quick Start
-1. Build Flowtrace: `cargo build --release`
+1. Build Agentreplay: `cargo build --release`
 2. Setup Python env: `python -m venv venv && source venv/bin/activate`
 3. Install deps: `pip install -r requirements-test.txt`
 4. Run tests: `pytest tests/`
@@ -761,7 +761,7 @@ Tests run automatically on:
 import graphviz
 
 def visualize_trace_graph(graph_data, output_path="trace_graph"):
-    """Create visual graph from Flowtrace trace data"""
+    """Create visual graph from Agentreplay trace data"""
     dot = graphviz.Digraph(comment='Trace Graph')
     
     # Add nodes
@@ -787,7 +787,7 @@ visualize_trace_graph(graph)
 import streamlit as st
 import pandas as pd
 
-st.title("Flowtrace Test Dashboard")
+st.title("Agentreplay Test Dashboard")
 
 # Query recent traces
 traces = cl_client.query_traces(
@@ -818,10 +818,10 @@ st.dataframe(df[['edge_id', 'agent_id', 'session_id', 'span_type', 'duration_us'
 # run_all_tests.sh
 #!/bin/bash
 
-echo "Starting Flowtrace Test Suite..."
+echo "Starting Agentreplay Test Suite..."
 
-# Start Flowtrace server
-./target/release/flowtrace-server --port 8080 --db-path ./test-data &
+# Start Agentreplay server
+./target/release/agentreplay-server --port 8080 --db-path ./test-data &
 SERVER_PID=$!
 
 # Wait for server to start
@@ -884,9 +884,9 @@ def monitor_test_performance():
 ## Success Criteria
 
 ### ✅ Phase 1-2: Setup (Pass if)
-- Flowtrace builds and runs successfully
+- Agentreplay builds and runs successfully
 - LangGraph examples execute without errors
-- Python client can communicate with Flowtrace
+- Python client can communicate with Agentreplay
 
 ### ✅ Phase 3-4: Core Tests (Pass if)
 - Temporal queries return correct results
@@ -911,7 +911,7 @@ def monitor_test_performance():
 
 ## Next Steps
 
-1. **Immediate**: Set up Flowtrace and LangGraph environments
+1. **Immediate**: Set up Agentreplay and LangGraph environments
 2. **Week 1**: Implement basic LangGraph instrumentation
 3. **Week 2**: Run core functionality tests
 4. **Week 3**: Performance testing and optimization
@@ -921,11 +921,11 @@ def monitor_test_performance():
 
 - LangGraph Examples: https://github.com/langchain-ai/langgraph/tree/main/examples
 - LangGraph Docs: https://langchain-ai.github.io/langgraph/
-- Flowtrace Architecture: See combined_project.rs
+- Agentreplay Architecture: See combined_project.rs
 - OpenTelemetry Tracing: https://opentelemetry.io/ (for inspiration)
 
 ---
 
 **Last Updated**: 2025-11-05
 **Author**: Technical Fellow, PhD Mathematics & Computer Science
-**Project**: Flowtrace Observability Testing with LangGraph
+**Project**: Agentreplay Observability Testing with LangGraph

@@ -1,4 +1,4 @@
-# Flowtrace Framework Examples
+# Agentreplay Framework Examples
 
 This directory contains auto-instrumented examples for different AI agent frameworks.
 
@@ -6,23 +6,23 @@ This directory contains auto-instrumented examples for different AI agent framew
 
 Each framework has its own folder and **dedicated project ID** for tracking:
 
-- `flowtrace_langgraph/` - LangGraph examples (Project ID: 31696)
-- `flowtrace_langchain/` - LangChain examples (Project ID: 31697)
-- `flowtrace_autogen/` - AutoGen examples (Project ID: 31698)
-- `flowtrace_crewai/` - CrewAI examples (Project ID: 31699)
+- `agentreplay_langgraph/` - LangGraph examples (Project ID: 31696)
+- `agentreplay_langchain/` - LangChain examples (Project ID: 31697)
+- `agentreplay_autogen/` - AutoGen examples (Project ID: 31698)
+- `agentreplay_crewai/` - CrewAI examples (Project ID: 31699)
 
 ## Setup
 
 1. **Install dependencies:**
 ```bash
-pip install flowtrace langgraph langchain autogen crewai tavily-python
+pip install agentreplay langgraph langchain autogen crewai tavily-python
 ```
 
 2. **Configure .env:**
 ```bash
-# Flowtrace
-FLOWTRACE_OTLP_ENDPOINT=localhost:4317
-FLOWTRACE_TENANT_ID=1
+# Agentreplay
+AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+AGENTREPLAY_TENANT_ID=1
 
 # Azure OpenAI (required for all examples)
 AZURE_OPENAI_API_KEY=your-key
@@ -34,9 +34,9 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 TAVILY_API_KEY=your-key
 ```
 
-3. **Start Flowtrace server:**
+3. **Start Agentreplay server:**
 ```bash
-cd flowtrace-server
+cd agentreplay-server
 cargo run --release
 ```
 
@@ -44,7 +44,7 @@ cargo run --release
 
 ### LangGraph (Project 31696)
 ```bash
-cd flowtrace_langgraph
+cd agentreplay_langgraph
 python multi_agent_research.py
 ```
 **Features:**
@@ -55,7 +55,7 @@ python multi_agent_research.py
 
 ### LangChain (Project 31697)
 ```bash
-cd flowtrace_langchain
+cd agentreplay_langchain
 python rag_agent_with_memory.py
 ```
 **Features:**
@@ -66,7 +66,7 @@ python rag_agent_with_memory.py
 
 ### AutoGen (Project 31698)
 ```bash
-cd flowtrace_autogen
+cd agentreplay_autogen
 python multi_agent_collaboration.py
 ```
 **Features:**
@@ -77,7 +77,7 @@ python multi_agent_collaboration.py
 
 ### CrewAI (Project 31699)
 ```bash
-cd flowtrace_crewai
+cd agentreplay_crewai
 python research_crew.py
 ```
 **Features:**
@@ -97,7 +97,7 @@ Each framework has its own project for isolated tracking:
 
 ## What's Captured
 
-Flowtrace automatically captures:
+Agentreplay automatically captures:
 - ✅ All LLM calls with prompts/completions
 - ✅ Token usage per agent
 - ✅ Tool/function calls
@@ -108,10 +108,10 @@ Flowtrace automatically captures:
 
 ## Zero-Code Instrumentation
 
-All examples use **2 lines** of Flowtrace initialization:
+All examples use **2 lines** of Agentreplay initialization:
 ```python
-import flowtrace
-flowtrace.init_otel_instrumentation(
+import agentreplay
+agentreplay.init_otel_instrumentation(
     service_name="your-service",
     project_id=31696,  # Framework-specific ID
     otlp_endpoint="localhost:4317",
@@ -130,4 +130,4 @@ Since each framework has its own project ID, you can easily compare:
 - Error rates
 - Tool usage patterns
 
-Navigate between projects in the Flowtrace UI to compare!
+Navigate between projects in the Agentreplay UI to compare!

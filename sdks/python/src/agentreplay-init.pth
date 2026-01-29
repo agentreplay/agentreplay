@@ -1,0 +1,1 @@
+import agentreplay.bootstrap; agentreplay.bootstrap._auto_init()

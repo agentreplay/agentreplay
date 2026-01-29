@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: flowtrace-ui/package-lock.json
+          cache-dependency-path: agentreplay-ui/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -43,25 +43,25 @@ jobs:
             patchelf
 
       - name: Install frontend dependencies
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm ci
 
       - name: Build frontend
-        working-directory: flowtrace-ui
+        working-directory: agentreplay-ui
         run: npm run build
 
       - name: Copy frontend to Tauri
         shell: bash
         run: |
-          rm -rf flowtrace-tauri/flowtrace-ui/dist
-          mkdir -p flowtrace-tauri/flowtrace-ui
-          cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+          rm -rf agentreplay-tauri/agentreplay-ui/dist
+          mkdir -p agentreplay-tauri/agentreplay-ui
+          cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0"
 
       - name: Build Tauri App
-        working-directory: flowtrace-tauri
+        working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-unknown-linux-gnu
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -70,10 +70,10 @@ jobs:
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Flowtrace-x86_64-unknown-linux-gnu
+          name: Agentreplay-x86_64-unknown-linux-gnu
           path: |
-            flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
           if-no-files-found: error
 
       - name: Upload to Release
@@ -81,7 +81,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            flowtrace-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

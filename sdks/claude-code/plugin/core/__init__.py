@@ -1,4 +1,4 @@
-# Flowtrace core module for Claude Code
+# Agentreplay core module for Claude Code
 from .client import (
     send_trace,
     send_tool_trace,

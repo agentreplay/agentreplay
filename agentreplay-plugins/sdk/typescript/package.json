@@ -1,0 +1,43 @@
+{
+  "name": "agentreplay-plugin-sdk",
+  "version": "0.1.0",
+  "description": "SDK for building Agentreplay plugins in TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "build:wasm": "jco componentize dist/index.js -w agentreplay-plugin -o plugin.wasm",
+    "clean": "rm -rf dist",
+    "test": "vitest"
+  },
+  "keywords": [
+    "agentreplay",
+    "plugin",
+    "wasm",
+    "evaluator",
+    "llm",
+    "tracing"
+  ],
+  "author": "Agentreplay Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sochdb/agentreplay.git"
+  },
+  "devDependencies": {
+    "@bytecodealliance/jco": "^1.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist",
+    "wit"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}

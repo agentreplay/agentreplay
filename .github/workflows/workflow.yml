@@ -16,9 +16,9 @@
 # Triggered on releases or manual workflow dispatch
 #
 # Prerequisites:
-# 1. Package name 'flowtrace-client' must be registered on PyPI
+# 1. Package name 'agentreplay-client' must be registered on PyPI
 # 2. Environment 'pypi' must be configured with trusted publisher settings:
-#    - Repository: sushanthpy/flowtrace
+#    - Repository: sushanthpy/agentreplay
 #    - Workflow: pypi-publish.yml
 #    - Environment name: pypi
 
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/flowtrace-client
+      url: https://pypi.org/p/agentreplay-client
 
     permissions:
       id-token: write  # Required for trusted publishing

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Example application demonstrating Flowtrace zero-code instrumentation.
+"""Example application demonstrating Agentreplay zero-code instrumentation.
 
 This example shows:
 1. Zero-code instrumentation (just set env vars)
@@ -21,10 +21,10 @@ This example shows:
 4. Tool/function calling
 
 Setup:
-    export FLOWTRACE_ENABLED=true
-    export FLOWTRACE_URL=http://localhost:9600
+    export AGENTREPLAY_ENABLED=true
+    export AGENTREPLAY_URL=http://localhost:9600
     export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-    export FLOWTRACE_DEBUG=true
+    export AGENTREPLAY_DEBUG=true
     export OPENAI_API_KEY=your-key-here
     
     python examples/zero_code_example.py
@@ -36,7 +36,7 @@ from openai import OpenAI
 
 # Import agent context (optional - only if you want agent tracking)
 try:
-    from flowtrace.context import AgentContext
+    from agentreplay.context import AgentContext
     HAS_AGENT_CONTEXT = True
 except ImportError:
     HAS_AGENT_CONTEXT = False
@@ -54,7 +54,7 @@ def example_simple_call():
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "user", "content": "What is Flowtrace?"}
+            {"role": "user", "content": "What is Agentreplay?"}
         ],
         temperature=0.7,
         max_tokens=100
@@ -86,7 +86,7 @@ def example_streaming_call():
         if chunk.choices[0].delta.content:
             print(chunk.choices[0].delta.content, end="", flush=True)
     
-    print("\n\nStreaming complete! Check Flowtrace UI for full trace.")
+    print("\n\nStreaming complete! Check Agentreplay UI for full trace.")
 
 
 def example_with_agent_context():
@@ -139,7 +139,7 @@ def example_with_agent_context():
         
         print(f"Written summary: {response.choices[0].message.content}")
     
-    print("\nCheck Flowtrace UI - traces should show agent_id, session_id, etc.")
+    print("\nCheck Agentreplay UI - traces should show agent_id, session_id, etc.")
 
 
 def example_tool_calling():
@@ -190,7 +190,7 @@ def example_tool_calling():
         for tool_call in message.tool_calls:
             print(f"  - Function: {tool_call.function.name}")
             print(f"  - Arguments: {tool_call.function.arguments}")
-        print("\nCheck Flowtrace UI - tool calls should be captured!")
+        print("\nCheck Agentreplay UI - tool calls should be captured!")
     else:
         print("Model didn't call any tools")
 
@@ -198,14 +198,14 @@ def example_tool_calling():
 def main():
     """Run all examples."""
     print("\n" + "="*60)
-    print("Flowtrace Zero-Code Instrumentation Example")
+    print("Agentreplay Zero-Code Instrumentation Example")
     print("="*60)
     
     # Check if auto-instrumentation is enabled
-    if os.getenv('FLOWTRACE_ENABLED') != 'true':
-        print("\n⚠️  WARNING: FLOWTRACE_ENABLED is not set to 'true'")
-        print("Set environment variable: export FLOWTRACE_ENABLED=true")
-        print("\nContinuing anyway, but traces won't be sent to Flowtrace...")
+    if os.getenv('AGENTREPLAY_ENABLED') != 'true':
+        print("\n⚠️  WARNING: AGENTREPLAY_ENABLED is not set to 'true'")
+        print("Set environment variable: export AGENTREPLAY_ENABLED=true")
+        print("\nContinuing anyway, but traces won't be sent to Agentreplay...")
         time.sleep(2)
     
     # Check if OpenAI API key is set
@@ -230,7 +230,7 @@ def main():
         print("\n" + "="*60)
         print("✅ All examples completed!")
         print("="*60)
-        print("\nCheck Flowtrace UI at http://localhost:5173")
+        print("\nCheck Agentreplay UI at http://localhost:5173")
         print("You should see 5+ traces with:")
         print("  - Simple call")
         print("  - Streaming call (with full content)")

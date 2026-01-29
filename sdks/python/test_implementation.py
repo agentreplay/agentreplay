@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Quick test to verify Flowtrace SDK implementation without OpenAI."""
+"""Quick test to verify Agentreplay SDK implementation without OpenAI."""
 
 import sys
 import os
@@ -24,34 +24,34 @@ sdk_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(sdk_dir, 'src'))
 
 print("=" * 60)
-print("Flowtrace SDK Implementation Test")
+print("Agentreplay SDK Implementation Test")
 print("=" * 60)
 
 # Test 1: Import modules
 print("\n1. Testing imports...")
 try:
-    from flowtrace.context import AgentContext, get_current_agent_id
+    from agentreplay.context import AgentContext, get_current_agent_id
     print("   ✓ Context module imported")
 except ImportError as e:
     print(f"   ✗ Context import failed: {e}")
     sys.exit(1)
 
 try:
-    from flowtrace.bootstrap import _auto_init
+    from agentreplay.bootstrap import _auto_init
     print("   ✓ Bootstrap module imported")
 except ImportError as e:
     print(f"   ✗ Bootstrap import failed: {e}")
     sys.exit(1)
 
 try:
-    from flowtrace.bootstrap import init_otel_instrumentation
+    from agentreplay.bootstrap import init_otel_instrumentation
     print("   ✓ OTEL bridge imported")
 except ImportError as e:
     print(f"   ✗ OTEL bridge import failed: {e}")
     sys.exit(1)
 
 try:
-    from flowtrace.auto_instrument.openai import instrument_openai
+    from agentreplay.auto_instrument.openai import instrument_openai
     print("   ✓ OpenAI instrumentation imported")
 except ImportError as e:
     print(f"   ✗ OpenAI instrumentation import failed: {e}")
@@ -81,13 +81,13 @@ except Exception as e:
 # Test 3: Bootstrap (without actually initializing)
 print("\n3. Testing bootstrap logic...")
 try:
-    # Test with FLOWTRACE_ENABLED=false (should do nothing)
-    os.environ['FLOWTRACE_ENABLED'] = 'false'
+    # Test with AGENTREPLAY_ENABLED=false (should do nothing)
+    os.environ['AGENTREPLAY_ENABLED'] = 'false'
     _auto_init()
     print("   ✓ Bootstrap handles disabled state")
     
     # Clean up
-    del os.environ['FLOWTRACE_ENABLED']
+    del os.environ['AGENTREPLAY_ENABLED']
 except Exception as e:
     print(f"   ✗ Bootstrap failed: {e}")
 
@@ -96,12 +96,12 @@ print("\n4. Testing environment variable configuration...")
 try:
     # Set test env vars
     os.environ['OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT'] = 'true'
-    os.environ['FLOWTRACE_MAX_CONTENT_LENGTH'] = '5000'
-    os.environ['FLOWTRACE_MAX_MESSAGES'] = '10'
+    os.environ['AGENTREPLAY_MAX_CONTENT_LENGTH'] = '5000'
+    os.environ['AGENTREPLAY_MAX_MESSAGES'] = '10'
     
     # Re-import to pick up new config
     import importlib
-    import flowtrace.auto_instrument.openai as openai_module
+    import agentreplay.auto_instrument.openai as openai_module
     importlib.reload(openai_module)
     
     if openai_module.CAPTURE_CONTENT:
@@ -121,8 +121,8 @@ try:
     
     # Clean up
     del os.environ['OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT']
-    del os.environ['FLOWTRACE_MAX_CONTENT_LENGTH']
-    del os.environ['FLOWTRACE_MAX_MESSAGES']
+    del os.environ['AGENTREPLAY_MAX_CONTENT_LENGTH']
+    del os.environ['AGENTREPLAY_MAX_MESSAGES']
     
 except Exception as e:
     print(f"   ✗ Environment configuration failed: {e}")
@@ -131,12 +131,12 @@ except Exception as e:
 
 # Test 5: Check .pth file exists
 print("\n5. Checking .pth file...")
-pth_file = os.path.join(os.path.dirname(__file__), '..', 'flowtrace-init.pth')
+pth_file = os.path.join(os.path.dirname(__file__), '..', 'agentreplay-init.pth')
 if os.path.exists(pth_file):
     print(f"   ✓ .pth file exists: {pth_file}")
     with open(pth_file) as f:
         content = f.read().strip()
-        if "flowtrace.bootstrap" in content:
+        if "agentreplay.bootstrap" in content:
             print("   ✓ .pth file has correct content")
         else:
             print(f"   ✗ .pth file content wrong: {content}")
@@ -149,9 +149,9 @@ print("=" * 60)
 
 print("\nNext steps:")
 print("1. Install the SDK: cd sdks/python && pip install -e .")
-print("2. Start Flowtrace backend: ./start-web.sh")
+print("2. Start Agentreplay backend: ./start-web.sh")
 print("3. Set env vars:")
-print("   export FLOWTRACE_ENABLED=true")
+print("   export AGENTREPLAY_ENABLED=true")
 print("   export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true")
 print("   export OPENAI_API_KEY=your-key")
 print("4. Run example: python examples/zero_code_example.py")

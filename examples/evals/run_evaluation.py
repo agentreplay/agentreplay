@@ -30,7 +30,7 @@ Usage:
     python examples/evals/run_evaluation.py --dataset-id <id> --mock
 
 Requirements:
-    - Flowtrace server running
+    - Agentreplay server running
     - openai package (optional, for real LLM calls)
 """
 
@@ -63,8 +63,8 @@ class EvalResult:
     explanation: str = ""
 
 
-class FlowtraceEvalsClient:
-    """Client for Flowtrace Evals API."""
+class AgentreplayEvalsClient:
+    """Client for Agentreplay Evals API."""
     
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url.rstrip("/")
@@ -244,7 +244,7 @@ class SemanticSimilarityEvaluator(Evaluator):
 
 
 def run_evaluation(
-    client: FlowtraceEvalsClient,
+    client: AgentreplayEvalsClient,
     dataset_id: str,
     agent: Any,
     evaluators: list[Evaluator],
@@ -363,9 +363,9 @@ def print_summary(evaluation: dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Flowtrace evaluation")
+    parser = argparse.ArgumentParser(description="Run Agentreplay evaluation")
     parser.add_argument("--dataset-id", required=True, help="Dataset ID to evaluate")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Flowtrace API URL")
+    parser.add_argument("--api-url", default="http://localhost:8000", help="Agentreplay API URL")
     parser.add_argument("--mock", action="store_true", help="Use mock agent instead of OpenAI")
     parser.add_argument("--model", default="gpt-4o-mini", help="OpenAI model to use")
     parser.add_argument("--output", help="Output file for results JSON")
@@ -373,7 +373,7 @@ def main():
     args = parser.parse_args()
     
     # Initialize client
-    client = FlowtraceEvalsClient(args.api_url)
+    client = AgentreplayEvalsClient(args.api_url)
     
     # Initialize agent
     if args.mock:

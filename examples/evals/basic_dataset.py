@@ -27,8 +27,8 @@ Usage:
     python examples/evals/basic_dataset.py
 
 Requirements:
-    - Flowtrace server running at localhost:8000
-    - pip install httpx  (or use flowtrace SDK)
+    - Agentreplay server running at localhost:8000
+    - pip install httpx  (or use agentreplay SDK)
 """
 
 import json
@@ -46,8 +46,8 @@ except ImportError:
     USE_HTTPX = False
 
 
-class FlowtraceEvalsClient:
-    """Simple client for Flowtrace Evals API."""
+class AgentreplayEvalsClient:
+    """Simple client for Agentreplay Evals API."""
     
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url.rstrip("/")
@@ -137,10 +137,10 @@ class FlowtraceEvalsClient:
 
 def main():
     print("=" * 60)
-    print("Flowtrace Evals - Basic Dataset Workflow")
+    print("Agentreplay Evals - Basic Dataset Workflow")
     print("=" * 60)
     
-    client = FlowtraceEvalsClient()
+    client = AgentreplayEvalsClient()
     
     # Step 1: Create a dataset
     print("\n📦 Creating dataset...")
@@ -159,7 +159,7 @@ def main():
         print(f"   ID: {dataset_id}")
     except Exception as e:
         print(f"❌ Failed to create dataset: {e}")
-        print("\nMake sure Flowtrace server is running at localhost:8000")
+        print("\nMake sure Agentreplay server is running at localhost:8000")
         sys.exit(1)
     
     # Step 2: Add test cases

@@ -7,9 +7,9 @@
 
 # Build artifacts
 target/
-flowtrace-tauri/target/
+agentreplay-tauri/target/
 **/node_modules/
-flowtrace-ui/dist/
+agentreplay-ui/dist/
 
 # IDE
 .vscode/

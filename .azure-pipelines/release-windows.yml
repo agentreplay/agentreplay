@@ -55,16 +55,16 @@ stages:
 
           - script: npm ci
             displayName: 'Install frontend dependencies'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - script: npm run build
             displayName: 'Build frontend'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - bash: |
-              rm -rf flowtrace-tauri/flowtrace-ui/dist
-              mkdir -p flowtrace-tauri/flowtrace-ui
-              cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+              rm -rf agentreplay-tauri/agentreplay-ui/dist
+              mkdir -p agentreplay-tauri/agentreplay-ui
+              cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
             displayName: 'Copy frontend to Tauri'
 
           - script: cargo install tauri-cli --version "^2.0"
@@ -72,7 +72,7 @@ stages:
 
           - script: cargo tauri build --target x86_64-pc-windows-msvc
             displayName: 'Build Tauri App'
-            workingDirectory: flowtrace-tauri
+            workingDirectory: agentreplay-tauri
             env:
               TAURI_SIGNING_PRIVATE_KEY: $(TAURI_PRIVATE_KEY)
               TAURI_SIGNING_PRIVATE_KEY_PASSWORD: $(TAURI_KEY_PASSWORD)
@@ -80,6 +80,6 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Windows artifacts'
             inputs:
-              targetPath: 'flowtrace-tauri/target/x86_64-pc-windows-msvc/release/bundle'
-              artifact: 'Flowtrace-x86_64-pc-windows-msvc'
+              targetPath: 'agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle'
+              artifact: 'Agentreplay-x86_64-pc-windows-msvc'
               publishLocation: 'pipeline'

@@ -1,6 +1,6 @@
-# Flowtrace Architecture
+# Agentreplay Architecture
 
-> This document provides a high-level overview of Flowtrace's architecture for contributors and maintainers.
+> This document provides a high-level overview of Agentreplay's architecture for contributors and maintainers.
 
 ## Table of Contents
 
@@ -20,14 +20,14 @@
 
 ## System Overview
 
-Flowtrace is a purpose-built observability platform for LLM agents. It's designed around four core principles:
+Agentreplay is a purpose-built observability platform for LLM agents. It's designed around four core principles:
 
 1. **Write-optimized**: Agents generate massive trace volumes; we optimize for ingestion
 2. **Causality-aware**: Traces form DAGs, not just flat logs; we preserve relationships
 3. **Evaluation-native**: Testing and validation are first-class, not afterthoughts
 4. **Memory-integrated**: Persistent context across sessions with semantic retrieval
 
-**Powered by SochDB**: Flowtrace uses [SochDB](https://github.com/sochdb/sochdb) as its storage backend - a high-performance embedded database designed for AI/ML workloads.
+**Powered by SochDB**: Agentreplay uses [SochDB](https://github.com/sochdb/sochdb) as its storage backend - a high-performance embedded database designed for AI/ML workloads.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -37,7 +37,7 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         flowtrace-server                                     │
+│                         agentreplay-server                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │  REST API   │  │  WebSocket  │  │    Auth     │  │   Rate Limiting     │ │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
@@ -45,7 +45,7 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          flowtrace-query                                     │
+│                          agentreplay-query                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │Query Engine │  │Aggregations │  │  Semantic   │  │ Cost Calculator     │ │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
@@ -54,7 +54,7 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
                     ┌───────────────┼───────────────┐
                     ▼               ▼               ▼
 ┌───────────────────────┐ ┌─────────────────┐ ┌─────────────────────────────┐
-│   flowtrace-storage   │ │ flowtrace-index │ │      flowtrace-evals        │
+│   agentreplay-storage   │ │ agentreplay-index │ │      agentreplay-evals        │
 │  ┌─────────────────┐  │ │ ┌─────────────┐ │ │  ┌──────────────────────┐   │
 │  │    LSM-Tree     │  │ │ │   Causal    │ │ │  │   20+ Evaluators     │   │
 │  │  ┌───────────┐  │  │ │ │    Index    │ │ │  │   (Hallucination,    │   │
@@ -71,7 +71,7 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          flowtrace-core                                      │
+│                          agentreplay-core                                      │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
 │  │ AgentFlowEdge   │  │ Hybrid Logical  │  │    SpanType, Error,         │  │
 │  │  (128 bytes)    │  │     Clock       │  │    Sensitivity Flags        │  │
@@ -84,44 +84,44 @@ Flowtrace is a purpose-built observability platform for LLM agents. It's designe
 ## Crate Dependency Graph
 
 ```
-flowtrace-core (foundation, no dependencies on other flowtrace crates)
+agentreplay-core (foundation, no dependencies on other agentreplay crates)
        │
        ├──────────────────────────────────────────────┬───────────────────┐
        │                                              │                   │
        ▼                                              ▼                   ▼
-flowtrace-storage                              flowtrace-evals    flowtrace-memory
+agentreplay-storage                              agentreplay-evals    agentreplay-memory
        │                                              │                   │
        ▼                                              │                   │
-flowtrace-index ◄─────────────────────────────────────┴───────────────────┘
+agentreplay-index ◄─────────────────────────────────────┴───────────────────┘
        │
        ▼
-flowtrace-query
+agentreplay-query
        │
        ▼
-flowtrace-server
+agentreplay-server
        │
        ├───────────────────────────────────────┐
        ▼                                       ▼
-flowtrace-plugins                     flowtrace-tauri (Desktop)
+agentreplay-plugins                     agentreplay-tauri (Desktop)
   │
   ├── WASM runtime
   ├── Bundle installer
   └── Capability enforcer
 ```
 
-**Key insight**: Dependencies flow downward. Lower crates are more stable and change less frequently. When contributing, changes to `flowtrace-core` have the widest impact.
+**Key insight**: Dependencies flow downward. Lower crates are more stable and change less frequently. When contributing, changes to `agentreplay-core` have the widest impact.
 
-**New in v2**: `flowtrace-memory` provides persistent agent memory, and `flowtrace-plugins` supports both WASM runtime plugins and file-based bundle plugins for Claude Code/Cursor integrations.
+**New in v2**: `agentreplay-memory` provides persistent agent memory, and `agentreplay-plugins` supports both WASM runtime plugins and file-based bundle plugins for Claude Code/Cursor integrations.
 
 ---
 
 ## SochDB Storage Backend
 
-Flowtrace's storage layer is built entirely on **SochDB** - a high-performance embedded database from the same team. This provides Flowtrace with enterprise-grade storage capabilities without reinventing the wheel.
+Agentreplay's storage layer is built entirely on **SochDB** - a high-performance embedded database from the same team. This provides Agentreplay with enterprise-grade storage capabilities without reinventing the wheel.
 
 ### Why SochDB?
 
-| Feature | Benefit for Flowtrace |
+| Feature | Benefit for Agentreplay |
 |---------|----------------------|
 | **LSM-tree architecture** | Write-optimized for high-throughput trace ingestion |
 | **ACID transactions** | Durability guarantees for critical observability data |
@@ -134,7 +134,7 @@ Flowtrace's storage layer is built entirely on **SochDB** - a high-performance e
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    FlowTraceStorage                             │
+│                    AgentReplayStorage                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
 │  │ Trace Store  │  │ Payload Store│  │ Metrics Store│           │
 │  │ (edges)      │  │ (blobs)      │  │ (aggregates) │           │
@@ -150,7 +150,7 @@ Flowtrace's storage layer is built entirely on **SochDB** - a high-performance e
 
 ### Key Encoding
 
-Flowtrace uses hierarchical key encoding for efficient range scans:
+Agentreplay uses hierarchical key encoding for efficient range scans:
 
 | Store | Key Format | Example |
 |-------|------------|---------|
@@ -184,7 +184,7 @@ SochDB's `PackedRow` format enables columnar projection - queries that only need
 ### SochDB Components Used
 
 ```
-flowtrace-storage
+agentreplay-storage
     │
     ├── sochdb (EmbeddedConnection)
     │   └── Primary database connection
@@ -207,7 +207,7 @@ Client SDK
     │
     ▼ HTTP POST /api/v1/traces
 ┌───────────────────────────────────────────────────────┐
-│ flowtrace-server                                      │
+│ agentreplay-server                                      │
 │   1. Validate input                                   │
 │   2. Parse into AgentFlowEdge (128 bytes, fixed)     │
 │   3. Assign tenant_id, project_id                     │
@@ -215,7 +215,7 @@ Client SDK
     │
     ▼
 ┌───────────────────────────────────────────────────────┐
-│ flowtrace-storage (SochDB Backend)                    │
+│ agentreplay-storage (SochDB Backend)                    │
 │   1. Encode key: traces/{tenant}/{project}/{ts}/{id} │
 │   2. Convert edge to PackedRow (columnar)            │
 │   3. Write to SochDB (WAL + Memtable)                │
@@ -225,7 +225,7 @@ Client SDK
     ├──────────────────────────────┐
     ▼                              ▼
 ┌─────────────────────┐   ┌─────────────────────────────┐
-│ flowtrace-index     │   │ flowtrace-storage::Payload  │
+│ agentreplay-index     │   │ agentreplay-storage::Payload  │
 │ ::CausalIndex       │   │   (if has_payload=true)     │
 │   - parent→children │   │   Store prompt/response     │
 │   - child→parents   │   └─────────────────────────────┘
@@ -241,14 +241,14 @@ Client Query
     │
     ▼
 ┌───────────────────────────────────────────────────────┐
-│ flowtrace-query::QueryEngine                          │
+│ agentreplay-query::QueryEngine                          │
 │   1. Parse query (time range, filters, semantic)      │
 │   2. Plan execution (index selection, parallelism)    │
 └───────────────────────────────────────────────────────┘
     │
     ▼
 ┌───────────────────────────────────────────────────────┐
-│ flowtrace-storage (SochDB Backend)                    │
+│ agentreplay-storage (SochDB Backend)                    │
 │   1. Build scan prefix from query filters             │
 │   2. SochDB range scan with columnar projection      │
 │   3. Deserialize only needed columns (80% I/O saved) │
@@ -269,9 +269,9 @@ Return Results
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       FLOWTRACE                             │
+│                       AGENTREPLAY                             │
 │  ┌─────────────────┐       ┌─────────────────┐              │
-│  │ flowtrace-index │       │ flowtrace-query │              │
+│  │ agentreplay-index │       │ agentreplay-query │              │
 │  │  - CausalIndex  │       │  - NL Parser    │              │
 │  │  - ConceptIndex │       │  - SemanticSearch│             │
 │  │  - Trace-aware  │       │  - QueryFilters │              │
@@ -300,7 +300,7 @@ Return Results
 
 ### EvalTraceV1 Canonical Transcript
 
-Flowtrace exposes a **versioned, canonical transcript** for eval workflows: `EvalTraceV1`.
+Agentreplay exposes a **versioned, canonical transcript** for eval workflows: `EvalTraceV1`.
 It models the trace as an append-only event log with:
 
 - `transcript`: ordered events (messages, tool calls/results, span start/end)
@@ -407,22 +407,22 @@ These are the most important architectural decisions. See `/docs/adr/` for full 
 
 | You want to... | Look in... |
 |----------------|------------|
-| Understand the core data model | `flowtrace-core/src/edge.rs` |
-| See SochDB integration | `flowtrace-storage/src/sochdb_unified.rs` |
-| Understand key encoding | `flowtrace-storage/src/sochdb_unified.rs` (key functions) |
-| See columnar edge schema | `flowtrace-storage/src/sochdb_unified.rs` (`create_edge_schema`) |
-| See payload storage | `flowtrace-storage/src/observation_store.rs` |
-| See causal graph traversal | `flowtrace-index/src/causal.rs` |
-| Understand vector search | `flowtrace-index/src/hnsw.rs`, `flowtrace-index/src/vamana.rs` |
-| See query planning | `flowtrace-query/src/engine.rs` |
-| Understand API routing | `flowtrace-server/src/api/` |
-| See evaluation implementations | `flowtrace-evals/src/evaluators/` |
-| Understand desktop app | `flowtrace-tauri/src/` |
-| **Plugin manifest schema** | `flowtrace-plugins/core/src/manifest.rs` |
-| **Bundle installation** | `flowtrace-plugins/core/src/bundle.rs` |
-| **WASM plugin runtime** | `flowtrace-plugins/core/src/wasm/` |
-| **Memory engine** | `flowtrace-memory/src/engine.rs` |
-| **Observations & context** | `flowtrace-memory/src/observation.rs`, `context.rs` |
+| Understand the core data model | `agentreplay-core/src/edge.rs` |
+| See SochDB integration | `agentreplay-storage/src/sochdb_unified.rs` |
+| Understand key encoding | `agentreplay-storage/src/sochdb_unified.rs` (key functions) |
+| See columnar edge schema | `agentreplay-storage/src/sochdb_unified.rs` (`create_edge_schema`) |
+| See payload storage | `agentreplay-storage/src/observation_store.rs` |
+| See causal graph traversal | `agentreplay-index/src/causal.rs` |
+| Understand vector search | `agentreplay-index/src/hnsw.rs`, `agentreplay-index/src/vamana.rs` |
+| See query planning | `agentreplay-query/src/engine.rs` |
+| Understand API routing | `agentreplay-server/src/api/` |
+| See evaluation implementations | `agentreplay-evals/src/evaluators/` |
+| Understand desktop app | `agentreplay-tauri/src/` |
+| **Plugin manifest schema** | `agentreplay-plugins/core/src/manifest.rs` |
+| **Bundle installation** | `agentreplay-plugins/core/src/bundle.rs` |
+| **WASM plugin runtime** | `agentreplay-plugins/core/src/wasm/` |
+| **Memory engine** | `agentreplay-memory/src/engine.rs` |
+| **Observations & context** | `agentreplay-memory/src/observation.rs`, `context.rs` |
 
 ### Code Patterns Used
 
@@ -494,7 +494,7 @@ These flags enable selective encryption, retention policies, and audit logging.
 
 ## What's NOT in Scope
 
-To stay focused, Flowtrace explicitly does NOT handle:
+To stay focused, Agentreplay explicitly does NOT handle:
 
 1. **Real-time streaming**: We batch writes, not stream
 2. **Full-text search**: Use Elasticsearch/Typesense alongside

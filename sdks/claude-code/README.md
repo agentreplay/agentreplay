@@ -1,6 +1,6 @@
-# @sochdb/flowtrace-claude-code
+# @sochdb/agentreplay-claude-code
 
-Flowtrace observability plugin for [Claude Code](https://github.com/anthropics/claude-code) - automatic tracing of all tool calls and sessions.
+Agentreplay observability plugin for [Claude Code](https://github.com/anthropics/claude-code) - automatic tracing of all tool calls and sessions.
 
 ## Features
 
@@ -8,28 +8,28 @@ Flowtrace observability plugin for [Claude Code](https://github.com/anthropics/c
 - 🔗 **Session Tracking**: Links all tool calls within a session
 - ⏱️ **Duration Tracking**: Measures time spent on each tool execution
 - 🚫 **Non-blocking**: Never interrupts or slows down Claude Code
-- 📈 **Dashboard Integration**: View traces in Flowtrace UI
+- 📈 **Dashboard Integration**: View traces in Agentreplay UI
 
 ## Installation
 
 ```bash
-npm install -g @sochdb/flowtrace-claude-code
+npm install -g @sochdb/agentreplay-claude-code
 ```
 
-This will automatically install the plugin to `~/.claude/plugins/flowtrace`.
+This will automatically install the plugin to `~/.claude/plugins/agentreplay`.
 
 ### Manual Installation
 
 If auto-install doesn't work, run:
 
 ```bash
-npx @sochdb/flowtrace-claude-code
+npx @sochdb/agentreplay-claude-code
 ```
 
 Or copy manually:
 
 ```bash
-cp -r node_modules/@sochdb/flowtrace-claude-code/plugin ~/.claude/plugins/flowtrace
+cp -r node_modules/@sochdb/agentreplay-claude-code/plugin ~/.claude/plugins/agentreplay
 ```
 
 ## Configuration
@@ -38,16 +38,16 @@ The plugin is configured via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FLOWTRACE_ENABLED` | `true` | Enable/disable tracing |
-| `FLOWTRACE_URL` | `http://localhost:9600` | Flowtrace server URL |
-| `FLOWTRACE_TENANT_ID` | `1` | Tenant identifier |
-| `FLOWTRACE_PROJECT_ID` | `1` | Project identifier |
+| `AGENTREPLAY_ENABLED` | `true` | Enable/disable tracing |
+| `AGENTREPLAY_URL` | `http://localhost:9600` | Agentreplay server URL |
+| `AGENTREPLAY_TENANT_ID` | `1` | Tenant identifier |
+| `AGENTREPLAY_PROJECT_ID` | `1` | Project identifier |
 
 ### Example
 
 ```bash
-# Set Flowtrace URL
-export FLOWTRACE_URL="http://localhost:9600"
+# Set Agentreplay URL
+export AGENTREPLAY_URL="http://localhost:9600"
 
 # Run Claude Code
 claude
@@ -77,14 +77,14 @@ Every tool invocation is traced with:
 
 ## Viewing Traces
 
-1. Start Flowtrace:
+1. Start Agentreplay:
    ```bash
-   open /Applications/Flowtrace.app
+   open /Applications/Agentreplay.app
    # or
-   flowtrace serve
+   agentreplay serve
    ```
 
-2. Open the Flowtrace UI at `http://localhost:9600`
+2. Open the Agentreplay UI at `http://localhost:9600`
 
 3. Navigate to **Traces** to see all Claude Code activity
 
@@ -97,12 +97,12 @@ Every tool invocation is traced with:
 ## Plugin Structure
 
 ```
-flowtrace/
+agentreplay/
 ├── .claude-plugin/
 │   └── plugin.json          # Plugin metadata
 ├── core/
 │   ├── __init__.py
-│   └── client.py            # Flowtrace API client
+│   └── client.py            # Agentreplay API client
 ├── hooks/
 │   ├── __init__.py
 │   ├── hooks.json           # Hook definitions
@@ -117,14 +117,14 @@ flowtrace/
 
 ### Traces not appearing
 
-1. Check Flowtrace is running:
+1. Check Agentreplay is running:
    ```bash
    curl http://localhost:9600/api/v1/health
    ```
 
 2. Verify environment variable:
    ```bash
-   echo $FLOWTRACE_URL
+   echo $AGENTREPLAY_URL
    ```
 
 3. Check plugin is loaded:
@@ -135,7 +135,7 @@ flowtrace/
 ### Disable temporarily
 
 ```bash
-export FLOWTRACE_ENABLED=false
+export AGENTREPLAY_ENABLED=false
 claude
 ```
 

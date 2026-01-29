@@ -18,7 +18,7 @@
 
 set -e
 
-echo "🚀 Flowtrace Auto-Instrumentation Quick Start"
+echo "🚀 Agentreplay Auto-Instrumentation Quick Start"
 echo "=============================================="
 echo ""
 
@@ -29,13 +29,13 @@ if [ ! -f "test_auto_instrumentation.py" ]; then
     exit 1
 fi
 
-# Check if Flowtrace server is running
-echo "📡 Checking Flowtrace server..."
+# Check if Agentreplay server is running
+echo "📡 Checking Agentreplay server..."
 if curl -s http://localhost:8080/health > /dev/null 2>&1; then
-    echo "✅ Flowtrace server is running at http://localhost:8080"
+    echo "✅ Agentreplay server is running at http://localhost:8080"
 else
-    echo "⚠️  Flowtrace server is not running"
-    echo "   Start it with: cargo run --bin flowtrace-server"
+    echo "⚠️  Agentreplay server is not running"
+    echo "   Start it with: cargo run --bin agentreplay-server"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo ""
@@ -61,15 +61,15 @@ fi
 
 # Check if SDK is installed
 echo ""
-echo "📦 Checking Flowtrace SDK..."
-if python3 -c "from flowtrace import auto_instrument" 2>/dev/null; then
-    echo "✅ Flowtrace SDK is installed"
+echo "📦 Checking Agentreplay SDK..."
+if python3 -c "from agentreplay import auto_instrument" 2>/dev/null; then
+    echo "✅ Agentreplay SDK is installed"
 else
-    echo "⚠️  Flowtrace SDK not found. Installing..."
+    echo "⚠️  Agentreplay SDK not found. Installing..."
     cd ../sdks/python
     pip install -e . --quiet
     cd ../../examples
-    echo "✅ Flowtrace SDK installed"
+    echo "✅ Agentreplay SDK installed"
 fi
 
 # Check OpenTelemetry dependencies

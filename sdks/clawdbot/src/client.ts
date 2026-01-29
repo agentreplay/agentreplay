@@ -1,8 +1,8 @@
 /**
- * Flowtrace API client
+ * Agentreplay API client
  */
 
-import type { FlowtraceConfig } from "./config.js";
+import type { AgentreplayConfig } from "./config.js";
 import type { MemoryTracePayload } from "./types.js";
 import type { PluginLogger } from "./plugin-types.js";
 
@@ -50,10 +50,10 @@ export interface ToolTracePayload {
 }
 
 /**
- * Send a generic trace to Flowtrace
+ * Send a generic trace to Agentreplay
  */
 export async function sendTrace(
-  config: FlowtraceConfig,
+  config: AgentreplayConfig,
   logger: PluginLogger,
   payload: TracePayload,
 ): Promise<string | null> {
@@ -65,14 +65,14 @@ export async function sendTrace(
     });
 
     if (!response.ok) {
-      logger.warn(`Flowtrace trace failed: ${response.status} ${response.statusText}`);
+      logger.warn(`Agentreplay trace failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
     const result = (await response.json()) as { edge_id?: string };
     return result.edge_id || null;
   } catch (err) {
-    logger.debug?.(`Flowtrace connection error: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug?.(`Agentreplay connection error: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -81,7 +81,7 @@ export async function sendTrace(
  * Send GenAI-specific trace (LLM calls)
  */
 export async function sendGenAITrace(
-  config: FlowtraceConfig,
+  config: AgentreplayConfig,
   logger: PluginLogger,
   payload: GenAITracePayload,
 ): Promise<string | null> {
@@ -93,14 +93,14 @@ export async function sendGenAITrace(
     });
 
     if (!response.ok) {
-      logger.warn(`Flowtrace GenAI trace failed: ${response.status}`);
+      logger.warn(`Agentreplay GenAI trace failed: ${response.status}`);
       return null;
     }
 
     const result = (await response.json()) as { edge_id?: string };
     return result.edge_id || null;
   } catch (err) {
-    logger.debug?.(`Flowtrace GenAI error: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug?.(`Agentreplay GenAI error: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -109,7 +109,7 @@ export async function sendGenAITrace(
  * Send tool call trace
  */
 export async function sendToolTrace(
-  config: FlowtraceConfig,
+  config: AgentreplayConfig,
   logger: PluginLogger,
   payload: ToolTracePayload,
 ): Promise<string | null> {
@@ -121,14 +121,14 @@ export async function sendToolTrace(
     });
 
     if (!response.ok) {
-      logger.warn(`Flowtrace tool trace failed: ${response.status}`);
+      logger.warn(`Agentreplay tool trace failed: ${response.status}`);
       return null;
     }
 
     const result = (await response.json()) as { edge_id?: string };
     return result.edge_id || null;
   } catch (err) {
-    logger.debug?.(`Flowtrace tool error: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug?.(`Agentreplay tool error: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -137,7 +137,7 @@ export async function sendToolTrace(
  * Send memory operation trace
  */
 export async function sendMemoryTrace(
-  config: FlowtraceConfig,
+  config: AgentreplayConfig,
   logger: PluginLogger,
   payload: MemoryTracePayload,
 ): Promise<string | null> {
@@ -171,14 +171,14 @@ export async function sendMemoryTrace(
           },
         });
       }
-      logger.warn(`Flowtrace memory trace failed: ${response.status}`);
+      logger.warn(`Agentreplay memory trace failed: ${response.status}`);
       return null;
     }
 
     const result = (await response.json()) as { edge_id?: string };
     return result.edge_id || null;
   } catch (err) {
-    logger.debug?.(`Flowtrace memory error: ${err instanceof Error ? err.message : String(err)}`);
+    logger.debug?.(`Agentreplay memory error: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }

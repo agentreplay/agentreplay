@@ -1,10 +1,10 @@
-# Flowtrace Evals Examples
+# Agentreplay Evals Examples
 
-This directory contains example scripts demonstrating how to use Flowtrace's evaluation system to test and benchmark AI agents.
+This directory contains example scripts demonstrating how to use Agentreplay's evaluation system to test and benchmark AI agents.
 
 ## Overview
 
-Flowtrace Evals provides:
+Agentreplay Evals provides:
 - **Datasets**: Collections of test cases for evaluating AI agents
 - **Evaluators**: Built-in and custom evaluators for measuring quality
 - **Runs**: Track evaluation runs with metrics and comparisons
@@ -77,8 +77,8 @@ python examples/evals/agent_eval_demo.py
 ## Prerequisites
 
 ```bash
-# Install Flowtrace Python SDK
-pip install flowtrace
+# Install Agentreplay Python SDK
+pip install agentreplay
 
 # Or install from source
 cd sdks/python

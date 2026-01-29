@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flowtrace
+package agentreplay
 
 import (
 	"bytes"
@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-// Client is the Flowtrace client for Go applications.
+// Client is the Agentreplay client for Go applications.
 type Client struct {
 	url            string
 	tenantID       int64
@@ -72,7 +72,7 @@ func WithHTTPClient(httpClient *http.Client) ClientOption {
 	}
 }
 
-// NewClient creates a new Flowtrace client.
+// NewClient creates a new Agentreplay client.
 //
 // Example:
 //
@@ -119,7 +119,7 @@ func (c *Client) nextSessionID() int64 {
 	return atomic.AddInt64(&c.sessionCounter, 1)
 }
 
-// request makes an HTTP request to the Flowtrace server.
+// request makes an HTTP request to the Agentreplay server.
 func (c *Client) request(ctx context.Context, method, path string, body interface{}, params map[string]string) ([]byte, error) {
 	reqURL := c.url + path
 
@@ -160,7 +160,7 @@ func (c *Client) request(ctx context.Context, method, path string, body interfac
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("Flowtrace API error (%d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("Agentreplay API error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
 	return respBody, nil

@@ -1,13 +1,13 @@
 /**
- * Flowtrace Service
+ * Agentreplay Service
  *
- * Manages the lifecycle of Flowtrace tracing and hooks into agent events.
+ * Manages the lifecycle of Agentreplay tracing and hooks into agent events.
  */
 
 import type { PluginApi, PluginService } from "./plugin-types.js";
 
-import { getFlowtraceConfig } from "../index.js";
-import type { FlowtraceConfig } from "./config.js";
+import { getAgentreplayConfig } from "../index.js";
+import type { AgentreplayConfig } from "./config.js";
 import { sendTrace, sendToolTrace, sendMemoryTrace, hashSessionKey, hashAgentId } from "./client.js";
 import { SpanType, type TraceContext, type MemoryOperation } from "./types.js";
 
@@ -16,22 +16,22 @@ const activeTraces = new Map<string, TraceContext>();
 // Track tool call start times for duration calculation
 const toolStartTimes = new Map<string, number>();
 
-export function createFlowtraceService(api: PluginApi): PluginService {
-  let config: FlowtraceConfig;
+export function createAgentreplayService(api: PluginApi): PluginService {
+  let config: AgentreplayConfig;
 
   return {
-    id: "flowtrace",
+    id: "agentreplay",
 
     async start() {
-      config = getFlowtraceConfig(api);
+      config = getAgentreplayConfig(api);
 
       if (!config.enabled) {
-        api.logger.info("Flowtrace service disabled");
+        api.logger.info("Agentreplay service disabled");
         return;
       }
 
       api.logger.info(
-        `Flowtrace enabled: ${config.url} (tenant=${config.tenantId}, project=${config.projectId})`,
+        `Agentreplay enabled: ${config.url} (tenant=${config.tenantId}, project=${config.projectId})`,
       );
 
       // =========================================================================
@@ -203,7 +203,7 @@ export function createFlowtraceService(api: PluginApi): PluginService {
         }
       });
 
-      api.logger.info("Flowtrace hooks registered");
+      api.logger.info("Agentreplay hooks registered");
     },
 
     async stop() {
@@ -216,7 +216,7 @@ export function createFlowtraceService(api: PluginApi): PluginService {
       }
       activeTraces.clear();
       toolStartTimes.clear();
-      api.logger.info("Flowtrace service stopped");
+      api.logger.info("Agentreplay service stopped");
     },
   };
 }

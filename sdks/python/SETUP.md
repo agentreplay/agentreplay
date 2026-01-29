@@ -1,11 +1,11 @@
-# Flowtrace Python SDK - Setup Guide
+# Agentreplay Python SDK - Setup Guide
 
-This guide walks you through setting up and using the Flowtrace Python SDK.
+This guide walks you through setting up and using the Agentreplay Python SDK.
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Flowtrace server running (see main README for setup)
+- Agentreplay server running (see main README for setup)
 - pip or poetry for package management
 
 ## Installation
@@ -13,7 +13,7 @@ This guide walks you through setting up and using the Flowtrace Python SDK.
 ### Basic Installation
 
 ```bash
-pip install flowtrace
+pip install agentreplay
 ```
 
 ### With Framework Integrations
@@ -22,16 +22,16 @@ Install optional dependencies for framework integrations:
 
 ```bash
 # LangChain support
-pip install flowtrace[langchain]
+pip install agentreplay[langchain]
 
 # AutoGen support
-pip install flowtrace[autogen]
+pip install agentreplay[autogen]
 
 # All integrations
-pip install flowtrace[langchain,autogen]
+pip install agentreplay[langchain,autogen]
 
 # Development tools
-pip install flowtrace[dev]
+pip install agentreplay[dev]
 ```
 
 ### From Source
@@ -46,26 +46,26 @@ pip install -e ".[langchain,autogen,dev]"
 
 ## Quick Start
 
-### 1. Start Flowtrace Server
+### 1. Start Agentreplay Server
 
-First, ensure the Flowtrace server is running:
+First, ensure the Agentreplay server is running:
 
 ```bash
-# In the main flowtrace directory
+# In the main agentreplay directory
 cargo build --release
-./target/release/flowtrace init --path ./test-db
-./target/release/flowtrace serve --path ./test-db --port 8080
+./target/release/agentreplay init --path ./test-db
+./target/release/agentreplay serve --path ./test-db --port 8080
 ```
 
 ### 2. Basic Usage Example
 
-Create a file `test_flowtrace.py`:
+Create a file `test_agentreplay.py`:
 
 ```python
-from flowtrace import FlowtraceClient, SpanType, Span
+from agentreplay import AgentreplayClient, SpanType, Span
 
 # Create client
-client = FlowtraceClient(
+client = AgentreplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     agent_id=1,
@@ -100,7 +100,7 @@ for edge in edges:
 Run it:
 
 ```bash
-python test_flowtrace.py
+python test_agentreplay.py
 ```
 
 ### 3. Framework Integration Examples
@@ -111,10 +111,10 @@ python test_flowtrace.py
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
-from flowtrace.integrations.langchain import FlowtraceCallbackHandler
+from agentreplay.integrations.langchain import AgentreplayCallbackHandler
 
 # Create callback
-callback = FlowtraceCallbackHandler(
+callback = AgentreplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1,
     agent_id=1,
@@ -129,21 +129,21 @@ chain = LLMChain(llm=llm, prompt=prompt, callbacks=[callback])
 result = chain.run(topic="machine learning")
 print(result)
 
-# All LLM calls, agent steps, and tool calls are now logged to Flowtrace!
+# All LLM calls, agent steps, and tool calls are now logged to Agentreplay!
 ```
 
 #### AutoGen
 
 ```python
 from autogen import AssistantAgent, UserProxyAgent
-from flowtrace.integrations.autogen import FlowtraceAgentWrapper
+from agentreplay.integrations.autogen import AgentreplayAgentWrapper
 
 # Configure and create agent
 llm_config = {"model": "gpt-4", "api_key": "your-key"}
 assistant = AssistantAgent(name="assistant", llm_config=llm_config)
 
-# Wrap with Flowtrace tracking
-wrapped = FlowtraceAgentWrapper(
+# Wrap with Agentreplay tracking
+wrapped = AgentreplayAgentWrapper(
     agent=assistant,
     url="http://localhost:8080",
     tenant_id=1,
@@ -160,7 +160,7 @@ user_proxy.initiate_chat(
     message="What is quantum computing?",
 )
 
-# All agent messages and tool calls are now logged to Flowtrace!
+# All agent messages and tool calls are now logged to Agentreplay!
 ```
 
 ## Configuration
@@ -170,21 +170,21 @@ user_proxy.initiate_chat(
 You can configure the SDK using environment variables:
 
 ```bash
-export FLOWTRACE_URL="http://localhost:8080"
-export FLOWTRACE_TENANT_ID="1"
-export FLOWTRACE_AGENT_ID="1"
+export AGENTREPLAY_URL="http://localhost:8080"
+export AGENTREPLAY_TENANT_ID="1"
+export AGENTREPLAY_AGENT_ID="1"
 ```
 
 Then in Python:
 
 ```python
 import os
-from flowtrace import FlowtraceClient
+from agentreplay import AgentreplayClient
 
-client = FlowtraceClient(
-    url=os.getenv("FLOWTRACE_URL", "http://localhost:8080"),
-    tenant_id=int(os.getenv("FLOWTRACE_TENANT_ID", "1")),
-    agent_id=int(os.getenv("FLOWTRACE_AGENT_ID", "1")),
+client = AgentreplayClient(
+    url=os.getenv("AGENTREPLAY_URL", "http://localhost:8080"),
+    tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
+    agent_id=int(os.getenv("AGENTREPLAY_AGENT_ID", "1")),
 )
 ```
 
@@ -193,11 +193,11 @@ client = FlowtraceClient(
 For high-throughput scenarios, use the async client:
 
 ```python
-from flowtrace import AsyncFlowtraceClient
+from agentreplay import AsyncAgentreplayClient
 import asyncio
 
 async def main():
-    client = AsyncFlowtraceClient(
+    client = AsyncAgentreplayClient(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=1,
@@ -230,7 +230,7 @@ pytest tests/
 Run with coverage:
 
 ```bash
-pytest --cov=flowtrace tests/
+pytest --cov=agentreplay tests/
 ```
 
 ## Type Checking
@@ -238,7 +238,7 @@ pytest --cov=flowtrace tests/
 The SDK is fully typed. Run type checking with:
 
 ```bash
-mypy src/flowtrace
+mypy src/agentreplay
 ```
 
 ## Linting
@@ -246,13 +246,13 @@ mypy src/flowtrace
 Format code with Black:
 
 ```bash
-black src/flowtrace tests/
+black src/agentreplay tests/
 ```
 
 Lint with Ruff:
 
 ```bash
-ruff check src/flowtrace tests/
+ruff check src/agentreplay tests/
 ```
 
 ## Troubleshooting
@@ -261,7 +261,7 @@ ruff check src/flowtrace tests/
 
 If you get "Connection refused" errors:
 
-1. Ensure Flowtrace server is running: `./target/release/flowtrace serve ...`
+1. Ensure Agentreplay server is running: `./target/release/agentreplay serve ...`
 2. Check the port matches: default is 8080
 3. Verify firewall settings
 
@@ -271,7 +271,7 @@ If you get import errors for LangChain or AutoGen:
 
 ```bash
 # Install the integration dependencies
-pip install flowtrace[langchain]  # or [autogen]
+pip install agentreplay[langchain]  # or [autogen]
 ```
 
 ### Type Errors
@@ -287,17 +287,17 @@ If you get Pydantic validation errors:
 If queries timeout:
 
 1. Check server logs for errors
-2. Verify database is initialized: `./target/release/flowtrace init --path ./test-db`
+2. Verify database is initialized: `./target/release/agentreplay init --path ./test-db`
 3. Try reducing batch size or query limits
 
 ## Next Steps
 
 - Read the [API Reference](API_REFERENCE.md)
 - Check out [Examples](examples/)
-- Join the community on [GitHub Discussions](https://github.com/sochdb/flowtrace/discussions)
+- Join the community on [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
 
 ## Support
 
-- Documentation: https://docs.flowtrace.dev
-- GitHub Issues: https://github.com/sochdb/flowtrace/issues
-- Discussions: https://github.com/sochdb/flowtrace/discussions
+- Documentation: https://docs.agentreplay.dev
+- GitHub Issues: https://github.com/sochdb/agentreplay/issues
+- Discussions: https://github.com/sochdb/agentreplay/discussions

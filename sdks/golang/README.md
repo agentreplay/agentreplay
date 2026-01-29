@@ -1,11 +1,11 @@
-# Flowtrace Go SDK
+# Agentreplay Go SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 
 ## Installation
 
 ```bash
-go get github.com/sochdb/flowtrace-go
+go get github.com/sochdb/agentreplay-go
 ```
 
 ## Quick Start
@@ -18,26 +18,26 @@ import (
     "fmt"
     "log"
 
-    flowtrace "github.com/sochdb/flowtrace-go"
+    agentreplay "github.com/sochdb/agentreplay-go"
 )
 
 func main() {
     // Create client
-    client := flowtrace.NewClient(
+    client := agentreplay.NewClient(
         "http://localhost:8080",
         1, // tenantID
-        flowtrace.WithProjectID(0),
-        flowtrace.WithAgentID(1),
+        agentreplay.WithProjectID(0),
+        agentreplay.WithAgentID(1),
     )
     defer client.Close()
 
     ctx := context.Background()
 
     // Create a basic trace
-    trace, err := client.CreateTrace(ctx, flowtrace.CreateTraceOptions{
+    trace, err := client.CreateTrace(ctx, agentreplay.CreateTraceOptions{
         AgentID:   1,
         SessionID: 123,
-        SpanType:  flowtrace.SpanTypeRoot,
+        SpanType:  agentreplay.SpanTypeRoot,
         Metadata:  map[string]interface{}{"name": "my-agent"},
     })
     if err != nil {
@@ -57,15 +57,15 @@ inputUsage := 25
 outputUsage := 12
 totalUsage := 37
 
-llmTrace, err := client.CreateGenAITrace(ctx, flowtrace.CreateGenAITraceOptions{
+llmTrace, err := client.CreateGenAITrace(ctx, agentreplay.CreateGenAITraceOptions{
     AgentID:   1,
     SessionID: 123,
     Model:     "gpt-4o",
-    InputMessages: []flowtrace.Message{
+    InputMessages: []agentreplay.Message{
         {Role: "system", Content: "You are a helpful assistant."},
         {Role: "user", Content: "What is the capital of France?"},
     },
-    Output: &flowtrace.Message{
+    Output: &agentreplay.Message{
         Role:    "assistant",
         Content: "The capital of France is Paris.",
     },
@@ -83,7 +83,7 @@ llmTrace, err := client.CreateGenAITrace(ctx, flowtrace.CreateGenAITraceOptions{
 ## Tracking Tool Calls
 
 ```go
-toolTrace, err := client.CreateToolTrace(ctx, flowtrace.CreateToolTraceOptions{
+toolTrace, err := client.CreateToolTrace(ctx, agentreplay.CreateToolTraceOptions{
     AgentID:   1,
     SessionID: 123,
     ToolName:  "web_search",
@@ -103,7 +103,7 @@ toolTrace, err := client.CreateToolTrace(ctx, flowtrace.CreateToolTraceOptions{
 ```go
 // Query traces with filters
 sessionID := int64(123)
-results, err := client.QueryTraces(ctx, &flowtrace.QueryFilter{
+results, err := client.QueryTraces(ctx, &agentreplay.QueryFilter{
     SessionID: &sessionID,
     Limit:     100,
 })
@@ -112,7 +112,7 @@ results, err := client.QueryTraces(ctx, &flowtrace.QueryFilter{
 now := time.Now().UnixMicro()
 hourAgo := now - 3600_000_000
 
-rangeResults, err := client.QueryTemporalRange(ctx, hourAgo, now, &flowtrace.QueryFilter{
+rangeResults, err := client.QueryTemporalRange(ctx, hourAgo, now, &agentreplay.QueryFilter{
     AgentID: &agentID,
 })
 
@@ -140,35 +140,35 @@ _, err = client.AddToDataset(ctx, trace.EdgeID, "bad_responses",
 ## Span Types
 
 ```go
-flowtrace.SpanTypeRoot         // 0 - Root span
-flowtrace.SpanTypePlanning     // 1 - Planning phase
-flowtrace.SpanTypeReasoning    // 2 - Reasoning/thinking
-flowtrace.SpanTypeToolCall     // 3 - Tool/function call
-flowtrace.SpanTypeToolResponse // 4 - Tool response
-flowtrace.SpanTypeSynthesis    // 5 - Result synthesis
-flowtrace.SpanTypeResponse     // 6 - Final response
-flowtrace.SpanTypeError        // 7 - Error state
-flowtrace.SpanTypeRetrieval    // 8 - Vector DB retrieval
-flowtrace.SpanTypeEmbedding    // 9 - Text embedding
-flowtrace.SpanTypeHttpCall     // 10 - HTTP API call
-flowtrace.SpanTypeDatabase     // 11 - Database query
-flowtrace.SpanTypeFunction     // 12 - Generic function
-flowtrace.SpanTypeReranking    // 13 - Result reranking
-flowtrace.SpanTypeParsing      // 14 - Document parsing
-flowtrace.SpanTypeGeneration   // 15 - Content generation
-flowtrace.SpanTypeCustom       // 255 - Custom types
+agentreplay.SpanTypeRoot         // 0 - Root span
+agentreplay.SpanTypePlanning     // 1 - Planning phase
+agentreplay.SpanTypeReasoning    // 2 - Reasoning/thinking
+agentreplay.SpanTypeToolCall     // 3 - Tool/function call
+agentreplay.SpanTypeToolResponse // 4 - Tool response
+agentreplay.SpanTypeSynthesis    // 5 - Result synthesis
+agentreplay.SpanTypeResponse     // 6 - Final response
+agentreplay.SpanTypeError        // 7 - Error state
+agentreplay.SpanTypeRetrieval    // 8 - Vector DB retrieval
+agentreplay.SpanTypeEmbedding    // 9 - Text embedding
+agentreplay.SpanTypeHttpCall     // 10 - HTTP API call
+agentreplay.SpanTypeDatabase     // 11 - Database query
+agentreplay.SpanTypeFunction     // 12 - Generic function
+agentreplay.SpanTypeReranking    // 13 - Result reranking
+agentreplay.SpanTypeParsing      // 14 - Document parsing
+agentreplay.SpanTypeGeneration   // 15 - Content generation
+agentreplay.SpanTypeCustom       // 255 - Custom types
 ```
 
 ## Configuration Options
 
 ```go
-client := flowtrace.NewClient(
+client := agentreplay.NewClient(
     "http://localhost:8080",
     tenantID,
-    flowtrace.WithProjectID(0),         // Project ID
-    flowtrace.WithAgentID(1),           // Default agent ID
-    flowtrace.WithTimeout(30*time.Second), // Request timeout
-    flowtrace.WithHTTPClient(customClient), // Custom HTTP client
+    agentreplay.WithProjectID(0),         // Project ID
+    agentreplay.WithAgentID(1),           // Default agent ID
+    agentreplay.WithTimeout(30*time.Second), // Request timeout
+    agentreplay.WithHTTPClient(customClient), // Custom HTTP client
 )
 ```
 
@@ -190,10 +190,10 @@ if err != nil {
 ```go
 import (
     "github.com/sashabaranov/go-openai"
-    flowtrace "github.com/sochdb/flowtrace-go"
+    agentreplay "github.com/sochdb/agentreplay-go"
 )
 
-func chat(client *openai.Client, ft *flowtrace.Client, messages []openai.ChatCompletionMessage) (string, error) {
+func chat(client *openai.Client, ft *agentreplay.Client, messages []openai.ChatCompletionMessage) (string, error) {
     resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
         Model:       openai.GPT4o,
         Messages:    messages,
@@ -208,12 +208,12 @@ func chat(client *openai.Client, ft *flowtrace.Client, messages []openai.ChatCom
     outputTokens := resp.Usage.CompletionTokens
     totalTokens := resp.Usage.TotalTokens
 
-    _, _ = ft.CreateGenAITrace(ctx, flowtrace.CreateGenAITraceOptions{
+    _, _ = ft.CreateGenAITrace(ctx, agentreplay.CreateGenAITraceOptions{
         AgentID:   1,
         SessionID: time.Now().UnixMilli(),
         Model:     resp.Model,
         InputMessages: convertMessages(messages),
-        Output: &flowtrace.Message{
+        Output: &agentreplay.Message{
             Role:    "assistant",
             Content: resp.Choices[0].Message.Content,
         },

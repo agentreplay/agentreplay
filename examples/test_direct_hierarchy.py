@@ -19,8 +19,8 @@ Direct test using OpenTelemetry SDK to create hierarchical spans.
 import time
 import os
 
-# Set Flowtrace config
-os.environ["FLOWTRACE_PROJECT_ID"] = "11635"
+# Set Agentreplay config
+os.environ["AGENTREPLAY_PROJECT_ID"] = "11635"
 os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4317"
 
 # Initialize OTEL manually
@@ -126,7 +126,7 @@ provider.force_flush()
 time.sleep(2)
 
 print("\n" + "=" * 60)
-print("✅ Done! Check Flowtrace UI for hierarchical traces")
+print("✅ Done! Check Agentreplay UI for hierarchical traces")
 print("   Expected:")
 print("   1. chain.MyChain → llm.gpt-4")
 print("   2. chain.ToolChain → tool.get_weather + llm.gpt-4")

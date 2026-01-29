@@ -1,6 +1,6 @@
-# @flowtrace/clawdbot-plugin
+# @agentreplay/clawdbot-plugin
 
-Flowtrace observability plugin for [Clawdbot](https://github.com/anthropics/clawdbot) - automatic tracing of agent activities, tool calls, and memory operations.
+Agentreplay observability plugin for [Clawdbot](https://github.com/anthropics/clawdbot) - automatic tracing of agent activities, tool calls, and memory operations.
 
 ## Features
 
@@ -9,26 +9,26 @@ Flowtrace observability plugin for [Clawdbot](https://github.com/anthropics/claw
 - 🔗 **Parent-Child Relationships**: Tool calls are linked to their parent agent runs
 - ⏱️ **Duration Tracking**: Measures time spent on each operation
 - 🏷️ **Rich Metadata**: Captures session keys, workspace info, and more
-- 📈 **Dashboard Integration**: View traces in Flowtrace UI
+- 📈 **Dashboard Integration**: View traces in Agentreplay UI
 
 ## Installation
 
 ```bash
-npm install @flowtrace/clawdbot-plugin
+npm install @agentreplay/clawdbot-plugin
 ```
 
 ## Setup
 
-### 1. Start Flowtrace
+### 1. Start Agentreplay
 
-Make sure Flowtrace is running. By default, it runs on `http://localhost:9600`.
+Make sure Agentreplay is running. By default, it runs on `http://localhost:9600`.
 
 ```bash
-# Using the Flowtrace desktop app
-open /Applications/Flowtrace.app
+# Using the Agentreplay desktop app
+open /Applications/Agentreplay.app
 
 # Or using the CLI
-flowtrace serve
+agentreplay serve
 ```
 
 ### 2. Configure the Plugin
@@ -38,7 +38,7 @@ Add to your `clawdbot.json`:
 ```json
 {
   "plugins": {
-    "@flowtrace/clawdbot-plugin": {
+    "@agentreplay/clawdbot-plugin": {
       "enabled": true,
       "url": "http://localhost:9600",
       "tenant_id": 1,
@@ -51,9 +51,9 @@ Add to your `clawdbot.json`:
 Or use environment variables:
 
 ```bash
-export FLOWTRACE_URL="http://localhost:9600"
-export FLOWTRACE_TENANT_ID="1"
-export FLOWTRACE_PROJECT_ID="1"
+export AGENTREPLAY_URL="http://localhost:9600"
+export AGENTREPLAY_TENANT_ID="1"
+export AGENTREPLAY_PROJECT_ID="1"
 ```
 
 ### 3. Restart Clawdbot
@@ -67,18 +67,18 @@ clawdbot restart
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable or disable tracing |
-| `url` | string | `http://localhost:9600` | Flowtrace server URL |
+| `url` | string | `http://localhost:9600` | Agentreplay server URL |
 | `tenant_id` | number | `1` | Tenant identifier |
 | `project_id` | number | `1` | Project identifier |
 
 ## Commands
 
-### `/flowtrace`
+### `/agentreplay`
 
-Shows the current Flowtrace integration status:
+Shows the current Agentreplay integration status:
 
 ```
-📊 Flowtrace Status
+📊 Agentreplay Status
 
 • Enabled: Yes
 • Server: http://localhost:9600
@@ -118,14 +118,14 @@ When using memory plugins (e.g., `memory-lancedb`):
 
 ## Viewing Traces
 
-1. Open Flowtrace desktop app or navigate to `http://localhost:9600`
+1. Open Agentreplay desktop app or navigate to `http://localhost:9600`
 2. Go to **Traces** section
 3. Filter by project, session, or time range
 4. Click on a trace to see the timeline and details
 
 ### Memory Dashboard
 
-In Flowtrace, you can also view:
+In Agentreplay, you can also view:
 - Memory operation frequency
 - Most recalled memories
 - Store/recall ratio
@@ -135,13 +135,13 @@ In Flowtrace, you can also view:
 
 ### Traces not appearing
 
-1. Check that Flowtrace is running: `curl http://localhost:9600/api/v1/health`
-2. Verify the plugin is enabled: Send `/flowtrace` command
+1. Check that Agentreplay is running: `curl http://localhost:9600/api/v1/health`
+2. Verify the plugin is enabled: Send `/agentreplay` command
 3. Check logs for connection errors
 
 ### Connection refused
 
-Make sure the Flowtrace URL is correct and the server is accessible:
+Make sure the Agentreplay URL is correct and the server is accessible:
 
 ```bash
 curl -X POST http://localhost:9600/api/v1/traces \
@@ -151,7 +151,7 @@ curl -X POST http://localhost:9600/api/v1/traces \
 
 ## API Reference
 
-The plugin sends traces to these Flowtrace endpoints:
+The plugin sends traces to these Agentreplay endpoints:
 
 | Endpoint | Purpose |
 |----------|---------|

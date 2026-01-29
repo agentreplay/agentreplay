@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package flowtrace provides a high-performance client for the Flowtrace
+// Package agentreplay provides a high-performance client for the Agentreplay
 // observability platform, designed for LLM agents and AI applications.
-package flowtrace
+package agentreplay
 
 import (
 	"encoding/json"

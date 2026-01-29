@@ -1,1 +1,1 @@
-# Flowtrace hooks for Claude Code
+# Agentreplay hooks for Claude Code

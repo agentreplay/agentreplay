@@ -22,14 +22,14 @@ echo "================================"
 
 # Run LangGraph (already completed, but re-run for fresh data)
 echo -e "\n[1/4] Running LangGraph..."
-cd flowtrace_langgraph
+cd agentreplay_langgraph
 python multi_agent_research.py > langraph_output.log 2>&1 &
 LANGGRAPH_PID=$!
 cd ..
 
 # Run LangChain
 echo -e "\n[2/4] Running LangChain..."
-cd flowtrace_langchain  
+cd agentreplay_langchain  
 python rag_agent_with_memory.py  > langchain_output.log 2>&1 &
 LANGCHAIN_PID=$!
 cd ..

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Example: Using Flowtrace with LangChain.
+"""Example: Using Agentreplay with LangChain.
 
 This example demonstrates how to automatically log LangChain traces
-to Flowtrace using the callback handler.
+to Agentreplay using the callback handler.
 """
 
 import os
@@ -24,18 +24,18 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 from langchain.agents import AgentType, initialize_agent, load_tools
 
-from flowtrace.integrations.langchain import (
-    FlowtraceCallbackHandler,
+from agentreplay.integrations.langchain import (
+    AgentreplayCallbackHandler,
     wrap_langchain_with_chronolake,
 )
 
 
 def example_basic_chain():
-    """Example: Basic LLM chain with Flowtrace logging."""
+    """Example: Basic LLM chain with Agentreplay logging."""
     print("=== Basic Chain Example ===\n")
 
     # Create callback handler
-    callback = FlowtraceCallbackHandler(
+    callback = AgentreplayCallbackHandler(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=1,
@@ -47,7 +47,7 @@ def example_basic_chain():
     prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
     chain = LLMChain(llm=llm, prompt=prompt, callbacks=[callback])
 
-    # Run chain - automatically logged to Flowtrace
+    # Run chain - automatically logged to Agentreplay
     result = chain.run(topic="programming")
     print(f"Result: {result}\n")
 
@@ -57,7 +57,7 @@ def example_agent_with_tools():
     print("=== Agent with Tools Example ===\n")
 
     # Create callback handler
-    callback = FlowtraceCallbackHandler(
+    callback = AgentreplayCallbackHandler(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=2,
@@ -76,7 +76,7 @@ def example_agent_with_tools():
         verbose=True,
     )
 
-    # Run agent - all steps logged to Flowtrace
+    # Run agent - all steps logged to Agentreplay
     result = agent.run(
         "What is the population of Tokyo? What is that number raised to the power of 2?"
     )
@@ -92,7 +92,7 @@ def example_wrap_component():
     prompt = ChatPromptTemplate.from_template("Write a haiku about {subject}")
     chain = LLMChain(llm=llm, prompt=prompt)
 
-    # Wrap with Flowtrace logging
+    # Wrap with Agentreplay logging
     chain = wrap_langchain_with_chronolake(
         chain,
         chronolake_url="http://localhost:8080",
@@ -101,7 +101,7 @@ def example_wrap_component():
         session_id=1003,
     )
 
-    # Run chain - now logged to Flowtrace
+    # Run chain - now logged to Agentreplay
     result = chain.run(subject="artificial intelligence")
     print(f"Result: {result}\n")
 
@@ -112,7 +112,7 @@ def example_multi_step_reasoning():
 
     from langchain.chains import SequentialChain
 
-    callback = FlowtraceCallbackHandler(
+    callback = AgentreplayCallbackHandler(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=4,
@@ -139,7 +139,7 @@ def example_multi_step_reasoning():
         callbacks=[callback],
     )
 
-    # Run - both steps logged to Flowtrace
+    # Run - both steps logged to Agentreplay
     result = overall_chain({"field": "quantum computing"})
     print(f"Topic: {result['topic']}")
     print(f"Paragraph: {result['paragraph']}\n")
@@ -174,4 +174,4 @@ if __name__ == "__main__":
     # except Exception as e:
     #     print(f"Error in agent: {e}\n")
 
-    print("Examples complete! Check Flowtrace for logged traces.")
+    print("Examples complete! Check Agentreplay for logged traces.")

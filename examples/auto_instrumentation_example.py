@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Flowtrace Auto-Instrumentation Example
+Agentreplay Auto-Instrumentation Example
 Demonstrates zero-config tracing for OpenAI and LangGraph
 
 This example shows how to enable automatic tracing with just 2 lines of code.
@@ -27,11 +27,11 @@ import operator
 # ============================================================================
 # STEP 1: Enable Auto-Instrumentation (2 lines!)
 # ============================================================================
-from flowtrace import Flowtrace
+from agentreplay import Agentreplay
 
-# Initialize Flowtrace
-ft = Flowtrace(
-    api_url=os.getenv("FLOWTRACE_API_URL", "http://localhost:9600"),
+# Initialize Agentreplay
+ft = Agentreplay(
+    api_url=os.getenv("AGENTREPLAY_API_URL", "http://localhost:9600"),
     project="auto-instrumented-example",
     tags=["example", "auto-trace"]
 )
@@ -51,7 +51,7 @@ class AgentState(TypedDict):
 # Define Agent Node
 # ============================================================================
 def call_model(state: AgentState):
-    """LLM call - automatically traced by Flowtrace"""
+    """LLM call - automatically traced by Agentreplay"""
     client = OpenAI()
     
     messages = state["messages"]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         "iterations": 0
     })
     
-    print("\n✅ Done! Check Flowtrace UI for:")
+    print("\n✅ Done! Check Agentreplay UI for:")
     print("  - Full conversation history")
     print("  - Token usage per call")
     print("  - Total cost breakdown")

@@ -50,7 +50,7 @@ stages:
           - task: Cache@2
             displayName: 'Cache npm packages'
             inputs:
-              key: 'npm | "$(Agent.OS)" | flowtrace-ui/package-lock.json'
+              key: 'npm | "$(Agent.OS)" | agentreplay-ui/package-lock.json'
               restoreKeys: |
                 npm | "$(Agent.OS)"
               path: $(Pipeline.Workspace)/.npm
@@ -63,16 +63,16 @@ stages:
 
           - script: npm ci
             displayName: 'Install frontend dependencies'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - script: npm run build
             displayName: 'Build frontend'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - script: |
-              rm -rf flowtrace-tauri/flowtrace-ui/dist
-              mkdir -p flowtrace-tauri/flowtrace-ui
-              cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+              rm -rf agentreplay-tauri/agentreplay-ui/dist
+              mkdir -p agentreplay-tauri/agentreplay-ui
+              cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
             displayName: 'Copy frontend to Tauri'
 
           - script: cargo install tauri-cli --version "^2.0"
@@ -80,7 +80,7 @@ stages:
 
           - script: cargo tauri build --target aarch64-apple-darwin
             displayName: 'Build Tauri App'
-            workingDirectory: flowtrace-tauri
+            workingDirectory: agentreplay-tauri
             env:
               TAURI_SIGNING_PRIVATE_KEY: $(TAURI_PRIVATE_KEY)
               TAURI_SIGNING_PRIVATE_KEY_PASSWORD: $(TAURI_KEY_PASSWORD)
@@ -88,8 +88,8 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: 'Publish macOS ARM artifacts'
             inputs:
-              targetPath: 'flowtrace-tauri/target/aarch64-apple-darwin/release/bundle'
-              artifact: 'Flowtrace-aarch64-apple-darwin'
+              targetPath: 'agentreplay-tauri/target/aarch64-apple-darwin/release/bundle'
+              artifact: 'Agentreplay-aarch64-apple-darwin'
               publishLocation: 'pipeline'
 
       # -------------------------------------------------------------------------
@@ -110,7 +110,7 @@ stages:
           - task: Cache@2
             displayName: 'Cache npm packages'
             inputs:
-              key: 'npm | "$(Agent.OS)" | flowtrace-ui/package-lock.json'
+              key: 'npm | "$(Agent.OS)" | agentreplay-ui/package-lock.json'
               restoreKeys: |
                 npm | "$(Agent.OS)"
               path: $(Pipeline.Workspace)/.npm
@@ -123,16 +123,16 @@ stages:
 
           - script: npm ci
             displayName: 'Install frontend dependencies'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - script: npm run build
             displayName: 'Build frontend'
-            workingDirectory: flowtrace-ui
+            workingDirectory: agentreplay-ui
 
           - script: |
-              rm -rf flowtrace-tauri/flowtrace-ui/dist
-              mkdir -p flowtrace-tauri/flowtrace-ui
-              cp -r flowtrace-ui/dist flowtrace-tauri/flowtrace-ui/
+              rm -rf agentreplay-tauri/agentreplay-ui/dist
+              mkdir -p agentreplay-tauri/agentreplay-ui
+              cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
             displayName: 'Copy frontend to Tauri'
 
           - script: cargo install tauri-cli --version "^2.0"
@@ -140,7 +140,7 @@ stages:
 
           - script: cargo tauri build --target x86_64-apple-darwin
             displayName: 'Build Tauri App'
-            workingDirectory: flowtrace-tauri
+            workingDirectory: agentreplay-tauri
             env:
               TAURI_SIGNING_PRIVATE_KEY: $(TAURI_PRIVATE_KEY)
               TAURI_SIGNING_PRIVATE_KEY_PASSWORD: $(TAURI_KEY_PASSWORD)
@@ -148,6 +148,6 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: 'Publish macOS Intel artifacts'
             inputs:
-              targetPath: 'flowtrace-tauri/target/x86_64-apple-darwin/release/bundle'
-              artifact: 'Flowtrace-x86_64-apple-darwin'
+              targetPath: 'agentreplay-tauri/target/x86_64-apple-darwin/release/bundle'
+              artifact: 'Agentreplay-x86_64-apple-darwin'
               publishLocation: 'pipeline'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreToolUse hook for Flowtrace plugin.
+PreToolUse hook for Agentreplay plugin.
 Records tool start time and sends initial trace.
 """
 

@@ -14,29 +14,29 @@
 
 [workspace]
 members = [
-    "flowtrace-core",
-    "flowtrace-storage",
-    "flowtrace-index",
-    "flowtrace-query",
-    "flowtrace-cli",
-    "flowtrace-server",
-    "flowtrace-observability",
-    "flowtrace-telemetry",
-    "flowtrace-evals",
-    "flowtrace-prompts",
-    "flowtrace-experiments",
-    "flowtrace-plugins/core",
-    "flowtrace-plugins/sdk/rust",
+    "agentreplay-core",
+    "agentreplay-storage",
+    "agentreplay-index",
+    "agentreplay-query",
+    "agentreplay-cli",
+    "agentreplay-server",
+    "agentreplay-observability",
+    "agentreplay-telemetry",
+    "agentreplay-evals",
+    "agentreplay-prompts",
+    "agentreplay-experiments",
+    "agentreplay-plugins/core",
+    "agentreplay-plugins/sdk/rust",
 ]
-exclude = ["flowtrace-tauri", "sdks/rust"]
+exclude = ["agentreplay-tauri", "sdks/rust"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["Flowtrace Contributors"]
+authors = ["Agentreplay Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/sochdb/flowtrace"
+repository = "https://github.com/sochdb/agentreplay"
 
 [workspace.dependencies]
 # NOTE: tokio was removed - storage engine uses sync I/O (std::fs, std::thread)

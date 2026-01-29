@@ -15,31 +15,31 @@
 """
 LangChain Auto-Instrumentation via Callback Handler
 
-Add Flowtrace to any LangChain application with one line.
+Add Agentreplay to any LangChain application with one line.
 """
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import LLMResult
 from typing import Any, Dict, List, Optional
 import time
 
-from flowtrace import Flowtrace
-from flowtrace.genai import GenAISpan
+from agentreplay import Agentreplay
+from agentreplay.genai import GenAISpan
 
 
-class FlowtraceCallback(BaseCallbackHandler):
+class AgentreplayCallback(BaseCallbackHandler):
     """
-    LangChain callback handler for Flowtrace integration.
+    LangChain callback handler for Agentreplay integration.
     
     Usage:
         from langchain.chat_models import ChatOpenAI
-        from flowtrace_callback import FlowtraceCallback
+        from agentreplay_callback import AgentreplayCallback
         
-        llm = ChatOpenAI(callbacks=[FlowtraceCallback()])
+        llm = ChatOpenAI(callbacks=[AgentreplayCallback()])
         response = llm.predict("Hello!")
     """
     
-    def __init__(self, flowtrace: Optional[Flowtrace] = None):
-        self.flowtrace = flowtrace or Flowtrace()
+    def __init__(self, agentreplay: Optional[Agentreplay] = None):
+        self.agentreplay = agentreplay or Agentreplay()
         self.active_spans: Dict[str, tuple[GenAISpan, float]] = {}
     
     def on_llm_start(
@@ -95,7 +95,7 @@ class FlowtraceCallback(BaseCallbackHandler):
         
         # Send span
         duration = time.time() - start_time
-        self.flowtrace.send_span(span, duration=duration)
+        self.agentreplay.send_span(span, duration=duration)
     
     def on_llm_error(
         self, error: Exception, **kwargs: Any
@@ -114,7 +114,7 @@ class FlowtraceCallback(BaseCallbackHandler):
         
         # Send span
         duration = time.time() - start_time
-        self.flowtrace.send_span(span, duration=duration)
+        self.agentreplay.send_span(span, duration=duration)
     
     @staticmethod
     def _detect_provider(model_name: str) -> str:
@@ -136,10 +136,10 @@ if __name__ == "__main__":
     from langchain.prompts import ChatPromptTemplate
     from langchain.schema import StrOutputParser
     
-    # Create LLM with Flowtrace callback
+    # Create LLM with Agentreplay callback
     llm = ChatOpenAI(
         model="gpt-4o-mini",
-        callbacks=[FlowtraceCallback()]
+        callbacks=[AgentreplayCallback()]
     )
     
     # Create chain
@@ -154,4 +154,4 @@ if __name__ == "__main__":
     result = chain.invoke({"input": "What is the capital of France?"})
     
     print(f"Response: {result}")
-    print("✅ Trace sent to Flowtrace!")
+    print("✅ Trace sent to Agentreplay!")

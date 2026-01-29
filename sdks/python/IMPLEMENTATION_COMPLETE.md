@@ -1,4 +1,4 @@
-# Flowtrace SDK Implementation - Complete ✅
+# Agentreplay SDK Implementation - Complete ✅
 
 ## Summary
 
@@ -10,14 +10,14 @@ Successfully implemented all P0 critical tasks from the task document, focusing 
 
 #### 1. ✅ Fix OpenAI Streaming Response Handler
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/auto_instrument/openai.py`
+**Files:** `sdks/python/src/agentreplay/auto_instrument/openai.py`
 
 **What was implemented:**
 - `_StreamWrapper` class that wraps streaming responses without consuming the stream
 - `_AsyncStreamWrapper` for async streaming support
 - Proper detection of `stream=True` parameter
 - Telemetry collection after stream exhaustion (tokens, content, latency)
-- Users receive chunks in real-time while Flowtrace captures full trace
+- Users receive chunks in real-time while Agentreplay captures full trace
 
 **Key features:**
 - No stream consumption - users get all chunks
@@ -29,17 +29,17 @@ Successfully implemented all P0 critical tasks from the task document, focusing 
 
 #### 2. ✅ Implement .pth File Auto-Initialization
 **Status:** Complete  
-**Files:** `sdks/python/flowtrace-init.pth`
+**Files:** `sdks/python/agentreplay-init.pth`
 
 **What was implemented:**
 - Single-line `.pth` file that auto-imports bootstrap module
-- Only activates when `FLOWTRACE_ENABLED=true`
+- Only activates when `AGENTREPLAY_ENABLED=true`
 - Runs before any user code
 - Zero-code instrumentation - just set env vars!
 
 **Content:**
 ```python
-import os; os.getenv('FLOWTRACE_ENABLED') == 'true' and __import__('flowtrace.bootstrap')
+import os; os.getenv('AGENTREPLAY_ENABLED') == 'true' and __import__('agentreplay.bootstrap')
 ```
 
 **Benefits:**
@@ -51,7 +51,7 @@ import os; os.getenv('FLOWTRACE_ENABLED') == 'true' and __import__('flowtrace.bo
 
 #### 3. ✅ Create Bootstrap Module
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/bootstrap.py`
+**Files:** `sdks/python/src/agentreplay/bootstrap.py`
 
 **What was implemented:**
 - Auto-initialization from environment variables
@@ -61,11 +61,11 @@ import os; os.getenv('FLOWTRACE_ENABLED') == 'true' and __import__('flowtrace.bo
 - Debug mode support
 
 **Environment Variables Used:**
-- `FLOWTRACE_ENABLED` - Enable/disable
-- `FLOWTRACE_URL` - Server URL
-- `FLOWTRACE_TENANT_ID` - Tenant ID
-- `FLOWTRACE_PROJECT_ID` - Project ID
-- `FLOWTRACE_DEBUG` - Debug logging
+- `AGENTREPLAY_ENABLED` - Enable/disable
+- `AGENTREPLAY_URL` - Server URL
+- `AGENTREPLAY_TENANT_ID` - Tenant ID
+- `AGENTREPLAY_PROJECT_ID` - Project ID
+- `AGENTREPLAY_DEBUG` - Debug logging
 - `OTEL_SERVICE_NAME` - Service name
 - `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` - Content capture
 
@@ -89,15 +89,15 @@ import os; os.getenv('FLOWTRACE_ENABLED') == 'true' and __import__('flowtrace.bo
   - `opentelemetry-exporter-otlp-proto-http>=1.20.0`
 
 **Result:**
-- `pip install flowtrace` automatically installs `.pth` file
+- `pip install agentreplay` automatically installs `.pth` file
 - Works with system, user, and virtualenv installs
-- `pip uninstall flowtrace` removes everything cleanly
+- `pip uninstall agentreplay` removes everything cleanly
 
 ---
 
 #### 5. ✅ Implement Agent Context Tracking
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/context.py`
+**Files:** `sdks/python/src/agentreplay/context.py`
 
 **What was implemented:**
 - `AgentContext` context manager using `contextvars`
@@ -108,7 +108,7 @@ import os; os.getenv('FLOWTRACE_ENABLED') == 'true' and __import__('flowtrace.bo
 
 **Usage:**
 ```python
-from flowtrace.context import AgentContext
+from agentreplay.context import AgentContext
 
 with AgentContext(agent_id="researcher", session_id="sess-123"):
     # All LLM calls here get tagged with agent_id
@@ -125,7 +125,7 @@ with AgentContext(agent_id="researcher", session_id="sess-123"):
 
 #### 6. ✅ Add Configurable Message Truncation
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/auto_instrument/openai.py`
+**Files:** `sdks/python/src/agentreplay/auto_instrument/openai.py`
 
 **What was implemented:**
 - Environment variable configuration for content capture
@@ -135,25 +135,25 @@ with AgentContext(agent_id="researcher", session_id="sess-123"):
 
 **Environment Variables:**
 - `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` - Enable/disable (standard OTEL)
-- `FLOWTRACE_MAX_CONTENT_LENGTH` - Max chars per message (default: 10000, 0 = unlimited)
-- `FLOWTRACE_MAX_MESSAGES` - Max messages to capture (default: 0 = all)
-- `FLOWTRACE_TRUNCATE_CONTENT` - Enable truncation (default: true)
+- `AGENTREPLAY_MAX_CONTENT_LENGTH` - Max chars per message (default: 10000, 0 = unlimited)
+- `AGENTREPLAY_MAX_MESSAGES` - Max messages to capture (default: 0 = all)
+- `AGENTREPLAY_TRUNCATE_CONTENT` - Enable truncation (default: true)
 
 **Configuration Presets:**
 
 **Development:**
 ```bash
 OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-FLOWTRACE_MAX_MESSAGES=0
-FLOWTRACE_TRUNCATE_CONTENT=false
+AGENTREPLAY_MAX_MESSAGES=0
+AGENTREPLAY_TRUNCATE_CONTENT=false
 ```
 
 **Production:**
 ```bash
 OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-FLOWTRACE_MAX_MESSAGES=5
-FLOWTRACE_TRUNCATE_CONTENT=true
-FLOWTRACE_MAX_CONTENT_LENGTH=500
+AGENTREPLAY_MAX_MESSAGES=5
+AGENTREPLAY_TRUNCATE_CONTENT=true
+AGENTREPLAY_MAX_CONTENT_LENGTH=500
 ```
 
 **Compliance (GDPR/HIPAA):**
@@ -165,18 +165,18 @@ OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
 
 #### 7. ✅ Migrate to OTLP Native Export
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/otel_bridge.py`
+**Files:** `sdks/python/src/agentreplay/otel_bridge.py`
 
 **What was implemented:**
-- Replaced custom `FlowtraceSpanExporter` with standard `OTLPSpanExporter`
+- Replaced custom `AgentreplaySpanExporter` with standard `OTLPSpanExporter`
 - Uses standard OTLP HTTP endpoint: `http://localhost:4318/v1/traces`
-- Flowtrace-specific headers: `x-flowtrace-tenant-id`, `x-flowtrace-project-id`
+- Agentreplay-specific headers: `x-agentreplay-tenant-id`, `x-agentreplay-project-id`
 - Full interoperability with other OTLP collectors
 
 **Before:**
 ```python
-from flowtrace.otel_exporter import FlowtraceSpanExporter
-exporter = FlowtraceSpanExporter(url="http://localhost:9600/api/v1/traces")
+from agentreplay.otel_exporter import AgentreplaySpanExporter
+exporter = AgentreplaySpanExporter(url="http://localhost:9600/api/v1/traces")
 ```
 
 **After:**
@@ -184,12 +184,12 @@ exporter = FlowtraceSpanExporter(url="http://localhost:9600/api/v1/traces")
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 exporter = OTLPSpanExporter(
     endpoint="http://localhost:4318/v1/traces",
-    headers={"x-flowtrace-tenant-id": "1", "x-flowtrace-project-id": "0"}
+    headers={"x-agentreplay-tenant-id": "1", "x-agentreplay-project-id": "0"}
 )
 ```
 
 **Benefits:**
-- Multi-vendor support (send to Flowtrace + Datadog simultaneously)
+- Multi-vendor support (send to Agentreplay + Datadog simultaneously)
 - Standard tooling compatibility (otel-cli, Grafana, etc.)
 - Battle-tested implementation with retry, compression, etc.
 - Future-proof as OTLP evolves
@@ -198,7 +198,7 @@ exporter = OTLPSpanExporter(
 
 #### 8. ✅ Add Tool Call Instrumentation
 **Status:** Complete  
-**Files:** `sdks/python/src/flowtrace/auto_instrument/openai.py`
+**Files:** `sdks/python/src/agentreplay/auto_instrument/openai.py`
 
 **What was implemented:**
 - Detection of tool/function calls in responses
@@ -240,7 +240,7 @@ Comprehensive example demonstrating:
 
 Run with:
 ```bash
-export FLOWTRACE_ENABLED=true
+export AGENTREPLAY_ENABLED=true
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 export OPENAI_API_KEY=your-key
 python3 examples/zero_code_example.py
@@ -269,7 +269,7 @@ Comprehensive README with:
 ┌─────────────────────────────────────────────────────────┐
 │ 1. Python Startup                                       │
 │    └─ .pth file imports bootstrap.py                    │
-│       └─ bootstrap checks FLOWTRACE_ENABLED             │
+│       └─ bootstrap checks AGENTREPLAY_ENABLED             │
 │          └─ Initializes OTEL with OTLP exporter         │
 │             └─ Instruments OpenAI/Anthropic SDKs        │
 └─────────────────────────────────────────────────────────┘
@@ -302,7 +302,7 @@ Comprehensive README with:
 └─────────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────────┐
-│ 5. Flowtrace Backend (Rust)                            │
+│ 5. Agentreplay Backend (Rust)                            │
 │    └─ OTLP HTTP server receives request                 │
 │       └─ Converts OTLP spans to AgentFlowEdge           │
 │          └─ Stores in SLED database                      │
@@ -317,7 +317,7 @@ Comprehensive README with:
 ### OTLP Server Status
 
 The backend already has OTLP support implemented:
-- **File:** `flowtrace-tauri/src/otlp_server.rs`
+- **File:** `agentreplay-tauri/src/otlp_server.rs`
 - **gRPC Port:** 4317
 - **HTTP Port:** 4318
 - **Endpoint:** `/v1/traces`
@@ -325,8 +325,8 @@ The backend already has OTLP support implemented:
 ### Required Headers
 
 ```
-x-flowtrace-tenant-id: 1
-x-flowtrace-project-id: 0
+x-agentreplay-tenant-id: 1
+x-agentreplay-project-id: 0
 ```
 
 ### Verification
@@ -338,8 +338,8 @@ curl http://localhost:9600/health
 # Test OTLP endpoint (should return 400 for empty body, but means it's working)
 curl -X POST http://localhost:4318/v1/traces \
   -H "Content-Type: application/x-protobuf" \
-  -H "x-flowtrace-tenant-id: 1" \
-  -H "x-flowtrace-project-id: 0"
+  -H "x-agentreplay-tenant-id: 1" \
+  -H "x-agentreplay-project-id: 0"
 ```
 
 ---
@@ -370,10 +370,10 @@ This verifies all files exist and contain expected content.
 
 3. **Set Environment:**
    ```bash
-   export FLOWTRACE_ENABLED=true
-   export FLOWTRACE_URL=http://localhost:9600
+   export AGENTREPLAY_ENABLED=true
+   export AGENTREPLAY_URL=http://localhost:9600
    export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
-   export FLOWTRACE_DEBUG=true
+   export AGENTREPLAY_DEBUG=true
    export OPENAI_API_KEY=your-key
    ```
 
@@ -396,7 +396,7 @@ This verifies all files exist and contain expected content.
 | Task | Requirement | Implementation | Status |
 |------|-------------|----------------|--------|
 | 1 | Fix streaming | `_StreamWrapper` class | ✅ |
-| 2 | .pth file | `flowtrace-init.pth` | ✅ |
+| 2 | .pth file | `agentreplay-init.pth` | ✅ |
 | 3 | Bootstrap | `bootstrap.py` with graceful errors | ✅ |
 | 4 | setup.py | `data-files` in pyproject.toml | ✅ |
 | 5 | Agent context | `context.py` with contextvars | ✅ |
@@ -409,7 +409,7 @@ This verifies all files exist and contain expected content.
 ## 🚀 Production Readiness
 
 ### Security
-- ✅ Opt-in by default (requires `FLOWTRACE_ENABLED=true`)
+- ✅ Opt-in by default (requires `AGENTREPLAY_ENABLED=true`)
 - ✅ Content capture configurable (GDPR/HIPAA compliant)
 - ✅ Graceful error handling (never crashes app)
 - ✅ Lazy imports (fast startup)
@@ -444,10 +444,10 @@ This verifies all files exist and contain expected content.
 
 Not implemented in this pass, but documented in task.md:
 
-- **P1:** Dual export capability (Flowtrace + LangSmith simultaneously)
+- **P1:** Dual export capability (Agentreplay + LangSmith simultaneously)
 - **P1:** RAG context tracking
 - **P2:** Automatic cost calculation (Rust backend)
-- **P2:** Diagnostic CLI tool (`flowtrace-doctor`)
+- **P2:** Diagnostic CLI tool (`agentreplay-doctor`)
 - **P2:** Anthropic streaming support (same pattern as OpenAI)
 
 ---

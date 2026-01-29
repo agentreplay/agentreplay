@@ -1,6 +1,6 @@
 """
-Flowtrace client for Claude Code plugin.
-Sends traces to the Flowtrace server.
+Agentreplay client for Claude Code plugin.
+Sends traces to the Agentreplay server.
 """
 
 import os
@@ -18,7 +18,7 @@ except ImportError:
 
 
 class SpanType(IntEnum):
-    """Span types matching Flowtrace SDK."""
+    """Span types matching Agentreplay SDK."""
     Root = 0
     Planning = 1
     Reasoning = 2
@@ -39,12 +39,12 @@ class SpanType(IntEnum):
 
 
 def get_config() -> Dict[str, Any]:
-    """Get Flowtrace configuration from environment or defaults."""
+    """Get Agentreplay configuration from environment or defaults."""
     return {
-        "enabled": os.environ.get("FLOWTRACE_ENABLED", "true").lower() != "false",
-        "url": os.environ.get("FLOWTRACE_URL", "http://localhost:9600"),
-        "tenant_id": int(os.environ.get("FLOWTRACE_TENANT_ID", "1")),
-        "project_id": int(os.environ.get("FLOWTRACE_PROJECT_ID", "1")),
+        "enabled": os.environ.get("AGENTREPLAY_ENABLED", "true").lower() != "false",
+        "url": os.environ.get("AGENTREPLAY_URL", "http://localhost:9600"),
+        "tenant_id": int(os.environ.get("AGENTREPLAY_TENANT_ID", "1")),
+        "project_id": int(os.environ.get("AGENTREPLAY_PROJECT_ID", "1")),
     }
 
 
@@ -73,7 +73,7 @@ def send_trace(
     parent_edge_id: Optional[str] = None,
     token_count: Optional[int] = None,
 ) -> Optional[str]:
-    """Send a generic trace to Flowtrace server."""
+    """Send a generic trace to Agentreplay server."""
     config = get_config()
     if not config["enabled"]:
         return None
@@ -104,7 +104,7 @@ def send_tool_trace(
     parent_edge_id: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
-    """Send a tool call trace to Flowtrace server."""
+    """Send a tool call trace to Agentreplay server."""
     config = get_config()
     if not config["enabled"]:
         return None
@@ -142,7 +142,7 @@ def send_tool_trace(
 
 
 def _send_request(url: str, payload: Dict[str, Any]) -> Optional[str]:
-    """Send HTTP POST request to Flowtrace server."""
+    """Send HTTP POST request to Agentreplay server."""
     if urllib is None:
         return None
 
@@ -165,7 +165,7 @@ def _send_request(url: str, payload: Dict[str, Any]) -> Optional[str]:
 
 
 # State file for tracking session context
-STATE_FILE = "/tmp/flowtrace-claude-code-state.json"
+STATE_FILE = "/tmp/agentreplay-claude-code-state.json"
 
 
 def load_state() -> Dict[str, Any]:

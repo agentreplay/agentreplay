@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Setup script for Flowtrace zero-code instrumentation testing
+# Setup script for Agentreplay zero-code instrumentation testing
 
 set -e
 
 echo "=========================================="
-echo "Flowtrace Zero-Code Instrumentation Setup"
+echo "Agentreplay Zero-Code Instrumentation Setup"
 echo "=========================================="
 echo ""
 
@@ -43,7 +43,7 @@ fi
 
 # Install SDK in development mode
 echo ""
-echo "2. Installing Flowtrace SDK..."
+echo "2. Installing Agentreplay SDK..."
 pip install -e . --quiet
 echo -e "${GREEN}✓ SDK installed${NC}"
 
@@ -60,7 +60,7 @@ echo -e "${GREEN}✓ Dependencies installed${NC}"
 echo ""
 echo "4. Checking for .pth file..."
 SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-PTH_FILE="$SITE_PACKAGES/flowtrace-init.pth"
+PTH_FILE="$SITE_PACKAGES/agentreplay-init.pth"
 
 if [ -f "$PTH_FILE" ]; then
     echo -e "${GREEN}✓ .pth file found: $PTH_FILE${NC}"
@@ -72,7 +72,7 @@ fi
 
 # Check if backend is running
 echo ""
-echo "5. Checking Flowtrace backend..."
+echo "5. Checking Agentreplay backend..."
 if curl -s http://localhost:9600/health > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Backend is running${NC}"
     curl -s http://localhost:9600/health | python3 -m json.tool 2>/dev/null || echo ""
@@ -105,8 +105,8 @@ check_env_var() {
 
 ALL_VARS_SET=true
 
-check_env_var "FLOWTRACE_ENABLED" "true" || ALL_VARS_SET=false
-check_env_var "FLOWTRACE_URL" "false"
+check_env_var "AGENTREPLAY_ENABLED" "true" || ALL_VARS_SET=false
+check_env_var "AGENTREPLAY_URL" "false"
 check_env_var "OPENAI_API_KEY" "false"
 check_env_var "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT" "false"
 
@@ -115,15 +115,15 @@ if [ "$ALL_VARS_SET" = "false" ] || [ ! -f ".env" ]; then
     echo ""
     echo "7. Creating .env file..."
     cat > .env << EOF
-# Flowtrace Configuration
-FLOWTRACE_ENABLED=true
-FLOWTRACE_URL=http://localhost:9600
-FLOWTRACE_TENANT_ID=1
-FLOWTRACE_PROJECT_ID=0
-FLOWTRACE_DEBUG=true
+# Agentreplay Configuration
+AGENTREPLAY_ENABLED=true
+AGENTREPLAY_URL=http://localhost:9600
+AGENTREPLAY_TENANT_ID=1
+AGENTREPLAY_PROJECT_ID=0
+AGENTREPLAY_DEBUG=true
 
 # OpenTelemetry
-OTEL_SERVICE_NAME=flowtrace-test
+OTEL_SERVICE_NAME=agentreplay-test
 OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 
 # LLM API Keys (set these!)
@@ -131,9 +131,9 @@ OPENAI_API_KEY=${OPENAI_API_KEY:-your-key-here}
 TAVILY_API_KEY=${TAVILY_API_KEY:-your-key-here}
 
 # Privacy Controls
-FLOWTRACE_MAX_CONTENT_LENGTH=10000
-FLOWTRACE_MAX_MESSAGES=0
-FLOWTRACE_TRUNCATE_CONTENT=false
+AGENTREPLAY_MAX_CONTENT_LENGTH=10000
+AGENTREPLAY_MAX_MESSAGES=0
+AGENTREPLAY_TRUNCATE_CONTENT=false
 EOF
     echo -e "${GREEN}✓ .env file created${NC}"
     echo "  Edit .env and set your API keys"
@@ -162,5 +162,5 @@ echo ""
 echo "Notes:"
 echo "- Set OPENAI_API_KEY in .env for real tests"
 echo "- Start backend with: cd ../.. && ./start-web.sh"
-echo "- Enable debug: export FLOWTRACE_DEBUG=true"
+echo "- Enable debug: export AGENTREPLAY_DEBUG=true"
 echo ""

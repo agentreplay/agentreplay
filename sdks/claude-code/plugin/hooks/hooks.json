@@ -1,5 +1,5 @@
 {
-  "description": "Flowtrace observability hooks for Claude Code - traces all tool usage and conversations",
+  "description": "Agentreplay observability hooks for Claude Code - traces all tool usage and conversations",
   "hooks": {
     "PreToolUse": [
       {

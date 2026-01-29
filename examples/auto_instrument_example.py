@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Example: Auto-instrumentation with Flowtrace.
+"""Example: Auto-instrumentation with Agentreplay.
 
 This example demonstrates zero-code observability for AI agents.
 Just call auto_instrument() and all your LLM calls are automatically traced!
@@ -22,10 +22,10 @@ Just call auto_instrument() and all your LLM calls are automatically traced!
 
 import os
 import time
-from flowtrace import auto_instrument
+from agentreplay import auto_instrument
 from config import (
     get_auto_instrument_config,
-    FLOWTRACE_URL,
+    AGENTREPLAY_URL,
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
 )
@@ -60,14 +60,14 @@ def example_openai():
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "What is Flowtrace?"}
+                {"role": "user", "content": "What is Agentreplay?"}
             ],
             temperature=0.7,
             max_tokens=100,
         )
         
         print(f"✓ Response: {response.choices[0].message.content[:100]}...")
-        print("✓ Automatically traced in Flowtrace!")
+        print("✓ Automatically traced in Agentreplay!")
         
     except ImportError:
         print("⚠ OpenAI SDK not installed (pip install openai)")
@@ -95,7 +95,7 @@ def example_anthropic():
         )
         
         print(f"✓ Response: {response.content[0].text[:100]}...")
-        print("✓ Automatically traced in Flowtrace!")
+        print("✓ Automatically traced in Agentreplay!")
         
     except ImportError:
         print("⚠ Anthropic SDK not installed (pip install anthropic)")
@@ -138,7 +138,7 @@ def example_langgraph():
         })
         
         print(f"✓ Result: {result}")
-        print("✓ Workflow automatically traced in Flowtrace!")
+        print("✓ Workflow automatically traced in Agentreplay!")
         
     except ImportError:
         print("⚠ LangGraph not installed (pip install langgraph)")
@@ -149,7 +149,7 @@ def example_langgraph():
 def main():
     """Run examples."""
     print("\n" + "=" * 60)
-    print("🚀 Flowtrace Auto-Instrumentation Demo")
+    print("🚀 Agentreplay Auto-Instrumentation Demo")
     print("=" * 60)
     print("""
 This demo shows zero-code observability for AI agents.
@@ -163,7 +163,7 @@ Key Features:
 ✓ Prompt & response capture
 ✓ Error tracking
 
-View your traces at: {FLOWTRACE_URL}
+View your traces at: {AGENTREPLAY_URL}
     """)
     
     # Run examples
@@ -179,9 +179,9 @@ View your traces at: {FLOWTRACE_URL}
     print("✅ Demo Complete!")
     print("=" * 60)
     print(f"""
-All traces have been automatically captured and sent to Flowtrace.
+All traces have been automatically captured and sent to Agentreplay.
 
-View them at: {FLOWTRACE_URL}
+View them at: {AGENTREPLAY_URL}
 
 Try the new analytics endpoints:
 - Latency breakdown: /api/v1/analytics/latency-breakdown?session_id=<id>

@@ -17,14 +17,14 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flowtrace-client"
+name = "agentreplay"
 version = "0.1.2"
-description = "Flowtrace is a high-performance observability and tracing platform for LLM agents and AI apps, combining semantic search, specialized evals (RAGAS, G-Eval, toxicity), and Git-like versioning of prompts and responses."
+description = "Agentreplay is a high-performance observability and tracing platform for LLM agents and AI apps, combining semantic search, specialized evals (RAGAS, G-Eval, toxicity), and Git-like versioning of prompts and responses."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Sushanth", email = "sushanth@flowtrace.dev"}
+    {name = "Sushanth", email = "sushanth@agentreplay.dev"}
 ]
 keywords = [
     "llm", "agents", "tracing", "observability", "ai", "opentelemetry",
@@ -52,7 +52,7 @@ dependencies = [
     "opentelemetry-instrumentation>=0.41b0",
     # Auto-instrumentation for popular libraries
     "opentelemetry-instrumentation-openai>=0.48.0",  # For OpenAI SDK auto-tracing
-    # HTTP client (used by Flowtrace client)
+    # HTTP client (used by Agentreplay client)
     "httpx>=0.24.0",
 ]
 
@@ -137,28 +137,28 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://flowtrace.dev"
-Documentation = "https://docs.flowtrace.dev"
-Repository = "https://github.com/sochdb/flowtrace"
-Issues = "https://github.com/sochdb/flowtrace/issues"
-Changelog = "https://github.com/sochdb/flowtrace/blob/main/CHANGELOG.md"
+Homepage = "https://agentreplay.dev"
+Documentation = "https://docs.agentreplay.dev"
+Repository = "https://github.com/sochdb/agentreplay"
+Issues = "https://github.com/sochdb/agentreplay/issues"
+Changelog = "https://github.com/sochdb/agentreplay/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-flowtrace = ["py.typed", "flowtrace-init.pth"]
+agentreplay = ["py.typed", "agentreplay-init.pth"]
 
 # Include the .pth file for auto-initialization
 [tool.setuptools]
 include-package-data = true
 
 # NOTE: .pth files cannot be included in wheels directly.
-# Users should run: python -m flowtrace.install_pth after pip install
-# Or use: FLOWTRACE_ENABLED=true with manual init
+# Users should run: python -m agentreplay.install_pth after pip install
+# Or use: AGENTREPLAY_ENABLED=true with manual init
 
 [project.scripts]
-flowtrace-install = "flowtrace.install_pth:main"
+agentreplay-install = "agentreplay.install_pth:main"
 
 [tool.black]
 line-length = 100

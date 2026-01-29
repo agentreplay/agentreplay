@@ -8,7 +8,7 @@ sdks/rust/target/
 # Cargo.lock - committed for reproducible builds
 AgenticAI-LangGraph-Azure
 combined_project_sdk_python.txt
-flowtrace-server/data/
+agentreplay-server/data/
 # Rust documentation
 /doc/
 ui_details/
@@ -155,7 +155,7 @@ dist
 .DS_Store
 
 # Project-specific
-flowtrace-data/
+agentreplay-data/
 test-db/
 test-db-server/
 *.index
@@ -176,7 +176,7 @@ llma.txt
 jj.md
 mkl.md
 tauri.md
-flowtrace-tauri/target/
+agentreplay-tauri/target/
 Archive.zip
 model_code.json
 mm.json
@@ -195,7 +195,7 @@ c-code.py
 *log
 SECURITY.md
 profile_backend.py
-flow_trace_rust.txt
+agent_replay_rust.txt
 debug_log.txt
 DEPLOYMENT_CHECKLIST.md
 taura_log*

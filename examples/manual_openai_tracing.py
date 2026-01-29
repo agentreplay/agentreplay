@@ -20,16 +20,16 @@ Use this if you want more control than auto-patching provides.
 import time
 from typing import Optional
 from openai import OpenAI
-from flowtrace import Flowtrace
-from flowtrace.genai import GenAISpan
+from agentreplay import Agentreplay
+from agentreplay.genai import GenAISpan
 
 
 class TracedOpenAI:
-    """Wrapper around OpenAI client with Flowtrace integration"""
+    """Wrapper around OpenAI client with Agentreplay integration"""
     
-    def __init__(self, api_key: Optional[str] = None, flowtrace: Optional[Flowtrace] = None):
+    def __init__(self, api_key: Optional[str] = None, agentreplay: Optional[Agentreplay] = None):
         self.client = OpenAI(api_key=api_key)
-        self.flowtrace = flowtrace or Flowtrace()
+        self.agentreplay = agentreplay or Agentreplay()
     
     def chat_completion(self, **kwargs):
         """
@@ -88,7 +88,7 @@ class TracedOpenAI:
             
             # Send span
             duration = time.time() - start_time
-            self.flowtrace.send_span(span, duration=duration)
+            self.agentreplay.send_span(span, duration=duration)
             
             return response
             
@@ -97,7 +97,7 @@ class TracedOpenAI:
             duration = time.time() - start_time
             span.add_attribute('error.type', type(e).__name__)
             span.add_attribute('error.message', str(e))
-            self.flowtrace.send_span(span, duration=duration)
+            self.agentreplay.send_span(span, duration=duration)
             raise
 
 
@@ -115,4 +115,4 @@ if __name__ == "__main__":
     )
     
     print(f"Response: {response.choices[0].message.content}")
-    print("✅ Trace sent to Flowtrace!")
+    print("✅ Trace sent to Agentreplay!")

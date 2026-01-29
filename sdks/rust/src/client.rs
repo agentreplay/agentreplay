@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Flowtrace Client
+//! Agentreplay Client
 //!
-//! High-performance async client for the Flowtrace observability platform.
+//! High-performance async client for the Agentreplay observability platform.
 
 use crate::types::*;
 use reqwest::Client as HttpClient;
@@ -24,9 +24,9 @@ use std::sync::atomic::{AtomicI64, Ordering};
 use std::time::Duration;
 use thiserror::Error;
 
-/// Flowtrace SDK errors.
+/// Agentreplay SDK errors.
 #[derive(Error, Debug)]
-pub enum FlowtraceError {
+pub enum AgentreplayError {
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),
 
@@ -40,13 +40,13 @@ pub enum FlowtraceError {
     InvalidFeedback,
 }
 
-/// Result type for Flowtrace operations.
-pub type Result<T> = std::result::Result<T, FlowtraceError>;
+/// Result type for Agentreplay operations.
+pub type Result<T> = std::result::Result<T, AgentreplayError>;
 
-/// Flowtrace client configuration.
+/// Agentreplay client configuration.
 #[derive(Debug, Clone)]
 pub struct ClientConfig {
-    /// Base URL of Flowtrace server
+    /// Base URL of Agentreplay server
     pub url: String,
     /// Tenant identifier
     pub tenant_id: i64,
@@ -89,12 +89,12 @@ impl ClientConfig {
     }
 }
 
-/// Flowtrace client for Rust applications.
+/// Agentreplay client for Rust applications.
 ///
 /// # Example
 ///
 /// ```no_run
-/// use flowtrace::{FlowtraceClient, ClientConfig, SpanType, CreateTraceOptions};
+/// use agentreplay::{AgentreplayClient, ClientConfig, SpanType, CreateTraceOptions};
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -102,7 +102,7 @@ impl ClientConfig {
 ///         .with_project_id(0)
 ///         .with_agent_id(1);
 ///
-///     let client = FlowtraceClient::new(config);
+///     let client = AgentreplayClient::new(config);
 ///
 ///     let trace = client.create_trace(CreateTraceOptions {
 ///         agent_id: 1,
@@ -115,14 +115,14 @@ impl ClientConfig {
 ///     Ok(())
 /// }
 /// ```
-pub struct FlowtraceClient {
+pub struct AgentreplayClient {
     config: ClientConfig,
     http_client: HttpClient,
     session_counter: AtomicI64,
 }
 
-impl FlowtraceClient {
-    /// Create a new Flowtrace client.
+impl AgentreplayClient {
+    /// Create a new Agentreplay client.
     pub fn new(config: ClientConfig) -> Self {
         let http_client = HttpClient::builder()
             .timeout(config.timeout)
@@ -156,7 +156,7 @@ impl FlowtraceClient {
         self.session_counter.fetch_add(1, Ordering::SeqCst) + 1
     }
 
-    /// Make an HTTP request to the Flowtrace server.
+    /// Make an HTTP request to the Agentreplay server.
     async fn request<T: serde::de::DeserializeOwned>(
         &self,
         method: reqwest::Method,
@@ -184,7 +184,7 @@ impl FlowtraceClient {
 
         if !status.is_success() {
             let message = response.text().await.unwrap_or_default();
-            return Err(FlowtraceError::ApiError {
+            return Err(AgentreplayError::ApiError {
                 status: status.as_u16(),
                 message,
             });
@@ -641,7 +641,7 @@ impl FlowtraceClient {
     /// Submit user feedback for a trace.
     pub async fn submit_feedback(&self, trace_id: &str, feedback: i8) -> Result<FeedbackResponse> {
         if !(-1..=1).contains(&feedback) {
-            return Err(FlowtraceError::InvalidFeedback);
+            return Err(AgentreplayError::InvalidFeedback);
         }
 
         self.request(
