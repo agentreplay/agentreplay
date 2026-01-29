@@ -1,6 +1,6 @@
-# Agentreplay Plugin SDK for Python
+# Agent Replay Plugin SDK for Python
 
-Build Agentreplay plugins in Python and compile them to WASM.
+Build Agent Replay plugins in Python and compile them to WASM.
 
 ## Installation
 

@@ -1,6 +1,6 @@
-# Agentreplay Integrations Bundle
+# Agent Replay Integrations Bundle
 
-This is an example bundle plugin that demonstrates how to package Agentreplay integrations for multiple AI coding assistants.
+This is an example bundle plugin that demonstrates how to package Agent Replay integrations for multiple AI coding assistants.
 
 ## Supported Targets
 
@@ -118,7 +118,7 @@ Paths support variable substitution:
 
 ## Installation Flow
 
-When a user clicks "Install" in the Agentreplay UI:
+When a user clicks "Install" in the Agent Replay UI:
 
 1. **Detection** - Check if target is available
 2. **Variables** - Prompt for required variables (e.g., project_dir)
@@ -137,6 +137,6 @@ The bundle system maintains install receipts for:
 
 ## See Also
 
-- [Agentreplay Plugin System](../../README.md)
+- [Agent Replay Plugin System](../../README.md)
 - [Bundle Module Source](../../core/src/bundle.rs)
 - [Manifest Schema](../../core/src/manifest.rs)

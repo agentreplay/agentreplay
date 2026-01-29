@@ -1,6 +1,6 @@
-# Agentreplay Python SDK
+# Agent Replay Python SDK
 
-Python SDK for Agentreplay - A purpose-built agent trace engine for LLM agents.
+Python SDK for Agent Replay - A purpose-built agent trace engine for LLM agents.
 
 ## Installation
 
@@ -33,10 +33,10 @@ pip install agentreplay[all]
 ## Quick Start
 
 ```python
-from agentreplay import AgentreplayClient, SpanType
+from agentreplay import Agent ReplayClient, SpanType
 
 # Initialize client
-client = AgentreplayClient(
+client = Agent ReplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0
@@ -72,7 +72,7 @@ ancestors = client.get_ancestors(edge_id)
 
 ## Framework Integrations
 
-Agentreplay provides seamless integrations for all major AI agent frameworks:
+Agent Replay provides seamless integrations for all major AI agent frameworks:
 
 ### Supported Frameworks
 
@@ -94,10 +94,10 @@ Agentreplay provides seamless integrations for all major AI agent frameworks:
 #### LangChain
 
 ```python
-from agentreplay.integrations.langchain import AgentreplayCallbackHandler
+from agentreplay.integrations.langchain import Agent ReplayCallbackHandler
 from langchain.chains import LLMChain
 
-callback = AgentreplayCallbackHandler(
+callback = Agent ReplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -126,11 +126,11 @@ index = VectorStoreIndex.from_documents(
 #### OpenAI Agents SDK
 
 ```python
-from agentreplay.integrations.openai_agents import AgentreplayAgentWrapper
+from agentreplay.integrations.openai_agents import Agent ReplayAgentWrapper
 from openai_agents import Agent
 
 agent = Agent(name="assistant", instructions="You are helpful")
-wrapped = AgentreplayAgentWrapper(
+wrapped = Agent ReplayAgentWrapper(
     agent=agent,
     agentreplay_url="http://localhost:8080",
     tenant_id=1

@@ -1,6 +1,6 @@
-# Agentreplay Plugins
+# Agent Replay Plugins
 
-This directory contains all plugin-related code for Agentreplay.
+This directory contains all plugin-related code for Agent Replay.
 
 ## Directory Structure
 
@@ -27,7 +27,7 @@ agentreplay-plugins/
 ## Components
 
 ### Core (`plugins/core`)
-The core plugin system that runs inside Agentreplay. Provides:
+The core plugin system that runs inside Agent Replay. Provides:
 - Plugin manifest parsing and validation
 - WASM runtime (wasmtime) for executing plugins
 - Plugin lifecycle management (install, enable, disable, uninstall)

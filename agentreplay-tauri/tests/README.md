@@ -1,6 +1,6 @@
-# Agentreplay Desktop Integration Tests
+# Agent Replay Desktop Integration Tests
 
-This directory contains integration tests for the Agentreplay Desktop application.
+This directory contains integration tests for the Agent Replay Desktop application.
 
 ## Test Structure
 

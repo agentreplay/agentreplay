@@ -1,10 +1,10 @@
-# Agentreplay Framework Integrations
+# Agent Replay Framework Integrations
 
-Comprehensive Python SDK integrations for popular AI agent frameworks with seamless Agentreplay observability.
+Comprehensive Python SDK integrations for popular AI agent frameworks with seamless Agent Replay observability.
 
 ## Overview
 
-Agentreplay provides production-ready integrations for all major AI agent frameworks, enabling automatic tracing, token tracking, cost calculation, and performance monitoring without requiring code changes to your existing agent workflows.
+Agent Replay provides production-ready integrations for all major AI agent frameworks, enabling automatic tracing, token tracking, cost calculation, and performance monitoring without requiring code changes to your existing agent workflows.
 
 ### Supported Frameworks
 
@@ -28,7 +28,7 @@ Agentreplay provides production-ready integrations for all major AI agent framew
 ### Installation
 
 ```bash
-# Install Agentreplay SDK
+# Install Agent Replay SDK
 pip install agentreplay
 
 # Install framework integrations (optional dependencies)
@@ -71,10 +71,10 @@ handler = Handler(
 from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
-from agentreplay.integrations.langchain import AgentreplayCallbackHandler
+from agentreplay.integrations.langchain import Agent ReplayCallbackHandler
 
 # Create callback
-callback = AgentreplayCallbackHandler(
+callback = Agent ReplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1,
     session_id=1001
@@ -86,7 +86,7 @@ prompt = ChatPromptTemplate.from_template("Tell me about {topic}")
 chain = LLMChain(llm=llm, prompt=prompt, callbacks=[callback])
 
 result = chain.run(topic="AI agents")
-# ✓ Automatically tracked in Agentreplay
+# ✓ Automatically tracked in Agent Replay
 ```
 
 #### Wrapper Approach
@@ -105,9 +105,9 @@ chain = wrap_langchain_with_agentreplay(
 #### LangGraph Workflows
 
 ```python
-from agentreplay.integrations.langchain import AgentreplayLangGraphTracer
+from agentreplay.integrations.langchain import Agent ReplayLangGraphTracer
 
-tracer = AgentreplayLangGraphTracer(
+tracer = Agent ReplayLangGraphTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -143,16 +143,16 @@ Settings.callback_manager = callback_manager
 # Use as normal
 index = VectorStoreIndex.from_documents(documents)
 query_engine = index.as_query_engine()
-response = query_engine.query("What is Agentreplay?")
+response = query_engine.query("What is Agent Replay?")
 # ✓ Automatically tracked
 ```
 
 #### Workflow Observability
 
 ```python
-from agentreplay.integrations.llamaindex import AgentreplayWorkflowObserver
+from agentreplay.integrations.llamaindex import Agent ReplayWorkflowObserver
 
-observer = AgentreplayWorkflowObserver(
+observer = Agent ReplayWorkflowObserver(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -172,7 +172,7 @@ result = await observer.run_workflow(workflow, **inputs)
 
 ```python
 from openai_agents import Agent
-from agentreplay.integrations.openai_agents import AgentreplayAgentWrapper
+from agentreplay.integrations.openai_agents import Agent ReplayAgentWrapper
 
 agent = Agent(
     name="assistant",
@@ -181,7 +181,7 @@ agent = Agent(
 )
 
 # Wrap agent
-wrapped = AgentreplayAgentWrapper(
+wrapped = Agent ReplayAgentWrapper(
     agent=agent,
     agentreplay_url="http://localhost:8080",
     tenant_id=1
@@ -190,15 +190,15 @@ wrapped = AgentreplayAgentWrapper(
 # Create session and run
 session = wrapped.create_session()
 response = wrapped.run(session, "Hello!")
-# ✓ Tracked in Agentreplay
+# ✓ Tracked in Agent Replay
 ```
 
 #### Session Manager
 
 ```python
-from agentreplay.integrations.openai_agents import AgentreplaySessionManager
+from agentreplay.integrations.openai_agents import Agent ReplaySessionManager
 
-manager = AgentreplaySessionManager(
+manager = Agent ReplaySessionManager(
     agentreplay_url="http://localhost:8080",
     tenant_id=1
 )
@@ -237,9 +237,9 @@ agent = wrap_autogen_agent(
 **Multi-Agent Workflows**:
 
 ```python
-from agentreplay.integrations.autogen import AgentreplayAutoGenTracer
+from agentreplay.integrations.autogen import Agent ReplayAutoGenTracer
 
-tracer = AgentreplayAutoGenTracer(
+tracer = Agent ReplayAutoGenTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -255,9 +255,9 @@ tracer.initiate_chat(user_proxy, assistant, "Hello!")
 
 ```python
 from semantic_kernel import Kernel
-from agentreplay.integrations.semantic_kernel import AgentreplaySemanticKernelTracer
+from agentreplay.integrations.semantic_kernel import Agent ReplaySemanticKernelTracer
 
-tracer = AgentreplaySemanticKernelTracer(
+tracer = Agent ReplaySemanticKernelTracer(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -420,9 +420,9 @@ export AGENTREPLAY_AGENT_ID="1"
 ### Programmatic Configuration
 
 ```python
-from agentreplay.config import AgentreplayConfig
+from agentreplay.config import Agent ReplayConfig
 
-config = AgentreplayConfig(
+config = Agent ReplayConfig(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0,
@@ -454,18 +454,18 @@ python examples/integrations/openai_agents_example.py
 
 ## Architecture
 
-All integrations follow the Agentreplay observability model:
+All integrations follow the Agent Replay observability model:
 
 ```
 Framework Code
      ↓
 Integration Layer (callbacks/wrappers)
      ↓
-Agentreplay Client
+Agent Replay Client
      ↓
 HTTP API (REST)
      ↓
-Agentreplay Server
+Agent Replay Server
      ↓
 LSM-Tree Storage + HNSW Index
 ```
@@ -494,7 +494,7 @@ editor = Handler(url=url, tenant_id=1, agent_id=3)
 ```
 
 ### 3. Error Handling
-Integrations are resilient to Agentreplay failures:
+Integrations are resilient to Agent Replay failures:
 
 ```python
 try:
@@ -508,7 +508,7 @@ except Exception as e:
 - Use environment variables for configuration
 - Enable connection pooling
 - Configure appropriate timeouts
-- Monitor Agentreplay server health
+- Monitor Agent Replay server health
 
 ---
 
@@ -527,7 +527,7 @@ pip install agentreplay[{framework}]
 ### Connection Issues
 
 ```python
-# Check Agentreplay server
+# Check Agent Replay server
 curl http://localhost:8080/health
 
 # Verify configuration
@@ -537,7 +537,7 @@ print(handler.client.url)
 ### Missing Traces
 
 - Verify `tenant_id` and `session_id`
-- Check Agentreplay server logs
+- Check Agent Replay server logs
 - Ensure API endpoints are accessible
 - Validate authentication if enabled
 

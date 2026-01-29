@@ -1,4 +1,4 @@
-# Agentreplay Go SDK
+# Agent Replay Go SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 

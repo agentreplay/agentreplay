@@ -1,4 +1,4 @@
-# Agentreplay Evaluators
+# Agent Replay Evaluators
 
 A modular, extensible evaluation framework for LLM agent traces. Evaluate your agent outputs for hallucinations, relevance, toxicity, performance, and cost.
 
@@ -269,7 +269,7 @@ Apache 2.0 - see [LICENSE](../LICENSE) for details.
 
 ## Credits
 
-Built by the Agentreplay team as part of the Agentreplay agent observability platform.
+Built by the Agent Replay team as part of the Agent Replay agent observability platform.
 
 Special thanks to:
 - OpenAI for GPT models used in LLM-as-judge

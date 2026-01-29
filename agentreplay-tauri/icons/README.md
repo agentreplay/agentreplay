@@ -1,13 +1,13 @@
-# Agentreplay Desktop Icons
+# Agent Replay Desktop Icons
 
-This directory contains the application icons for the Agentreplay Tauri desktop app.
+This directory contains the application icons for the Agent Replay Tauri desktop app.
 
 ## Source File
 
 - **`desktop_icon.svg`** - The master source file for all icons (512x512)
   - Blue gradient background (#3b82f6 to #1d4ed8)
   - White nodes connected in a flow graph pattern
-  - Represents the Agentreplay concept of tracking agent execution flows
+  - Represents the Agent Replay concept of tracking agent execution flows
 
 ## Generated Icons
 

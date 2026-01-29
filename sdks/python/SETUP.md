@@ -1,11 +1,11 @@
-# Agentreplay Python SDK - Setup Guide
+# Agent Replay Python SDK - Setup Guide
 
-This guide walks you through setting up and using the Agentreplay Python SDK.
+This guide walks you through setting up and using the Agent Replay Python SDK.
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Agentreplay server running (see main README for setup)
+- Agent Replay server running (see main README for setup)
 - pip or poetry for package management
 
 ## Installation
@@ -46,9 +46,9 @@ pip install -e ".[langchain,autogen,dev]"
 
 ## Quick Start
 
-### 1. Start Agentreplay Server
+### 1. Start Agent Replay Server
 
-First, ensure the Agentreplay server is running:
+First, ensure the Agent Replay server is running:
 
 ```bash
 # In the main agentreplay directory
@@ -62,10 +62,10 @@ cargo build --release
 Create a file `test_agentreplay.py`:
 
 ```python
-from agentreplay import AgentreplayClient, SpanType, Span
+from agentreplay import Agent ReplayClient, SpanType, Span
 
 # Create client
-client = AgentreplayClient(
+client = Agent ReplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     agent_id=1,
@@ -111,10 +111,10 @@ python test_agentreplay.py
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
-from agentreplay.integrations.langchain import AgentreplayCallbackHandler
+from agentreplay.integrations.langchain import Agent ReplayCallbackHandler
 
 # Create callback
-callback = AgentreplayCallbackHandler(
+callback = Agent ReplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1,
     agent_id=1,
@@ -129,21 +129,21 @@ chain = LLMChain(llm=llm, prompt=prompt, callbacks=[callback])
 result = chain.run(topic="machine learning")
 print(result)
 
-# All LLM calls, agent steps, and tool calls are now logged to Agentreplay!
+# All LLM calls, agent steps, and tool calls are now logged to Agent Replay!
 ```
 
 #### AutoGen
 
 ```python
 from autogen import AssistantAgent, UserProxyAgent
-from agentreplay.integrations.autogen import AgentreplayAgentWrapper
+from agentreplay.integrations.autogen import Agent ReplayAgentWrapper
 
 # Configure and create agent
 llm_config = {"model": "gpt-4", "api_key": "your-key"}
 assistant = AssistantAgent(name="assistant", llm_config=llm_config)
 
-# Wrap with Agentreplay tracking
-wrapped = AgentreplayAgentWrapper(
+# Wrap with Agent Replay tracking
+wrapped = Agent ReplayAgentWrapper(
     agent=assistant,
     url="http://localhost:8080",
     tenant_id=1,
@@ -160,7 +160,7 @@ user_proxy.initiate_chat(
     message="What is quantum computing?",
 )
 
-# All agent messages and tool calls are now logged to Agentreplay!
+# All agent messages and tool calls are now logged to Agent Replay!
 ```
 
 ## Configuration
@@ -179,9 +179,9 @@ Then in Python:
 
 ```python
 import os
-from agentreplay import AgentreplayClient
+from agentreplay import Agent ReplayClient
 
-client = AgentreplayClient(
+client = Agent ReplayClient(
     url=os.getenv("AGENTREPLAY_URL", "http://localhost:8080"),
     tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     agent_id=int(os.getenv("AGENTREPLAY_AGENT_ID", "1")),
@@ -193,11 +193,11 @@ client = AgentreplayClient(
 For high-throughput scenarios, use the async client:
 
 ```python
-from agentreplay import AsyncAgentreplayClient
+from agentreplay import AsyncAgent ReplayClient
 import asyncio
 
 async def main():
-    client = AsyncAgentreplayClient(
+    client = AsyncAgent ReplayClient(
         url="http://localhost:8080",
         tenant_id=1,
         agent_id=1,
@@ -261,7 +261,7 @@ ruff check src/agentreplay tests/
 
 If you get "Connection refused" errors:
 
-1. Ensure Agentreplay server is running: `./target/release/agentreplay serve ...`
+1. Ensure Agent Replay server is running: `./target/release/agentreplay serve ...`
 2. Check the port matches: default is 8080
 3. Verify firewall settings
 

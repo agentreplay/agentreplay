@@ -1,4 +1,4 @@
-# Agentreplay Desktop Icons
+# Agent Replay Desktop Icons
 
 ## Required Icons
 
@@ -41,7 +41,7 @@ This will automatically generate all required formats.
 - Accent: #10B981 (green) - represents growth and monitoring
 - Alternative: #8B5CF6 (purple) - represents AI and intelligence
 
-### Agentreplay Icon Concept
+### Agent Replay Icon Concept
 
 The icon could represent:
 - A clock/time element (chronos = time)

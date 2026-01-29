@@ -1,8 +1,8 @@
-# Agentreplay Python SDK - Quick Start
+# Agent Replay Python SDK - Quick Start
 
 ## Zero-Code Instrumentation 🚀
 
-Agentreplay provides **true zero-code observability** - just like LangSmith!
+Agent Replay provides **true zero-code observability** - just like LangSmith!
 
 ### Installation
 
@@ -28,7 +28,7 @@ python your_app.py  # ✅ Automatically traced!
 
 ## How It Works
 
-Agentreplay uses Python's `.pth` file mechanism to automatically instrument your code **before it runs**:
+Agent Replay uses Python's `.pth` file mechanism to automatically instrument your code **before it runs**:
 
 1. Install SDK → `.pth` file added to site-packages
 2. Set `AGENTREPLAY_ENABLED=true`
@@ -62,12 +62,12 @@ print(response.choices[0].message.content)
 ```bash
 export AGENTREPLAY_ENABLED=true
 export AGENTREPLAY_PROJECT_ID=my-project
-python your_app.py  # ✅ Traces automatically appear in Agentreplay!
+python your_app.py  # ✅ Traces automatically appear in Agent Replay!
 ```
 
 ## Supported Frameworks
 
-Agentreplay automatically instruments:
+Agent Replay automatically instruments:
 
 - ✅ **OpenAI** - Direct API calls
 - ✅ **LangChain** - Chains, agents, tools
@@ -97,7 +97,7 @@ export AGENTREPLAY_SERVICE_NAME=my-app           # Default: python-app
 export AGENTREPLAY_LOG_LEVEL=DEBUG               # Default: INFO
 ```
 
-## Comparison: Agentreplay vs Others
+## Comparison: Agent Replay vs Others
 
 ### LangSmith
 
@@ -107,7 +107,7 @@ export LANGCHAIN_TRACING_V2=true
 python app.py  # ✅ Auto-traces
 ```
 
-### Agentreplay
+### Agent Replay
 
 ```bash
 export AGENTREPLAY_ENABLED=true
@@ -115,7 +115,7 @@ export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
 python app.py  # ✅ Auto-traces (SAME UX!)
 ```
 
-| Feature | Agentreplay | LangSmith | Manual OTEL |
+| Feature | Agent Replay | LangSmith | Manual OTEL |
 |---------|-----------|-----------|-------------|
 | **Zero code changes** | ✅ | ✅ | ❌ |
 | **Local deployment** | ✅ | ❌ | ✅ |
@@ -239,8 +239,8 @@ python -c "print('Test')"
 **Expected:**
 
 ```
-[agentreplay.env_init] INFO: 🚀 Initializing Agentreplay
-[agentreplay.env_init] INFO: ✅ Agentreplay auto-instrumentation enabled
+[agentreplay.env_init] INFO: 🚀 Initializing Agent Replay
+[agentreplay.env_init] INFO: ✅ Agent Replay auto-instrumentation enabled
 Test
 ```
 
@@ -303,12 +303,12 @@ Program Exits → atexit flushes spans
     ↓
 Spans sent to server via OTLP
     ↓
-✅ Visible in Agentreplay UI!
+✅ Visible in Agent Replay UI!
 ```
 
 ### Pure OpenTelemetry
 
-Agentreplay uses **official OpenTelemetry instrumentations**:
+Agent Replay uses **official OpenTelemetry instrumentations**:
 
 - `opentelemetry-instrumentation-openai`
 - `opentelemetry-instrumentation-anthropic`
@@ -340,8 +340,8 @@ Agentreplay uses **official OpenTelemetry instrumentations**:
    python your_app.py
    
    # Should see:
-   # [agentreplay.env_init] INFO: 🚀 Initializing Agentreplay
-   # [agentreplay.env_init] INFO: ✅ Agentreplay auto-instrumentation enabled
+   # [agentreplay.env_init] INFO: 🚀 Initializing Agent Replay
+   # [agentreplay.env_init] INFO: ✅ Agent Replay auto-instrumentation enabled
    ```
 
 3. **Check server is running:**

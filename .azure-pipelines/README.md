@@ -1,6 +1,6 @@
 # Azure Pipelines Configuration
 
-This directory contains Azure Pipelines YAML configurations for the Agentreplay project.
+This directory contains Azure Pipelines YAML configurations for the Agent Replay project.
 
 ## Available Pipelines
 

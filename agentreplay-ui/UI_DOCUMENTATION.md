@@ -1,4 +1,4 @@
-# Agentreplay UI - Best-in-Class Experience
+# Agent Replay UI - Best-in-Class Experience
 
 This UI has been redesigned to follow the best practices from top LLM observability platforms like Helicone, Langfuse, Lunary, Phoenix, TruLens, Braintrust, and LangSmith.
 

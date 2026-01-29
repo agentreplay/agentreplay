@@ -1,6 +1,6 @@
 # Sentiment Evaluator Plugin
 
-A Agentreplay plugin that evaluates the sentiment of LLM outputs.
+A Agent Replay plugin that evaluates the sentiment of LLM outputs.
 
 ## Description
 
@@ -21,10 +21,10 @@ agentreplay plugin install ./plugins/sentiment-evaluator
 Once installed, the sentiment evaluator will be available for use in evaluations:
 
 ```python
-# Via the Agentreplay API
-from agentreplay import Agentreplay
+# Via the Agent Replay API
+from agentreplay import Agent Replay
 
-ft = Agentreplay()
+ft = Agent Replay()
 
 # Run sentiment evaluation on traces
 results = ft.evaluate(
@@ -52,7 +52,7 @@ print(results["sentiment-evaluator"])
 | `positive_threshold` | float | 0.6 | Score threshold for positive sentiment |
 | `negative_threshold` | float | 0.4 | Score threshold for negative sentiment |
 
-Configure in your Agentreplay settings:
+Configure in your Agent Replay settings:
 
 ```toml
 [plugins.sentiment-evaluator]

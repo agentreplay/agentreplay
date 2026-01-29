@@ -1,4 +1,4 @@
-# Agentreplay Index
+# Agent Replay Index
 
 High-performance vector indexing and embedding integration for agent observability.
 
@@ -150,4 +150,4 @@ cargo test -p agentreplay-index --test vamana_integration_test
 
 ## License
 
-Same as the parent Agentreplay project.
+Same as the parent Agent Replay project.

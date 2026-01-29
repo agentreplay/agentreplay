@@ -1,6 +1,6 @@
 # @sochdb/agentreplay-claude-code
 
-Agentreplay observability plugin for [Claude Code](https://github.com/anthropics/claude-code) - automatic tracing of all tool calls and sessions.
+Agent Replay observability plugin for [Claude Code](https://github.com/anthropics/claude-code) - automatic tracing of all tool calls and sessions.
 
 ## Features
 
@@ -8,7 +8,7 @@ Agentreplay observability plugin for [Claude Code](https://github.com/anthropics
 - 🔗 **Session Tracking**: Links all tool calls within a session
 - ⏱️ **Duration Tracking**: Measures time spent on each tool execution
 - 🚫 **Non-blocking**: Never interrupts or slows down Claude Code
-- 📈 **Dashboard Integration**: View traces in Agentreplay UI
+- 📈 **Dashboard Integration**: View traces in Agent Replay UI
 
 ## Installation
 
@@ -39,14 +39,14 @@ The plugin is configured via environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AGENTREPLAY_ENABLED` | `true` | Enable/disable tracing |
-| `AGENTREPLAY_URL` | `http://localhost:9600` | Agentreplay server URL |
+| `AGENTREPLAY_URL` | `http://localhost:9600` | Agent Replay server URL |
 | `AGENTREPLAY_TENANT_ID` | `1` | Tenant identifier |
 | `AGENTREPLAY_PROJECT_ID` | `1` | Project identifier |
 
 ### Example
 
 ```bash
-# Set Agentreplay URL
+# Set Agent Replay URL
 export AGENTREPLAY_URL="http://localhost:9600"
 
 # Run Claude Code
@@ -77,14 +77,14 @@ Every tool invocation is traced with:
 
 ## Viewing Traces
 
-1. Start Agentreplay:
+1. Start Agent Replay:
    ```bash
-   open /Applications/Agentreplay.app
+   open /Applications/Agent Replay.app
    # or
    agentreplay serve
    ```
 
-2. Open the Agentreplay UI at `http://localhost:9600`
+2. Open the Agent Replay UI at `http://localhost:9600`
 
 3. Navigate to **Traces** to see all Claude Code activity
 
@@ -102,7 +102,7 @@ agentreplay/
 │   └── plugin.json          # Plugin metadata
 ├── core/
 │   ├── __init__.py
-│   └── client.py            # Agentreplay API client
+│   └── client.py            # Agent Replay API client
 ├── hooks/
 │   ├── __init__.py
 │   ├── hooks.json           # Hook definitions
@@ -117,7 +117,7 @@ agentreplay/
 
 ### Traces not appearing
 
-1. Check Agentreplay is running:
+1. Check Agent Replay is running:
    ```bash
    curl http://localhost:9600/api/v1/health
    ```

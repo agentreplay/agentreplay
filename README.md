@@ -1,4 +1,4 @@
-# Agentreplay
+# Agent Replay
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 🎯 Why Agentreplay?
+## 🎯 Why Agent Replay?
 
 <table>
 <tr>
@@ -45,22 +45,22 @@
 </tr>
 </table>
 
-> **Built for AI coding agents** - Agentreplay gives your tools like Claude Code, Cursor, and VS Code agents persistent memory and full observability without cloud dependencies.
+> **Built for AI coding agents** - Agent Replay gives your tools like Claude Code, Cursor, and VS Code agents persistent memory and full observability without cloud dependencies.
 
 ---
 
 ## 🚀 Quick Start
 
-### Download Agentreplay Desktop
+### Download Agent Replay Desktop
 
 | Platform | Download | Architecture |
 |----------|----------|--------------|
-| **macOS** | [Agentreplay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
-| **macOS** | [Agentreplay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64.dmg) | Intel |
-| **Windows** | [Agentreplay.exe](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64-setup.exe) | x64 (NSIS Installer) |
-| **Windows** | [Agentreplay.msi](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_x64.msi) | x64 (MSI Installer) |
-| **Linux** | [Agentreplay.AppImage](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_amd64.AppImage) | x64 |
-| **Linux** | [Agentreplay.deb](https://github.com/sochdb/agentreplay/releases/latest/download/Agentreplay_amd64.deb) | Debian/Ubuntu |
+| **macOS** | [Agent Replay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
+| **macOS** | [Agent Replay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64.dmg) | Intel |
+| **Windows** | [Agent Replay.exe](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64-setup.exe) | x64 (NSIS Installer) |
+| **Windows** | [Agent Replay.msi](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64.msi) | x64 (MSI Installer) |
+| **Linux** | [Agent Replay.AppImage](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_amd64.AppImage) | x64 |
+| **Linux** | [Agent Replay.deb](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_amd64.deb) | Debian/Ubuntu |
 
 ### Or Build from Source
 
@@ -77,7 +77,7 @@ cd agentreplay
 
 ## 🎯 Overview
 
-Agentreplay is a **local-first desktop application** that gives your AI agents and coding tools:
+Agent Replay is a **local-first desktop application** that gives your AI agents and coding tools:
 
 - **🧠 Unlimited persistent memory** - stored on your machine, not in the cloud
 - **👁️ Full observability** - see every decision, tool call, and reasoning step
@@ -97,7 +97,7 @@ Agentreplay is a **local-first desktop application** that gives your AI agents a
 
 ### 🔌 Claude Code Plugin (Recommended)
 
-Install the official Agentreplay plugin for Claude Code:
+Install the official Agent Replay plugin for Claude Code:
 
 ```bash
 # Add the marketplace
@@ -117,7 +117,7 @@ Install the official Agentreplay plugin for Claude Code:
 
 ### Powered by SochDB - Everything Built-In
 
-Unlike tools that need Postgres, Redis, or cloud databases, Agentreplay uses **SochDB** - a high-performance embedded database that lives inside the app:
+Unlike tools that need Postgres, Redis, or cloud databases, Agent Replay uses **SochDB** - a high-performance embedded database that lives inside the app:
 
 | Feature | Benefit |
 |---------|---------|
@@ -217,7 +217,7 @@ Git-like version control for your prompts:
 
 ### 🔌 Plugin System
 
-Extend Agentreplay with custom evaluators and integrations:
+Extend Agent Replay with custom evaluators and integrations:
 
 - **Install from directory/file** - local plugin development
 - **Dev mode** - hot-reload during development
@@ -288,7 +288,7 @@ Protect your data with built-in backup features:
 
 ### 🖥️ Desktop-First Architecture
 
-The primary way to run Agentreplay - a native desktop app:
+The primary way to run Agent Replay - a native desktop app:
 
 - **Double-click to run** - no terminal, no commands
 - **Everything embedded** - database, UI, API server all inside
@@ -360,9 +360,9 @@ npm run tauri dev
 ```
 
 The desktop app will launch with a local database at:
-- **Windows**: `C:\Users\<User>\AppData\Roaming\Agentreplay\database`
-- **macOS**: `~/Library/Application Support/Agentreplay/database`
-- **Linux**: `~/.local/share/Agentreplay/database`
+- **Windows**: `C:\Users\<User>\AppData\Roaming\Agent Replay\database`
+- **macOS**: `~/Library/Application Support/Agent Replay/database`
+- **Linux**: `~/.local/share/Agent Replay/database`
 
 ### Option 2: Server Deployment
 
@@ -400,10 +400,10 @@ pip install agentreplay-client[all-frameworks] # All integrations
 **Basic Usage:**
 
 ```python
-from agentreplay import AgentreplayClient, SpanType
+from agentreplay import Agent ReplayClient, SpanType
 
 # Initialize client
-client = AgentreplayClient(
+client = Agent ReplayClient(
     url="http://localhost:8080",
     tenant_id=1,
     project_id=0
@@ -440,10 +440,10 @@ ancestors = client.get_ancestors(edge_id)
 **Framework Integration Example (LangChain):**
 
 ```python
-from agentreplay.integrations.langchain import AgentreplayCallbackHandler
+from agentreplay.integrations.langchain import Agent ReplayCallbackHandler
 from langchain.chains import LLMChain
 
-callback = AgentreplayCallbackHandler(
+callback = Agent ReplayCallbackHandler(
     url="http://localhost:8080",
     tenant_id=1
 )
@@ -457,7 +457,7 @@ result = chain.run("What is the weather?")
 
 ## 🏗️ Architecture
 
-Agentreplay is built as a modular Rust workspace with 8 specialized crates:
+Agent Replay is built as a modular Rust workspace with 8 specialized crates:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -531,7 +531,7 @@ Agentreplay is built as a modular Rust workspace with 8 specialized crates:
 
 ### SochDB Storage Architecture
 
-Agentreplay's storage layer is built on **SochDB**, providing:
+Agent Replay's storage layer is built on **SochDB**, providing:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -559,7 +559,7 @@ Agentreplay's storage layer is built on **SochDB**, providing:
 
 ### The AgentFlowEdge Format
 
-At the heart of Agentreplay is the **128-byte fixed-size edge format**:
+At the heart of Agent Replay is the **128-byte fixed-size edge format**:
 
 ```rust
 pub struct AgentFlowEdge {
@@ -594,7 +594,7 @@ pub struct AgentFlowEdge {
 
 ### Benchmark Results
 
-Tested against a real Agentreplay server with **240K+ traces** in the database:
+Tested against a real Agent Replay server with **240K+ traces** in the database:
 
 #### Write Performance
 
@@ -626,7 +626,7 @@ Tested against a real Agentreplay server with **240K+ traces** in the database:
 
 ### Vamana + Product Quantization: Scaling to 10M+ Vectors
 
-Agentreplay now includes the **Vamana index** with **Product Quantization (PQ)** for massive vector scaling:
+Agent Replay now includes the **Vamana index** with **Product Quantization (PQ)** for massive vector scaling:
 
 **Memory Efficiency at Scale:**
 
@@ -764,7 +764,7 @@ stats = client.get_latency_stats(agent_id="my-agent")
 Zero-code integration with popular frameworks:
 ```python
 # LangChain
-callback = AgentreplayCallbackHandler(url="http://localhost:8080")
+callback = Agent ReplayCallbackHandler(url="http://localhost:8080")
 chain = LLMChain(llm=llm, callbacks=[callback])
 
 # LlamaIndex
@@ -772,7 +772,7 @@ callback_manager = create_callback_manager(agentreplay_url="...")
 index = VectorStoreIndex.from_documents(docs, callback_manager=callback_manager)
 
 # OpenAI Agents
-agent = AgentreplayAgentWrapper(agent=openai_agent, agentreplay_url="...")
+agent = Agent ReplayAgentWrapper(agent=openai_agent, agentreplay_url="...")
 ```
 
 ---
@@ -896,7 +896,7 @@ agentreplay/
 
 ## 💾 Backup & Restore
 
-Agentreplay includes comprehensive backup and restore features to protect your data. Both the Desktop App and CLI support full backup operations.
+Agent Replay includes comprehensive backup and restore features to protect your data. Both the Desktop App and CLI support full backup operations.
 
 ### Desktop App Backup
 
@@ -1028,7 +1028,7 @@ cargo test --workspace
 
 ## � Related Projects
 
-Agentreplay is part of the SochDB ecosystem:
+Agent Replay is part of the SochDB ecosystem:
 
 | Project | Description | Link |
 |---------|-------------|------|
@@ -1041,17 +1041,17 @@ Agentreplay is part of the SochDB ecosystem:
 
 ## �📄 License
 
-Agentreplay is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+Agent Replay is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
 
 ### Third-Party Licenses
 
-Agentreplay uses several open-source libraries. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
+Agent Replay uses several open-source libraries. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Agentreplay builds on research and insights from:
+Agent Replay builds on research and insights from:
 
 - **Observability**: OpenTelemetry
 - **LLM Frameworks**: LangChain, LlamaIndex, Hugging Face, OpenAI
@@ -1082,8 +1082,8 @@ Special thanks to the open-source community and all contributors.
 
 <div align="center">
 
-**⭐ Star us on GitHub if you find Agentreplay useful! ⭐**
+**⭐ Star us on GitHub if you find Agent Replay useful! ⭐**
 
-Made with ❤️ by the Agentreplay team
+Made with ❤️ by the Agent Replay team
 
 </div>

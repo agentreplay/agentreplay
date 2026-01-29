@@ -1,4 +1,4 @@
-# Agentreplay Evaluation Framework - Implementation Summary
+# Agent Replay Evaluation Framework - Implementation Summary
 
 ## ✅ Completed Components
 
@@ -222,7 +222,7 @@ cargo test -- --nocapture
 cargo test test_registry_evaluate_trace
 ```
 
-## 📦 Integration with Agentreplay
+## 📦 Integration with Agent Replay
 
 ### Add to Workspace
 

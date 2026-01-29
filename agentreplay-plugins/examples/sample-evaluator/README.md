@@ -1,6 +1,6 @@
 # Sample Evaluator Plugin
 
-A sample evaluator plugin that demonstrates how to create custom evaluators for Agentreplay.
+A sample evaluator plugin that demonstrates how to create custom evaluators for Agent Replay.
 
 ## Overview
 
@@ -42,7 +42,7 @@ agentreplay sample-evaluator batch-evaluate --session <session-id>
 
 ### API
 
-The evaluators are automatically registered and can be used through the Agentreplay API:
+The evaluators are automatically registered and can be used through the Agent Replay API:
 
 ```rust
 use agentreplay_plugins::PluginManager;
@@ -63,7 +63,7 @@ println!("Sentiment score: {}", result.score);
 
 ## Configuration
 
-The evaluators can be configured in your Agentreplay configuration:
+The evaluators can be configured in your Agent Replay configuration:
 
 ```toml
 [plugins.sample-evaluator]

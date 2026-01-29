@@ -1,4 +1,4 @@
-# Agentreplay Framework Examples
+# Agent Replay Framework Examples
 
 This directory contains auto-instrumented examples for different AI agent frameworks.
 
@@ -20,7 +20,7 @@ pip install agentreplay langgraph langchain autogen crewai tavily-python
 
 2. **Configure .env:**
 ```bash
-# Agentreplay
+# Agent Replay
 AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
 AGENTREPLAY_TENANT_ID=1
 
@@ -34,7 +34,7 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 TAVILY_API_KEY=your-key
 ```
 
-3. **Start Agentreplay server:**
+3. **Start Agent Replay server:**
 ```bash
 cd agentreplay-server
 cargo run --release
@@ -97,7 +97,7 @@ Each framework has its own project for isolated tracking:
 
 ## What's Captured
 
-Agentreplay automatically captures:
+Agent Replay automatically captures:
 - ✅ All LLM calls with prompts/completions
 - ✅ Token usage per agent
 - ✅ Tool/function calls
@@ -108,7 +108,7 @@ Agentreplay automatically captures:
 
 ## Zero-Code Instrumentation
 
-All examples use **2 lines** of Agentreplay initialization:
+All examples use **2 lines** of Agent Replay initialization:
 ```python
 import agentreplay
 agentreplay.init_otel_instrumentation(
@@ -130,4 +130,4 @@ Since each framework has its own project ID, you can easily compare:
 - Error rates
 - Tool usage patterns
 
-Navigate between projects in the Agentreplay UI to compare!
+Navigate between projects in the Agent Replay UI to compare!

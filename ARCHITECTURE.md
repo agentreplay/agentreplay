@@ -1,6 +1,6 @@
-# Agentreplay Architecture
+# Agent Replay Architecture
 
-> This document provides a high-level overview of Agentreplay's architecture for contributors and maintainers.
+> This document provides a high-level overview of Agent Replay's architecture for contributors and maintainers.
 
 ## Table of Contents
 
@@ -20,14 +20,14 @@
 
 ## System Overview
 
-Agentreplay is a purpose-built observability platform for LLM agents. It's designed around four core principles:
+Agent Replay is a purpose-built observability platform for LLM agents. It's designed around four core principles:
 
 1. **Write-optimized**: Agents generate massive trace volumes; we optimize for ingestion
 2. **Causality-aware**: Traces form DAGs, not just flat logs; we preserve relationships
 3. **Evaluation-native**: Testing and validation are first-class, not afterthoughts
 4. **Memory-integrated**: Persistent context across sessions with semantic retrieval
 
-**Powered by SochDB**: Agentreplay uses [SochDB](https://github.com/sochdb/sochdb) as its storage backend - a high-performance embedded database designed for AI/ML workloads.
+**Powered by SochDB**: Agent Replay uses [SochDB](https://github.com/sochdb/sochdb) as its storage backend - a high-performance embedded database designed for AI/ML workloads.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -117,11 +117,11 @@ agentreplay-plugins                     agentreplay-tauri (Desktop)
 
 ## SochDB Storage Backend
 
-Agentreplay's storage layer is built entirely on **SochDB** - a high-performance embedded database from the same team. This provides Agentreplay with enterprise-grade storage capabilities without reinventing the wheel.
+Agent Replay's storage layer is built entirely on **SochDB** - a high-performance embedded database from the same team. This provides Agent Replay with enterprise-grade storage capabilities without reinventing the wheel.
 
 ### Why SochDB?
 
-| Feature | Benefit for Agentreplay |
+| Feature | Benefit for Agent Replay |
 |---------|----------------------|
 | **LSM-tree architecture** | Write-optimized for high-throughput trace ingestion |
 | **ACID transactions** | Durability guarantees for critical observability data |
@@ -150,7 +150,7 @@ Agentreplay's storage layer is built entirely on **SochDB** - a high-performance
 
 ### Key Encoding
 
-Agentreplay uses hierarchical key encoding for efficient range scans:
+Agent Replay uses hierarchical key encoding for efficient range scans:
 
 | Store | Key Format | Example |
 |-------|------------|---------|
@@ -300,7 +300,7 @@ Return Results
 
 ### EvalTraceV1 Canonical Transcript
 
-Agentreplay exposes a **versioned, canonical transcript** for eval workflows: `EvalTraceV1`.
+Agent Replay exposes a **versioned, canonical transcript** for eval workflows: `EvalTraceV1`.
 It models the trace as an append-only event log with:
 
 - `transcript`: ordered events (messages, tool calls/results, span start/end)
@@ -494,7 +494,7 @@ These flags enable selective encryption, retention policies, and audit logging.
 
 ## What's NOT in Scope
 
-To stay focused, Agentreplay explicitly does NOT handle:
+To stay focused, Agent Replay explicitly does NOT handle:
 
 1. **Real-time streaming**: We batch writes, not stream
 2. **Full-text search**: Use Elasticsearch/Typesense alongside

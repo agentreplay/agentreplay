@@ -1,6 +1,6 @@
-# Contributing to Agentreplay
+# Contributing to Agent Replay
 
-Thank you for your interest in contributing to Agentreplay! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Agent Replay! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
@@ -416,4 +416,4 @@ Contributors are recognized in:
 - GitHub contributors page
 - Project README (for significant contributions)
 
-Thank you for contributing to Agentreplay! 🎉
+Thank you for contributing to Agent Replay! 🎉

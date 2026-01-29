@@ -1,4 +1,4 @@
-# Agentreplay JavaScript/TypeScript SDK
+# Agent Replay JavaScript/TypeScript SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 
@@ -15,10 +15,10 @@ pnpm add @agentreplay/sdk
 ## Quick Start
 
 ```typescript
-import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
+import { Agent ReplayClient, SpanType } from '@agentreplay/sdk';
 
 // Initialize the client
-const client = new AgentreplayClient({
+const client = new Agent ReplayClient({
   url: 'http://localhost:8080',
   tenantId: 1,
   projectId: 0  // optional
@@ -142,8 +142,8 @@ SpanType.Custom      // 255 - Custom types
 ## Configuration Options
 
 ```typescript
-interface AgentreplayClientOptions {
-  url: string;                      // Agentreplay server URL
+interface Agent ReplayClientOptions {
+  url: string;                      // Agent Replay server URL
   tenantId: number;                 // Tenant identifier
   projectId?: number;               // Project identifier (default: 0)
   agentId?: number;                 // Default agent ID (default: 1)
@@ -159,10 +159,10 @@ interface AgentreplayClientOptions {
 
 ```typescript
 import OpenAI from 'openai';
-import { AgentreplayClient } from '@agentreplay/sdk';
+import { Agent ReplayClient } from '@agentreplay/sdk';
 
 const openai = new OpenAI();
-const agentreplay = new AgentreplayClient({ url: '...', tenantId: 1 });
+const agentreplay = new Agent ReplayClient({ url: '...', tenantId: 1 });
 
 async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
   const response = await openai.chat.completions.create({
@@ -192,12 +192,12 @@ async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
+import { Agent ReplayClient, SpanType } from '@agentreplay/sdk';
 
-const agentreplay = new AgentreplayClient({ url: '...', tenantId: 1 });
+const agentreplay = new Agent ReplayClient({ url: '...', tenantId: 1 });
 
 // Create a callback handler
-class AgentreplayHandler {
+class Agent ReplayHandler {
   private sessionId = Date.now();
 
   async handleLLMStart(llm: any, prompts: string[]) {
@@ -225,7 +225,7 @@ The SDK is written in TypeScript and provides full type definitions:
 
 ```typescript
 import type {
-  AgentreplayClientOptions,
+  Agent ReplayClientOptions,
   QueryFilter,
   QueryResponse,
   TraceView,
@@ -241,7 +241,7 @@ try {
   const trace = await client.createTrace({...});
 } catch (error) {
   if (error instanceof Error) {
-    console.error(`Agentreplay error: ${error.message}`);
+    console.error(`Agent Replay error: ${error.message}`);
   }
 }
 ```

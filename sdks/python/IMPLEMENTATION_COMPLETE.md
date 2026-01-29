@@ -1,4 +1,4 @@
-# Agentreplay SDK Implementation - Complete ✅
+# Agent Replay SDK Implementation - Complete ✅
 
 ## Summary
 
@@ -17,7 +17,7 @@ Successfully implemented all P0 critical tasks from the task document, focusing 
 - `_AsyncStreamWrapper` for async streaming support
 - Proper detection of `stream=True` parameter
 - Telemetry collection after stream exhaustion (tokens, content, latency)
-- Users receive chunks in real-time while Agentreplay captures full trace
+- Users receive chunks in real-time while Agent Replay captures full trace
 
 **Key features:**
 - No stream consumption - users get all chunks
@@ -168,15 +168,15 @@ OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
 **Files:** `sdks/python/src/agentreplay/otel_bridge.py`
 
 **What was implemented:**
-- Replaced custom `AgentreplaySpanExporter` with standard `OTLPSpanExporter`
+- Replaced custom `Agent ReplaySpanExporter` with standard `OTLPSpanExporter`
 - Uses standard OTLP HTTP endpoint: `http://localhost:4318/v1/traces`
-- Agentreplay-specific headers: `x-agentreplay-tenant-id`, `x-agentreplay-project-id`
+- Agent Replay-specific headers: `x-agentreplay-tenant-id`, `x-agentreplay-project-id`
 - Full interoperability with other OTLP collectors
 
 **Before:**
 ```python
-from agentreplay.otel_exporter import AgentreplaySpanExporter
-exporter = AgentreplaySpanExporter(url="http://localhost:9600/api/v1/traces")
+from agentreplay.otel_exporter import Agent ReplaySpanExporter
+exporter = Agent ReplaySpanExporter(url="http://localhost:9600/api/v1/traces")
 ```
 
 **After:**
@@ -189,7 +189,7 @@ exporter = OTLPSpanExporter(
 ```
 
 **Benefits:**
-- Multi-vendor support (send to Agentreplay + Datadog simultaneously)
+- Multi-vendor support (send to Agent Replay + Datadog simultaneously)
 - Standard tooling compatibility (otel-cli, Grafana, etc.)
 - Battle-tested implementation with retry, compression, etc.
 - Future-proof as OTLP evolves
@@ -302,7 +302,7 @@ Comprehensive README with:
 └─────────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────────┐
-│ 5. Agentreplay Backend (Rust)                            │
+│ 5. Agent Replay Backend (Rust)                            │
 │    └─ OTLP HTTP server receives request                 │
 │       └─ Converts OTLP spans to AgentFlowEdge           │
 │          └─ Stores in SLED database                      │
@@ -444,7 +444,7 @@ This verifies all files exist and contain expected content.
 
 Not implemented in this pass, but documented in task.md:
 
-- **P1:** Dual export capability (Agentreplay + LangSmith simultaneously)
+- **P1:** Dual export capability (Agent Replay + LangSmith simultaneously)
 - **P1:** RAG context tracking
 - **P2:** Automatic cost calculation (Rust backend)
 - **P2:** Diagnostic CLI tool (`agentreplay-doctor`)

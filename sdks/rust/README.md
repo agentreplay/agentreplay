@@ -1,4 +1,4 @@
-# Agentreplay Rust SDK
+# Agent Replay Rust SDK
 
 High-performance observability SDK for LLM agents and AI applications.
 
@@ -15,7 +15,7 @@ tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
 ## Quick Start
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig, SpanType, CreateTraceOptions};
+use agentreplay_client::{Agent ReplayClient, ClientConfig, SpanType, CreateTraceOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_project_id(0)
         .with_agent_id(1);
 
-    let client = AgentreplayClient::new(config);
+    let client = Agent ReplayClient::new(config);
 
     // Create a basic trace
     let trace = client.create_trace(CreateTraceOptions {
@@ -45,12 +45,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 The SDK supports OpenTelemetry GenAI semantic conventions:
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig, CreateGenAITraceOptions, Message};
+use agentreplay_client::{Agent ReplayClient, ClientConfig, CreateGenAITraceOptions, Message};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = Agent ReplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     let trace = client.create_genai_trace(CreateGenAITraceOptions {
         agent_id: 1,
@@ -82,12 +82,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Tracking Tool Calls
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig, CreateToolTraceOptions};
+use agentreplay_client::{Agent ReplayClient, ClientConfig, CreateToolTraceOptions};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = Agent ReplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     let trace = client.create_tool_trace(CreateToolTraceOptions {
         agent_id: 1,
@@ -116,12 +116,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Querying Traces
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig, QueryFilter};
+use agentreplay_client::{Agent ReplayClient, ClientConfig, QueryFilter};
 use chrono::Utc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = Agent ReplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     // Query traces with filters
     let results = client.query_traces(Some(&QueryFilter {
@@ -152,12 +152,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## User Feedback
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig};
+use agentreplay_client::{Agent ReplayClient, ClientConfig};
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = Agent ReplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     // Submit feedback
     client.submit_feedback("trace_id", 1).await?;  // thumbs up
@@ -214,11 +214,11 @@ let config = ClientConfig::new("http://localhost:8080", 1)
 ## Error Handling
 
 ```rust
-use agentreplay_client::{AgentreplayClient, ClientConfig, AgentreplayError, CreateTraceOptions, SpanType};
+use agentreplay_client::{Agent ReplayClient, ClientConfig, Agent ReplayError, CreateTraceOptions, SpanType};
 
 #[tokio::main]
 async fn main() {
-    let client = AgentreplayClient::new(ClientConfig::new("http://localhost:8080", 1));
+    let client = Agent ReplayClient::new(ClientConfig::new("http://localhost:8080", 1));
 
     match client.create_trace(CreateTraceOptions {
         agent_id: 1,
@@ -226,7 +226,7 @@ async fn main() {
         ..Default::default()
     }).await {
         Ok(trace) => println!("Created: {}", trace.edge_id),
-        Err(AgentreplayError::ApiError { status, message }) => {
+        Err(Agent ReplayError::ApiError { status, message }) => {
             eprintln!("API error ({}): {}", status, message);
         }
         Err(e) => eprintln!("Error: {}", e),

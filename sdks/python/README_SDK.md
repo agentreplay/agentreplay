@@ -1,8 +1,8 @@
-# Agentreplay Python SDK
+# Agent Replay Python SDK
 
 **Zero-code instrumentation for LLM applications with agent context tracking.**
 
-Agentreplay automatically captures traces from OpenAI, Anthropic, and other LLM providers using OpenTelemetry, with zero code changes required.
+Agent Replay automatically captures traces from OpenAI, Anthropic, and other LLM providers using OpenTelemetry, with zero code changes required.
 
 ## Features
 
@@ -53,7 +53,7 @@ response = client.chat.completions.create(
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `AGENTREPLAY_ENABLED` | Enable auto-instrumentation | `false` |
-| `AGENTREPLAY_URL` | Agentreplay server URL | `http://localhost:9600` |
+| `AGENTREPLAY_URL` | Agent Replay server URL | `http://localhost:9600` |
 | `AGENTREPLAY_TENANT_ID` | Tenant ID | `1` |
 | `AGENTREPLAY_PROJECT_ID` | Project ID | `0` |
 | `AGENTREPLAY_DEBUG` | Enable debug logging | `false` |
@@ -171,11 +171,11 @@ init_otel_instrumentation(
 2. **Bootstrap**: Checks `AGENTREPLAY_ENABLED` env var and initializes OpenTelemetry if enabled
 3. **Monkey Patching**: Wraps OpenAI/Anthropic methods to inject tracing
 4. **Stream Wrapping**: Wraps streaming responses to collect telemetry without consuming the stream
-5. **OTLP Export**: Uses standard OpenTelemetry Protocol to send traces to Agentreplay backend
+5. **OTLP Export**: Uses standard OpenTelemetry Protocol to send traces to Agent Replay backend
 
 ## Backend Setup
 
-Start the Agentreplay backend:
+Start the Agent Replay backend:
 
 ```bash
 cd /path/to/chronolake

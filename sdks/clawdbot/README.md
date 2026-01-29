@@ -1,6 +1,6 @@
 # @agentreplay/clawdbot-plugin
 
-Agentreplay observability plugin for [Clawdbot](https://github.com/anthropics/clawdbot) - automatic tracing of agent activities, tool calls, and memory operations.
+Agent Replay observability plugin for [Clawdbot](https://github.com/anthropics/clawdbot) - automatic tracing of agent activities, tool calls, and memory operations.
 
 ## Features
 
@@ -9,7 +9,7 @@ Agentreplay observability plugin for [Clawdbot](https://github.com/anthropics/cl
 - 🔗 **Parent-Child Relationships**: Tool calls are linked to their parent agent runs
 - ⏱️ **Duration Tracking**: Measures time spent on each operation
 - 🏷️ **Rich Metadata**: Captures session keys, workspace info, and more
-- 📈 **Dashboard Integration**: View traces in Agentreplay UI
+- 📈 **Dashboard Integration**: View traces in Agent Replay UI
 
 ## Installation
 
@@ -19,13 +19,13 @@ npm install @agentreplay/clawdbot-plugin
 
 ## Setup
 
-### 1. Start Agentreplay
+### 1. Start Agent Replay
 
-Make sure Agentreplay is running. By default, it runs on `http://localhost:9600`.
+Make sure Agent Replay is running. By default, it runs on `http://localhost:9600`.
 
 ```bash
-# Using the Agentreplay desktop app
-open /Applications/Agentreplay.app
+# Using the Agent Replay desktop app
+open /Applications/Agent Replay.app
 
 # Or using the CLI
 agentreplay serve
@@ -67,7 +67,7 @@ clawdbot restart
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable or disable tracing |
-| `url` | string | `http://localhost:9600` | Agentreplay server URL |
+| `url` | string | `http://localhost:9600` | Agent Replay server URL |
 | `tenant_id` | number | `1` | Tenant identifier |
 | `project_id` | number | `1` | Project identifier |
 
@@ -75,10 +75,10 @@ clawdbot restart
 
 ### `/agentreplay`
 
-Shows the current Agentreplay integration status:
+Shows the current Agent Replay integration status:
 
 ```
-📊 Agentreplay Status
+📊 Agent Replay Status
 
 • Enabled: Yes
 • Server: http://localhost:9600
@@ -118,14 +118,14 @@ When using memory plugins (e.g., `memory-lancedb`):
 
 ## Viewing Traces
 
-1. Open Agentreplay desktop app or navigate to `http://localhost:9600`
+1. Open Agent Replay desktop app or navigate to `http://localhost:9600`
 2. Go to **Traces** section
 3. Filter by project, session, or time range
 4. Click on a trace to see the timeline and details
 
 ### Memory Dashboard
 
-In Agentreplay, you can also view:
+In Agent Replay, you can also view:
 - Memory operation frequency
 - Most recalled memories
 - Store/recall ratio
@@ -135,13 +135,13 @@ In Agentreplay, you can also view:
 
 ### Traces not appearing
 
-1. Check that Agentreplay is running: `curl http://localhost:9600/api/v1/health`
+1. Check that Agent Replay is running: `curl http://localhost:9600/api/v1/health`
 2. Verify the plugin is enabled: Send `/agentreplay` command
 3. Check logs for connection errors
 
 ### Connection refused
 
-Make sure the Agentreplay URL is correct and the server is accessible:
+Make sure the Agent Replay URL is correct and the server is accessible:
 
 ```bash
 curl -X POST http://localhost:9600/api/v1/traces \
@@ -151,7 +151,7 @@ curl -X POST http://localhost:9600/api/v1/traces \
 
 ## API Reference
 
-The plugin sends traces to these Agentreplay endpoints:
+The plugin sends traces to these Agent Replay endpoints:
 
 | Endpoint | Purpose |
 |----------|---------|

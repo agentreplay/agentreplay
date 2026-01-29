@@ -1,10 +1,10 @@
-# Agentreplay Evals Examples
+# Agent Replay Evals Examples
 
-This directory contains example scripts demonstrating how to use Agentreplay's evaluation system to test and benchmark AI agents.
+This directory contains example scripts demonstrating how to use Agent Replay's evaluation system to test and benchmark AI agents.
 
 ## Overview
 
-Agentreplay Evals provides:
+Agent Replay Evals provides:
 - **Datasets**: Collections of test cases for evaluating AI agents
 - **Evaluators**: Built-in and custom evaluators for measuring quality
 - **Runs**: Track evaluation runs with metrics and comparisons
@@ -77,7 +77,7 @@ python examples/evals/agent_eval_demo.py
 ## Prerequisites
 
 ```bash
-# Install Agentreplay Python SDK
+# Install Agent Replay Python SDK
 pip install agentreplay
 
 # Or install from source

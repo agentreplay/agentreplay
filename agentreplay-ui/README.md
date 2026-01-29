@@ -1,6 +1,6 @@
-# Agentreplay UI Dashboard
+# Agent Replay UI Dashboard
 
-A modern, LinkedIn-inspired observability dashboard for Agentreplay LLM tracing.
+A modern, LinkedIn-inspired observability dashboard for Agent Replay LLM tracing.
 
 ## Features
 
@@ -119,7 +119,7 @@ Add custom Prometheus queries in `lib/api/prometheus.ts`.
 - Check Langfuse is accessible at http://localhost:3000
 
 **Issue: No data showing**
-- Verify that Agentreplay is sending traces to the OTLP collector
+- Verify that Agent Replay is sending traces to the OTLP collector
 - Check browser console for API errors
 - Enable mock data mode for testing (enabled by default)
 
