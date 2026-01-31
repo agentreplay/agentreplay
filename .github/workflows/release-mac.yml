@@ -24,6 +24,7 @@ jobs:
     
     name: Build ${{ matrix.name }}
     runs-on: macos-latest
+    environment: TAURI
     
     steps:
       - name: Checkout repository

@@ -15,6 +15,7 @@ jobs:
   build-tauri-windows:
     name: Build Windows (x64)
     runs-on: windows-latest
+    environment: TAURI
     
     steps:
       - name: Checkout repository
