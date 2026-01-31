@@ -79,14 +79,13 @@ jobs:
       - name: Write Tauri signing key to file
         shell: bash
         run: |
-          mkdir -p ~/.tauri
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > ~/.tauri/agentreplay.key
+          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
 
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-unknown-linux-gnu
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ~/.tauri/agentreplay.key
+          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
