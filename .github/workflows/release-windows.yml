@@ -67,11 +67,17 @@ jobs:
           }
         shell: pwsh
 
+      - name: Write Tauri signing key to file
+        shell: bash
+        run: |
+          mkdir -p ~/.tauri
+          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > ~/.tauri/agentreplay.key
+
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ~/.tauri/agentreplay.key
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
