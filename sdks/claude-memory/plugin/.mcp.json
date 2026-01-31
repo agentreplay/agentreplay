@@ -1,0 +1,10 @@
+{
+  "_comment": "MCP disabled - using direct API calls via skill instead",
+  "_mcpServers": {
+    "agentreplay-memory": {
+      "type": "sse",
+      "url": "http://localhost:9600/mcp",
+      "headers": {}
+    }
+  }
+}

@@ -77,6 +77,7 @@ jobs:
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
           TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4

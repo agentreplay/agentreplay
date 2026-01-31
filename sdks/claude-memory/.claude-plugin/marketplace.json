@@ -1,0 +1,8 @@
+{
+  "name": "claude-agentreplay",
+  "displayName": "Claude AgentReplay Memory",
+  "description": "Local-first persistent memory for Claude Code using Agent Replay",
+  "version": "1.0.0",
+  "homepage": "https://agentreplay.dev",
+  "repository": "https://github.com/sochdb/agentreplay"
+}
