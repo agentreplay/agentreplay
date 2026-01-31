@@ -15,7 +15,6 @@ jobs:
   build-tauri-windows:
     name: Build Windows (x64)
     runs-on: windows-latest
-    environment: TAURI
     
     steps:
       - name: Checkout repository
@@ -67,16 +66,11 @@ jobs:
           }
         shell: pwsh
 
-      - name: Write Tauri signing key to file
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
-
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
-          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload Windows artifacts

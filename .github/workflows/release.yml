@@ -43,7 +43,6 @@ jobs:
   build-macos-arm:
     name: Build macOS (Apple Silicon)
     runs-on: macos-latest
-    environment: TAURI
     
     steps:
       - name: Checkout repository
@@ -93,16 +92,11 @@ jobs:
             cargo install tauri-cli --version "^2.0"
           fi
 
-      - name: Write Tauri signing key to file
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
-
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target aarch64-apple-darwin
         env:
-          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
@@ -136,7 +130,6 @@ jobs:
   build-macos-intel:
     name: Build macOS (Intel)
     runs-on: macos-13  # Intel runner for native x64 build
-    environment: TAURI
     
     steps:
       - name: Checkout repository
@@ -186,16 +179,11 @@ jobs:
             cargo install tauri-cli --version "^2.0"
           fi
 
-      - name: Write Tauri signing key to file
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
-
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-apple-darwin
         env:
-          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
@@ -229,7 +217,6 @@ jobs:
   build-linux:
     name: Build Linux (AppImage + Deb)
     runs-on: ubuntu-22.04
-    environment: TAURI
     
     steps:
       - name: Checkout repository
@@ -289,16 +276,11 @@ jobs:
             cargo install tauri-cli --version "^2.0"
           fi
 
-      - name: Write Tauri signing key to file
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
-
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-unknown-linux-gnu
         env:
-          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
@@ -353,7 +335,6 @@ jobs:
   build-windows:
     name: Build Windows (EXE + MSI)
     runs-on: windows-latest
-    environment: TAURI
     
     steps:
       - name: Checkout repository
@@ -401,16 +382,11 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0"
 
-      - name: Write Tauri signing key to file
-        shell: bash
-        run: |
-          echo "${{ secrets.TAURI_PRIVATE_KEY }}" > /tmp/tauri.key
-
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target x86_64-pc-windows-msvc
         env:
-          TAURI_SIGNING_PRIVATE_KEY: /tmp/tauri.key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Rename artifacts for consistency
