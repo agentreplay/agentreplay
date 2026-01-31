@@ -42,6 +42,18 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: 'agentreplay-tauri -> target'
+          cache-targets: true
+
+      - name: Cache Cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-tauri-2.0
+
       - name: Install frontend dependencies
         working-directory: agentreplay-ui
         run: npm ci
@@ -58,7 +70,10 @@ jobs:
           cp -r agentreplay-ui/dist agentreplay-tauri/agentreplay-ui/
 
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2.0"
+        run: |
+          if ! command -v cargo-tauri &> /dev/null; then
+            cargo install tauri-cli --version "^2.0"
+          fi
 
       - name: Build Tauri App
         working-directory: agentreplay-tauri
