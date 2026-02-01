@@ -17,7 +17,7 @@ export interface McpResponse<T = any> {
     id: number | string;
 }
 
-const MCP_ENDPOINT = "http://127.0.0.1:9601/mcp";
+const MCP_ENDPOINT = "http://127.0.0.1:47101/mcp";
 
 export async function mcpCall<T = any>(
     method: string,

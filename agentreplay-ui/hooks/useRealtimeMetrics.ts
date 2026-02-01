@@ -141,7 +141,7 @@ export function useRealtimeMetrics(options: UseRealtimeMetricsOptions = {}) {
 
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = process.env.NEXT_PUBLIC_WS_URL || 'localhost:9600';
+        const wsHost = process.env.NEXT_PUBLIC_WS_URL || 'localhost:47100';
         const baseUrl = `${protocol}//${wsHost}/ws/metrics`;
         // apiKey is always null in current implementation (HttpOnly cookie auth)
         // But we keep the parameter support for future compatibility

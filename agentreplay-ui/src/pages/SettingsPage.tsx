@@ -209,7 +209,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
       onMessage({ type: 'success', text: 'Preparing backup for download...' });
       
       // Request the server to create a zip and return it
-      const response = await fetch(`http://localhost:9600/api/v1/admin/backups/${backupId}/export`, {
+      const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}/export`, {
         method: 'GET',
       });
       
@@ -252,7 +252,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
       const formData = new FormData();
       formData.append('backup', file);
       
-      const response = await fetch('http://localhost:9600/api/v1/admin/backups/import', {
+      const response = await fetch('http://localhost:47100/api/v1/admin/backups/import', {
         method: 'POST',
         body: formData,
       });
@@ -282,7 +282,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
     }
     
     try {
-      const response = await fetch(`http://localhost:9600/api/v1/admin/backups/${backupId}`, {
+      const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}`, {
         method: 'DELETE',
       });
       
@@ -306,7 +306,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
     try {
       onMessage({ type: 'success', text: `${mode === 'merge' ? 'Merging' : 'Restoring'} backup... Please wait.` });
       
-      const response = await fetch(`http://localhost:9600/api/v1/admin/backups/${backupId}/restore?mode=${mode}`, {
+      const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}/restore?mode=${mode}`, {
         method: 'POST',
       });
       

@@ -1,5 +1,5 @@
 {
-  "name": "agentreplay-client",
+  "name": "agentreplay",
   "version": "0.1.0",
   "description": "Agentreplay SDK for JavaScript/TypeScript - High-performance observability for LLM agents",
   "main": "dist/index.js",

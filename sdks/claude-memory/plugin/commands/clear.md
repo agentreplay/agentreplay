@@ -19,7 +19,7 @@ Remove Agent Replay plugin settings to reset to defaults.
    Successfully cleared Agent Replay settings.
 
    Your local settings have been removed. The plugin will use default settings
-   (http://localhost:9600) on the next session.
+   (http://localhost:47100) on the next session.
    
    Note: Your memories stored in Agent Replay are NOT deleted. Only the plugin
    settings file has been removed.

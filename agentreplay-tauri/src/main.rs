@@ -329,7 +329,7 @@ impl AppConfig {
         // Parse server config
         if let Some(server) = toml_config.get("server").and_then(|s| s.as_table()) {
             if let Some(addr) = server.get("listen_addr").and_then(|a| a.as_str()) {
-                // Extract host and port from address (e.g., "127.0.0.1:9600")
+                // Extract host and port from address (e.g., "127.0.0.1:47100")
                 let parts: Vec<&str> = addr.split(':').collect();
                 if parts.len() == 2 {
                     config.ingestion_server.host = parts[0].to_string();
@@ -829,11 +829,11 @@ fn main() {
                 tracing::info!("Ingestion server disabled in configuration");
             }
 
-            // Start dedicated MCP server on port 9601 (isolated from ingestion)
+            // Start dedicated MCP server on port 47101 (isolated from ingestion)
             let mcp_state = state.clone();
-            // Re-use host from ingestion config, but force port 9601
+            // Re-use host from ingestion config, but force port 47101
             let mcp_host = state.config.read().ingestion_server.host.clone(); 
-            let mcp_port = 9601; 
+            let mcp_port = 47101; 
             
             tracing::info!("Starting dedicated MCP server on {}:{}", mcp_host, mcp_port);
             tauri::async_runtime::spawn(async move {
@@ -847,9 +847,9 @@ fn main() {
                 }
             });
 
-            // Start OTLP gRPC server on port 4317
+            // Start OTLP gRPC server on port 47117
             let otlp_grpc_state = state.clone();
-            tracing::info!("Starting OTLP gRPC server on 127.0.0.1:4317");
+            tracing::info!("Starting OTLP gRPC server on 127.0.0.1:47117");
             tauri::async_runtime::spawn(async move {
                 match otlp_server::start_otlp_grpc_server(otlp_grpc_state).await {
                     Ok(_) => {

@@ -32,8 +32,8 @@ export function ProjectSetupInfo({ projectId, projectName }: ProjectSetupInfoPro
   const envVars = {
     AGENTREPLAY_ENABLED: 'true',
     AGENTREPLAY_SERVICE_NAME: (projectName || 'my-app').toLowerCase().replace(/\\s+/g, '-'),
-    AGENTREPLAY_URL: 'http://localhost:9600',
-    AGENTREPLAY_OTLP_ENDPOINT: 'http://localhost:4317',
+    AGENTREPLAY_URL: 'http://localhost:47100',
+    AGENTREPLAY_OTLP_ENDPOINT: 'http://localhost:47117',
     AGENTREPLAY_TENANT_ID: '1',
     AGENTREPLAY_PROJECT_ID: projectId,
   };

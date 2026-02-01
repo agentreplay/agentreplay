@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Agentreplay",
-  "version": "0.1.1",
+  "productName": "Agent Replay",
+  "version": "0.1.1-alpha",
   "identifier": "io.agentreplay.desktop",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
     "frontendDist": "../agentreplay-ui/dist",
-    "devUrl": "http://localhost:5173"
+    "devUrl": "http://localhost:47173"
   },
   "app": {
     "security": {

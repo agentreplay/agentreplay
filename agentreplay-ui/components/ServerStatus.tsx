@@ -20,9 +20,9 @@ import { Activity, AlertCircle, Wifi, WifiOff, Terminal, X, ChevronDown, Chevron
 // Determine the API base URL based on environment
 function getApiBaseUrl(): string {
   const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
-  if (isTauri) return 'http://127.0.0.1:9600';
+  if (isTauri) return 'http://127.0.0.1:47100';
   if (typeof window !== 'undefined' && window.location.port === '5173') return '';
-  return 'http://127.0.0.1:9600';
+  return 'http://127.0.0.1:47100';
 }
 const API_BASE_URL = getApiBaseUrl();
 
@@ -180,16 +180,16 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
                     <strong className="text-textPrimary">Verify server is running:</strong>
                   </p>
                   <pre className="bg-background border border-border rounded p-3 text-xs overflow-x-auto">
-                    <code className="text-green-400">curl http://127.0.0.1:9600/api/v1/health</code>
+                    <code className="text-green-400">curl http://127.0.0.1:47100/api/v1/health</code>
                   </pre>
                 </div>
 
                 <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-blue-400">
-                    <strong>Tip:</strong> The server runs on port 9600 by default. 
+                    <strong>Tip:</strong> The server runs on port 47100 by default. 
                     Make sure nothing else is using this port. To check: 
-                    <code className="ml-1 px-1 py-0.5 bg-background rounded">lsof -i :9600</code>
+                    <code className="ml-1 px-1 py-0.5 bg-background rounded">lsof -i :47100</code>
                   </div>
                 </div>
               </div>

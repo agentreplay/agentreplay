@@ -42,7 +42,7 @@ function getApiBaseUrl(): string {
 
   if (isTauri) {
     // Tauri app: connect directly to embedded server
-    return 'http://127.0.0.1:9600';
+    return 'http://127.0.0.1:47100';
   }
 
   // Development with Vite proxy (port 5173)
@@ -51,7 +51,7 @@ function getApiBaseUrl(): string {
   }
 
   // Fallback: direct connection to server
-  return 'http://127.0.0.1:9600';
+  return 'http://127.0.0.1:47100';
 }
 
 const API_BASE_URL = getApiBaseUrl();

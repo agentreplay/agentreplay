@@ -77,7 +77,7 @@ pub struct BatcherConfig {
     /// Maximum number of spans to buffer in memory (OOM protection) - Task 8
     pub max_buffer_size: usize,
 
-    /// Agentreplay endpoint (e.g., "http://localhost:9600")
+    /// Agentreplay endpoint (e.g., "http://localhost:47100")
     pub agentreplay_endpoint: String,
 
     /// API key for authentication
@@ -100,7 +100,7 @@ impl Default for BatcherConfig {
             batch_timeout: Duration::from_secs(1),
             channel_buffer_size: 1000,
             max_buffer_size: 10_000,
-            agentreplay_endpoint: "http://localhost:9600".to_string(),
+            agentreplay_endpoint: "http://localhost:47100".to_string(),
             api_key: None,
             priority_span_types: vec!["error".to_string(), "root".to_string()],
             adaptive_sampling: true,

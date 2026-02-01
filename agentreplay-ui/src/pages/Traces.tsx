@@ -144,7 +144,7 @@ export default function Traces() {
   const [liveMode, setLiveMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // API Base URL for direct fetches (if client doesn't support listSessions yet)
-  const API_BASE_URL = "http://127.0.0.1:9600";
+  const API_BASE_URL = "http://127.0.0.1:47100";
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

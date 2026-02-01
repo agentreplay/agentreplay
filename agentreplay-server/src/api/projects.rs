@@ -256,7 +256,7 @@ pub async fn create_project(
     }
 
     let env_vars = EnvVariables {
-        agentreplay_url: "http://*********:9600".to_string(),
+        agentreplay_url: "http://*********:47100".to_string(),
         tenant_id: auth.tenant_id.to_string(),
         project_id: project_id.to_string(),
     };

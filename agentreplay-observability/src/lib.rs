@@ -44,7 +44,7 @@ pub struct ObservabilityConfig {
     /// Service name for identification
     pub service_name: String,
 
-    /// Agentreplay server endpoint (e.g., "http://localhost:9600")
+    /// Agentreplay server endpoint (e.g., "http://localhost:47100")
     pub agentreplay_endpoint: String,
 
     /// Environment (production, staging, development)
@@ -67,7 +67,7 @@ impl Default for ObservabilityConfig {
     fn default() -> Self {
         Self {
             service_name: "agentreplay-app".to_string(),
-            agentreplay_endpoint: "http://localhost:9600".to_string(),
+            agentreplay_endpoint: "http://localhost:47100".to_string(),
             environment: "development".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
             enabled: true,
@@ -83,7 +83,7 @@ impl ObservabilityConfig {
     /// Supported environment variables:
     /// - AGENTREPLAY_ENABLED: Enable/disable observability (default: true)
     /// - AGENTREPLAY_API_KEY: API key for authentication
-    /// - AGENTREPLAY_ENDPOINT: Agentreplay server endpoint (default: http://localhost:9600)
+    /// - AGENTREPLAY_ENDPOINT: Agentreplay server endpoint (default: http://localhost:47100)
     /// - AGENTREPLAY_PROJECT: Project identifier
     /// - AGENTREPLAY_SERVICE_NAME: Service name
     /// - AGENTREPLAY_ENVIRONMENT: Environment (production/staging/development)

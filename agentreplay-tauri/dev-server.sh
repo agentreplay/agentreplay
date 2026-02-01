@@ -18,7 +18,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Kill any existing process on port 5173
-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
+lsof -ti :47173 | xargs kill -9 2>/dev/null || true
 sleep 1
 
 cd "$SCRIPT_DIR/../ui" && npm run dev

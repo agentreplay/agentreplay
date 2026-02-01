@@ -21,7 +21,7 @@ pip install agentreplay langgraph langchain autogen crewai tavily-python
 2. **Configure .env:**
 ```bash
 # Agent Replay
-AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+AGENTREPLAY_OTLP_ENDPOINT=localhost:47117
 AGENTREPLAY_TENANT_ID=1
 
 # Azure OpenAI (required for all examples)
@@ -90,10 +90,10 @@ python research_crew.py
 
 Each framework has its own project for isolated tracking:
 
-- **LangGraph**: http://localhost:5173/projects/31696/traces
-- **LangChain**: http://localhost:5173/projects/31697/traces
-- **AutoGen**: http://localhost:5173/projects/31698/traces
-- **CrewAI**: http://localhost:5173/projects/31699/traces
+- **LangGraph**: http://localhost:47173/projects/31696/traces
+- **LangChain**: http://localhost:47173/projects/31697/traces
+- **AutoGen**: http://localhost:47173/projects/31698/traces
+- **CrewAI**: http://localhost:47173/projects/31699/traces
 
 ## What's Captured
 
@@ -114,7 +114,7 @@ import agentreplay
 agentreplay.init_otel_instrumentation(
     service_name="your-service",
     project_id=31696,  # Framework-specific ID
-    otlp_endpoint="localhost:4317",
+    otlp_endpoint="localhost:47117",
     tenant_id=1
 )
 ```

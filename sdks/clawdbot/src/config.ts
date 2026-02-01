@@ -13,7 +13,7 @@ export const agentreplayConfigSchema = {
       },
       url: {
         type: "string",
-        default: "http://localhost:9600",
+        default: "http://localhost:47100",
         description: "Agentreplay server URL",
       },
       tenant_id: {
@@ -35,7 +35,7 @@ export const agentreplayConfigSchema = {
     },
     url: {
       label: "Agentreplay URL",
-      placeholder: "http://localhost:9600",
+      placeholder: "http://localhost:47100",
       help: "The URL of your Agentreplay server",
     },
     tenant_id: {

@@ -26,10 +26,10 @@ echo ""
 
 # Kill any existing processes
 echo "🧹 Cleaning up existing processes..."
-lsof -ti :9600 | xargs kill -9 2>/dev/null || true
-lsof -ti :9601 | xargs kill -9 2>/dev/null || true  # MCP Server port
-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
-lsof -ti :4317 | xargs kill -9 2>/dev/null || true
+lsof -ti :47100 | xargs kill -9 2>/dev/null || true
+lsof -ti :47101 | xargs kill -9 2>/dev/null || true  # MCP Server port
+lsof -ti :47173 | xargs kill -9 2>/dev/null || true
+lsof -ti :47117 | xargs kill -9 2>/dev/null || true
 pkill -f "cargo run --no-default-features" 2>/dev/null || true
 pkill -f "agentreplay" 2>/dev/null || true
 pkill -f "vite" 2>/dev/null || true
@@ -42,10 +42,10 @@ export AGENTREPLAY_CONFIG_PATH="$(pwd)/agentreplay-server-config.toml"
 echo "📝 Using config: $AGENTREPLAY_CONFIG_PATH"
 echo ""
 echo "📡 Servers that will start:"
-echo "   • HTTP API:    http://localhost:9600"
-echo "   • MCP Server:  http://localhost:9601"
-echo "   • OTLP gRPC:   localhost:4317"
-echo "   • Vite Dev:    http://localhost:5173"
+echo "   • HTTP API:    http://localhost:47100"
+echo "   • MCP Server:  http://localhost:47101"
+echo "   • OTLP gRPC:   localhost:47117"
+echo "   • Vite Dev:    http://localhost:47173"
 echo ""
 
 # Unset snap-related environment variables that might cause glibc conflicts
@@ -78,7 +78,7 @@ if [ -f "agentreplay-ui/node_modules/.bin/tauri" ]; then
     # Wait for Vite to be ready
     echo "⏳ Waiting for Vite dev server to start..."
     for i in {1..30}; do
-        if curl -s http://localhost:5173 > /dev/null 2>&1; then
+        if curl -s http://localhost:47173 > /dev/null 2>&1; then
             echo "✅ Vite dev server is ready"
             break
         fi

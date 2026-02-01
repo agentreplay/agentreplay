@@ -11,7 +11,7 @@ Check the Agent Replay server connection and memory statistics.
 
 1. Check if Agent Replay is running and get stats:
    ```bash
-   curl -s http://localhost:9600/api/v1/health && echo "" && curl -s http://localhost:9600/api/v1/memory/stats
+   curl -s http://localhost:47100/api/v1/health && echo "" && curl -s http://localhost:47100/api/v1/memory/stats
    ```
 
 2. Present the results to the user:
@@ -23,7 +23,7 @@ Check the Agent Replay server connection and memory statistics.
 ```
 Agent Replay Status: ✅ Connected
 
-Server: http://localhost:9600
+Server: http://localhost:47100
 Memory Stats:
 - Total Vectors: 1,234
 - Total Documents: 567

@@ -34,7 +34,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
 
     setCreating(true);
     try {
-      const response = await fetch('http://localhost:9600/api/v1/projects', {
+      const response = await fetch('http://localhost:47100/api/v1/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

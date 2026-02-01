@@ -11,7 +11,7 @@
  *   "plugins": {
  *     "@agentreplay/clawdbot-plugin": {
  *       "enabled": true,
- *       "url": "http://localhost:9600",
+ *       "url": "http://localhost:47100",
  *       "tenant_id": 1,
  *       "project_id": 1
  *     }
@@ -19,7 +19,7 @@
  * }
  *
  * Or via environment:
- * - AGENTREPLAY_URL: Agentreplay server URL (default: http://localhost:9600)
+ * - AGENTREPLAY_URL: Agentreplay server URL (default: http://localhost:47100)
  * - AGENTREPLAY_TENANT_ID: Tenant ID (default: 1)
  * - AGENTREPLAY_PROJECT_ID: Project ID (default: 1)
  */
@@ -68,7 +68,7 @@ export function getAgentreplayConfig(api: PluginApi) {
       pluginCfg.enabled !== undefined
         ? Boolean(pluginCfg.enabled)
         : process.env.AGENTREPLAY_ENABLED !== "false",
-    url: (pluginCfg.url as string) || process.env.AGENTREPLAY_URL || "http://localhost:9600",
+    url: (pluginCfg.url as string) || process.env.AGENTREPLAY_URL || "http://localhost:47100",
     tenantId:
       typeof pluginCfg.tenant_id === "number"
         ? pluginCfg.tenant_id

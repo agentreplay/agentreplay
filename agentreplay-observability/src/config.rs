@@ -54,7 +54,7 @@ impl ObservabilityConfig {
                 .unwrap_or_else(|_| "agentreplay".to_string()),
 
             otel_exporter_otlp_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+                .unwrap_or_else(|_| "http://localhost:47117".to_string()),
 
             otel_exporter_otlp_protocol: match env::var("OTEL_EXPORTER_OTLP_PROTOCOL")
                 .unwrap_or_else(|_| "grpc".to_string())
@@ -90,7 +90,7 @@ impl Default for ObservabilityConfig {
         Self {
             otel_sdk_disabled: false,
             otel_service_name: "agentreplay".to_string(),
-            otel_exporter_otlp_endpoint: "http://localhost:4317".to_string(),
+            otel_exporter_otlp_endpoint: "http://localhost:47117".to_string(),
             otel_exporter_otlp_protocol: Protocol::Grpc,
             capture_message_content: false,
             sampling_rate: 0.1,

@@ -62,7 +62,7 @@ function install() {
     console.log('✅ Agentreplay plugin installed successfully!');
     console.log('');
     console.log('📊 Configuration (via environment variables):');
-    console.log('   AGENTREPLAY_URL=http://localhost:9600');
+    console.log('   AGENTREPLAY_URL=http://localhost:47100');
     console.log('   AGENTREPLAY_TENANT_ID=1');
     console.log('   AGENTREPLAY_PROJECT_ID=1');
     console.log('');

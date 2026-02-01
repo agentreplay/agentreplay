@@ -25,11 +25,11 @@ export default defineConfig({
 
   // Tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 5173,
+    port: 47173,
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:9600',
+        target: 'http://127.0.0.1:47100',
         changeOrigin: true,
         secure: false,
         // Suppress connection errors during startup (backend may not be ready yet)
@@ -38,7 +38,7 @@ export default defineConfig({
         },
       },
       '/ws': {
-        target: 'ws://127.0.0.1:9600',
+        target: 'ws://127.0.0.1:47100',
         ws: true,
       },
     },

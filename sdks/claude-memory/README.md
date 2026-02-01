@@ -123,8 +123,8 @@ Clear plugin settings (not memories).
 ### Environment Variables
 
 ```bash
-# Optional - defaults to localhost:9600
-AGENTREPLAY_URL=http://localhost:9600
+# Optional - defaults to localhost:47100
+AGENTREPLAY_URL=http://localhost:47100
 
 # Optional - for multi-tenant setups
 AGENTREPLAY_TENANT_ID=1
@@ -141,7 +141,7 @@ Create `~/.agentreplay-claude/settings.json`:
 
 ```json
 {
-  "url": "http://localhost:9600",
+  "url": "http://localhost:47100",
   "tenantId": 1,
   "projectId": 1,
   "skipTools": ["Read", "Glob", "Grep", "TodoWrite"],
@@ -194,7 +194,7 @@ claude-memory/
 Unlike cloud-based memory solutions:
 
 - **All data stays local**: Memories are stored in Agent Replay on your machine
-- **No external API calls**: The plugin only talks to localhost:9600
+- **No external API calls**: The plugin only talks to localhost:47100
 - **No accounts required**: No signup, no API keys to manage
 - **Full control**: Delete your data anytime by clearing Agent Replay storage
 

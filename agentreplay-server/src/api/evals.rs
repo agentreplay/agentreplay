@@ -98,7 +98,7 @@ impl From<&EvalMetric> for EvalMetricOutput {
 ///
 /// # Example
 /// ```bash
-/// curl -X POST http://localhost:9600/api/v1/evals/metrics \
+/// curl -X POST http://localhost:47100/api/v1/evals/metrics \
 ///   -H "Content-Type: application/json" \
 ///   -d '{
 ///     "edge_id": "0x1234567890abcdef",
@@ -159,10 +159,10 @@ pub async fn store_eval_metrics(
 /// # Example
 /// ```bash
 /// # Get all metrics for a trace
-/// curl 'http://localhost:9600/api/v1/evals/metrics?edge_id=0x1234567890abcdef'
+/// curl 'http://localhost:47100/api/v1/evals/metrics?edge_id=0x1234567890abcdef'
 ///
 /// # Get specific metric
-/// curl 'http://localhost:9600/api/v1/evals/metrics?edge_id=0x1234567890abcdef&metric_name=accuracy&evaluator=ragas'
+/// curl 'http://localhost:47100/api/v1/evals/metrics?edge_id=0x1234567890abcdef&metric_name=accuracy&evaluator=ragas'
 /// ```
 pub async fn get_eval_metrics(
     State(state): State<AppState>,

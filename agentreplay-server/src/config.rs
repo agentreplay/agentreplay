@@ -29,7 +29,7 @@ pub struct ServerConfig {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpServerConfig {
-    /// HTTP API listen address (e.g., "127.0.0.1:9600")
+    /// HTTP API listen address (e.g., "127.0.0.1:47100")
     #[serde(default = "default_http_addr")]
     pub listen_addr: String,
 
@@ -137,7 +137,7 @@ impl Default for RateLimitConfig {
 
 // Default values
 fn default_http_addr() -> String {
-    "127.0.0.1:9600".to_string()
+    "127.0.0.1:47100".to_string()
 }
 
 fn default_max_connections() -> usize {
@@ -210,7 +210,7 @@ impl ServerConfig {
     /// Load configuration from environment variables
     ///
     /// Supported environment variables:
-    /// - AGENTREPLAY_HTTP_ADDR: HTTP listen address (default: 127.0.0.1:9600)
+    /// - AGENTREPLAY_HTTP_ADDR: HTTP listen address (default: 127.0.0.1:47100)
     /// - AGENTREPLAY_DATA_DIR: Data directory path (default: ./agentreplay-data)
     /// - AGENTREPLAY_AUTH_ENABLED: Enable authentication (default: false)
     /// - AGENTREPLAY_JWT_SECRET: JWT secret for token validation
@@ -366,7 +366,7 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = ServerConfig::default();
-        assert_eq!(config.server.listen_addr, "127.0.0.1:9600");
+        assert_eq!(config.server.listen_addr, "127.0.0.1:47100");
         assert!(!config.auth.enabled);
     }
 

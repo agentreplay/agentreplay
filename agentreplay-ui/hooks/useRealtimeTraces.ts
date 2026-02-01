@@ -188,7 +188,7 @@ export function useRealtimeTraces(options: UseRealtimeTracesOptions = {}) {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // Connect directly to Agentreplay server for WebSocket (Next.js rewrites don't support WS)
-        const wsHost = process.env.NEXT_PUBLIC_WS_URL || 'localhost:9600';
+        const wsHost = process.env.NEXT_PUBLIC_WS_URL || 'localhost:47100';
         const baseUrl = `${protocol}//${wsHost}/ws/traces`;
         // apiKey is always null in current implementation (HttpOnly cookie auth)
         const wsUrl =

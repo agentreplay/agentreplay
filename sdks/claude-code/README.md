@@ -39,7 +39,7 @@ The plugin is configured via environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AGENTREPLAY_ENABLED` | `true` | Enable/disable tracing |
-| `AGENTREPLAY_URL` | `http://localhost:9600` | Agent Replay server URL |
+| `AGENTREPLAY_URL` | `http://localhost:47100` | Agent Replay server URL |
 | `AGENTREPLAY_TENANT_ID` | `1` | Tenant identifier |
 | `AGENTREPLAY_PROJECT_ID` | `1` | Project identifier |
 
@@ -47,7 +47,7 @@ The plugin is configured via environment variables:
 
 ```bash
 # Set Agent Replay URL
-export AGENTREPLAY_URL="http://localhost:9600"
+export AGENTREPLAY_URL="http://localhost:47100"
 
 # Run Claude Code
 claude
@@ -84,7 +84,7 @@ Every tool invocation is traced with:
    agentreplay serve
    ```
 
-2. Open the Agent Replay UI at `http://localhost:9600`
+2. Open the Agent Replay UI at `http://localhost:47100`
 
 3. Navigate to **Traces** to see all Claude Code activity
 
@@ -119,7 +119,7 @@ agentreplay/
 
 1. Check Agent Replay is running:
    ```bash
-   curl http://localhost:9600/api/v1/health
+   curl http://localhost:47100/api/v1/health
    ```
 
 2. Verify environment variable:

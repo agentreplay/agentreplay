@@ -15,7 +15,7 @@
 // Agentreplay API client for UI
 import axios from 'axios';
 
-const AGENTREPLAY_BASE_URL = process.env.NEXT_PUBLIC_AGENTREPLAY_URL || 'http://localhost:9600';
+const AGENTREPLAY_BASE_URL = process.env.NEXT_PUBLIC_AGENTREPLAY_URL || 'http://localhost:47100';
 // Alias for backwards compatibility
 const CHRONOLAKE_BASE_URL = AGENTREPLAY_BASE_URL;
 

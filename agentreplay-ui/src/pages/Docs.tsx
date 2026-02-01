@@ -98,10 +98,10 @@ import "github.com/sashabaranov/go-openai"
   };
 
   const installCmd = {
-    python: 'pip install agentreplay-client && agentreplay-install',
-    ts: 'npm install agentreplay-client',
+    python: 'pip install agentreplay && agentreplay-install',
+    ts: 'npm install agentreplay',
     go: 'go get github.com/sushanthpy/agentreplay-go',
-    rust: 'cargo add agentreplay-client'
+    rust: 'cargo add agentreplay'
   };
 
   const sections: Array<{
@@ -161,11 +161,11 @@ import "github.com/sashabaranov/go-openai"
                 <div className="relative">
                   <pre className="bg-surface-elevated border border-border rounded-lg p-4 text-sm overflow-x-auto">
                     <code>{`export AGENTREPLAY_ENABLED=true
-export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:47117
 export AGENTREPLAY_PROJECT_ID="${currentProject?.project_id || 'your-project-id'}"`}</code>
                   </pre>
                   <button
-                    onClick={() => copyToClipboard(`export AGENTREPLAY_ENABLED=true\nexport AGENTREPLAY_OTLP_ENDPOINT=localhost:4317\nexport AGENTREPLAY_PROJECT_ID="${currentProject?.project_id || 'your-project-id'}"`, 1)}
+                    onClick={() => copyToClipboard(`export AGENTREPLAY_ENABLED=true\nexport AGENTREPLAY_OTLP_ENDPOINT=localhost:47117\nexport AGENTREPLAY_PROJECT_ID="${currentProject?.project_id || 'your-project-id'}"`, 1)}
                     className="absolute top-2 right-2 p-2 hover:bg-surface-hover rounded-lg transition-colors"
                   >
                     {copiedIndex === 1 ? (
@@ -290,7 +290,7 @@ result = graph.invoke({"messages": [("user", "Hello!")]})
               <div>
                 <h4 className="text-sm font-semibold text-textPrimary mb-2">Base URL</h4>
                 <div className="bg-surface-elevated border border-border rounded-lg p-4">
-                  <code className="text-sm text-primary">http://localhost:9600/api/v1</code>
+                  <code className="text-sm text-primary">http://localhost:47100/api/v1</code>
                 </div>
               </div>
               <div>
@@ -386,7 +386,7 @@ result = graph.invoke({"messages": [("user", "Hello!")]})
                   <div>
                     <code className="text-xs font-mono text-primary">AGENTREPLAY_OTLP_ENDPOINT</code>
                     <p className="text-sm text-textSecondary mt-1">
-                      OTLP endpoint for sending traces (default: <code className="px-1 py-0.5 bg-background rounded">localhost:4317</code>)
+                      OTLP endpoint for sending traces (default: <code className="px-1 py-0.5 bg-background rounded">localhost:47117</code>)
                     </p>
                   </div>
                   <div>
@@ -417,7 +417,7 @@ result = graph.invoke({"messages": [("user", "Hello!")]})
 export AGENTREPLAY_ENABLED=true
 
 # Point to your Agentreplay server
-export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:47117
 
 # Associate traces with your project
 export AGENTREPLAY_PROJECT_ID=${currentProject?.project_id || 'your-project-id'}

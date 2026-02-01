@@ -8,7 +8,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-agentreplay-client = "0.1"
+agentreplay = "0.1"
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
 ```
 

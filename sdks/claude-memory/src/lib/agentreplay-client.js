@@ -10,7 +10,7 @@ const {
   validateContainerTag,
 } = require('./validate.js');
 
-const DEFAULT_URL = 'http://localhost:9600';
+const DEFAULT_URL = 'http://localhost:47100';
 const DEFAULT_TENANT_ID = 1;
 const DEFAULT_PROJECT_ID = 1;
 

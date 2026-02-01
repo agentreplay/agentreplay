@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   maxProfileItems: 5,
   debug: false,
   injectProfile: true,
-  url: 'http://localhost:9600',
+  url: 'http://localhost:47100',
   tenantId: 1,
   projectId: 1,
 };

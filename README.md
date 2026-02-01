@@ -152,7 +152,7 @@ See exactly what your AI agents are doing:
 - **Reasoning chains** visualized as causal graphs
 - **Token usage** tracked per model, session, and project
 - **Cost analytics** - automatic pricing from LiteLLM registry
-- **OTLP ingestion** - accepts OpenTelemetry traces on ports 4317/4318
+- **OTLP ingestion** - accepts OpenTelemetry traces on ports 47117/47118
 
 ### 🤖 Multi-Provider LLM Support
 
@@ -296,7 +296,7 @@ The primary way to run Agent Replay - a native desktop app:
 - **Unlimited storage** - uses your local disk, no cloud limits
 - **10x faster** - native IPC vs HTTP
 - **System tray** - runs in background, always available
-- **Embedded HTTP server** - REST API on port 9600
+- **Embedded HTTP server** - REST API on port 47100
 - **OTLP endpoints** - gRPC 4317, HTTP 4318
 
 ### 📦 SDKs & Integrations
@@ -389,12 +389,12 @@ The server will start on `http://localhost:8080` by default.
 
 ```bash
 # Install from PyPI
-pip install agentreplay-client
+pip install agentreplay
 
 # Or with framework integrations
-pip install agentreplay-client[langchain]      # LangChain/LangGraph
-pip install agentreplay-client[llamaindex]     # LlamaIndex
-pip install agentreplay-client[all-frameworks] # All integrations
+pip install agentreplay[langchain]      # LangChain/LangGraph
+pip install agentreplay[llamaindex]     # LlamaIndex
+pip install agentreplay[all-frameworks] # All integrations
 ```
 
 **Basic Usage:**
@@ -808,7 +808,7 @@ api_keys_file = "./data/api_keys.json"
 enable_metrics = true
 metrics_port = 9090
 enable_tracing = true
-tracing_endpoint = "http://localhost:4317"
+tracing_endpoint = "http://localhost:47117"
 ```
 
 ### Environment Variables
@@ -825,7 +825,7 @@ export AGENTREPLAY_API_KEY="your-api-key"
 
 # Observability
 export AGENTREPLAY_ENABLE_METRICS=true
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:47117"
 ```
 
 ---
@@ -1064,9 +1064,9 @@ Special thanks to the open-source community and all contributors.
 
 - **GitHub**: [github.com/sochdb/agentreplay](https://github.com/sochdb/agentreplay)
 - **Documentation**: [sochdb.github.io/agentreplay](https://sochdb.github.io/agentreplay)
-- **Python SDK**: [PyPI](https://pypi.org/project/agentreplay-client/)
-- **JavaScript SDK**: [npm](https://www.npmjs.com/package/agentreplay-client)
-- **Rust SDK**: [crates.io](https://crates.io/crates/agentreplay-client)
+- **Python SDK**: [PyPI](https://pypi.org/project/agentreplay/)
+- **JavaScript SDK**: [npm](https://www.npmjs.com/package/agentreplay)
+- **Rust SDK**: [crates.io](https://crates.io/crates/agentreplay)
 - **Issues**: [Bug reports & feature requests](https://github.com/sochdb/agentreplay/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
 

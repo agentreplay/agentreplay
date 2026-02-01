@@ -16,7 +16,7 @@
 //! OTLP gRPC and HTTP server implementation
 //!
 //! Implements OpenTelemetry Protocol (OTLP) ingestion endpoints:
-//! - gRPC on port 4317
+//! - gRPC on port 47117
 //! - HTTP on port 4318 (protobuf and JSON)
 //!
 //! This allows Agentreplay to accept traces from any OTEL-compatible client
@@ -128,9 +128,9 @@ impl TraceService for OtlpTraceService {
     }
 }
 
-/// Start OTLP gRPC server on port 4317
+/// Start OTLP gRPC server on port 47117
 pub async fn start_otlp_grpc_server(tauri_state: AppState) -> Result<()> {
-    let addr = "127.0.0.1:4317".parse()?;
+    let addr = "127.0.0.1:47117".parse()?;
     let shutdown_token = tauri_state.shutdown_token.clone();
     let service = OtlpTraceService { tauri_state };
 

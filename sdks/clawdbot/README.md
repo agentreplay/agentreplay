@@ -21,7 +21,7 @@ npm install @agentreplay/clawdbot-plugin
 
 ### 1. Start Agent Replay
 
-Make sure Agent Replay is running. By default, it runs on `http://localhost:9600`.
+Make sure Agent Replay is running. By default, it runs on `http://localhost:47100`.
 
 ```bash
 # Using the Agent Replay desktop app
@@ -40,7 +40,7 @@ Add to your `clawdbot.json`:
   "plugins": {
     "@agentreplay/clawdbot-plugin": {
       "enabled": true,
-      "url": "http://localhost:9600",
+      "url": "http://localhost:47100",
       "tenant_id": 1,
       "project_id": 1
     }
@@ -51,7 +51,7 @@ Add to your `clawdbot.json`:
 Or use environment variables:
 
 ```bash
-export AGENTREPLAY_URL="http://localhost:9600"
+export AGENTREPLAY_URL="http://localhost:47100"
 export AGENTREPLAY_TENANT_ID="1"
 export AGENTREPLAY_PROJECT_ID="1"
 ```
@@ -67,7 +67,7 @@ clawdbot restart
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable or disable tracing |
-| `url` | string | `http://localhost:9600` | Agent Replay server URL |
+| `url` | string | `http://localhost:47100` | Agent Replay server URL |
 | `tenant_id` | number | `1` | Tenant identifier |
 | `project_id` | number | `1` | Project identifier |
 
@@ -81,7 +81,7 @@ Shows the current Agent Replay integration status:
 📊 Agent Replay Status
 
 • Enabled: Yes
-• Server: http://localhost:9600
+• Server: http://localhost:47100
 • Tenant: 1
 • Project: 1
 ```
@@ -118,7 +118,7 @@ When using memory plugins (e.g., `memory-lancedb`):
 
 ## Viewing Traces
 
-1. Open Agent Replay desktop app or navigate to `http://localhost:9600`
+1. Open Agent Replay desktop app or navigate to `http://localhost:47100`
 2. Go to **Traces** section
 3. Filter by project, session, or time range
 4. Click on a trace to see the timeline and details
@@ -135,7 +135,7 @@ In Agent Replay, you can also view:
 
 ### Traces not appearing
 
-1. Check that Agent Replay is running: `curl http://localhost:9600/api/v1/health`
+1. Check that Agent Replay is running: `curl http://localhost:47100/api/v1/health`
 2. Verify the plugin is enabled: Send `/agentreplay` command
 3. Check logs for connection errors
 
@@ -144,7 +144,7 @@ In Agent Replay, you can also view:
 Make sure the Agent Replay URL is correct and the server is accessible:
 
 ```bash
-curl -X POST http://localhost:9600/api/v1/traces \
+curl -X POST http://localhost:47100/api/v1/traces \
   -H "Content-Type: application/json" \
   -d '{"tenant_id":1,"project_id":1,"agent_id":1,"session_id":1,"span_type":0}'
 ```

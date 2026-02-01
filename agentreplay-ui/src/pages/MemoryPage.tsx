@@ -212,11 +212,11 @@ export default function MemoryPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="bg-background rounded-lg p-3">
               <p className="text-xs text-textTertiary mb-2">Ingest memory (REST API):</p>
-              <pre className="text-xs text-primary font-mono overflow-x-auto">{`curl -X POST http://localhost:9600/api/v1/memory/ingest \\\n  -H "Content-Type: application/json" \\\n  -d '{"collection": "docs", "content": "Your content"}'`}</pre>
+              <pre className="text-xs text-primary font-mono overflow-x-auto">{`curl -X POST http://localhost:47100/api/v1/memory/ingest \\\n  -H "Content-Type: application/json" \\\n  -d '{"collection": "docs", "content": "Your content"}'`}</pre>
             </div>
             <div className="bg-background rounded-lg p-3">
               <p className="text-xs text-textTertiary mb-2">Search memories:</p>
-              <pre className="text-xs text-primary font-mono overflow-x-auto">{`curl -X POST http://localhost:9600/api/v1/memory/retrieve \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "your search", "k": 5}'`}</pre>
+              <pre className="text-xs text-primary font-mono overflow-x-auto">{`curl -X POST http://localhost:47100/api/v1/memory/retrieve \\\n  -H "Content-Type: application/json" \\\n  -d '{"query": "your search", "k": 5}'`}</pre>
             </div>
           </div>
         </div>
@@ -271,7 +271,7 @@ function OverviewTab({ copyToClipboard, copiedCode }: { copyToClipboard: (text: 
 from agentreplay import AgentreplayClient
 
 client = AgentreplayClient(
-    url="http://localhost:9600",
+    url="http://localhost:47100",
     tenant_id=1,
     project_id=0
 )
@@ -295,7 +295,7 @@ for mem in results["results"]:
 
   const curlExample = `# Raw API usage (if not using SDK)
 # Store memory
-curl -X POST http://localhost:9600/api/v1/memory/ingest \\
+curl -X POST http://localhost:47100/api/v1/memory/ingest \\
   -H "Content-Type: application/json" \\
   -d '{
     "collection": "default",
@@ -303,7 +303,7 @@ curl -X POST http://localhost:9600/api/v1/memory/ingest \\
   }'
 
 # Search memories
-curl -X POST http://localhost:9600/api/v1/memory/retrieve \\
+curl -X POST http://localhost:47100/api/v1/memory/retrieve \\
   -H "Content-Type: application/json" \\
   -d '{ "query": "preferences", "k": 5 }'`;
 
@@ -316,7 +316,7 @@ curl -X POST http://localhost:9600/api/v1/memory/retrieve \\
       "command": "node",
       "args": ["<path>/agentreplay-claude-bridge/dist/index.js"],
       "env": {
-        "AGENTREPLAY_URL": "http://127.0.0.1:9601/mcp"
+        "AGENTREPLAY_URL": "http://127.0.0.1:47101/mcp"
       }
     }
   }
@@ -689,7 +689,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
           <div className="bg-background rounded-lg p-4 max-w-lg mx-auto text-left">
             <p className="text-xs text-textTertiary mb-2">Ingest your first memory:</p>
             <pre className="text-xs text-primary font-mono overflow-x-auto whitespace-pre-wrap">
-              {`curl -X POST http://localhost:9600/api/v1/memory/ingest \\
+              {`curl -X POST http://localhost:47100/api/v1/memory/ingest \\
   -H "Content-Type: application/json" \\
   -d '{"collection": "default", "content": "Your content here"}'`}
             </pre>
@@ -780,7 +780,7 @@ function KnowledgeGraphTab({ mcpInfo }: { mcpInfo: MCPInfoResponse | null }) {
             <div className="bg-background rounded-lg p-4 max-w-lg mx-auto text-left">
               <p className="text-xs text-textTertiary mb-2">Ingest a document to start building the graph:</p>
               <pre className="text-xs text-primary font-mono overflow-x-auto">
-                {`curl -X POST http://localhost:9600/api/v1/memory/ingest \\
+                {`curl -X POST http://localhost:47100/api/v1/memory/ingest \\
   -H "Content-Type: application/json" \\
   -d '{"collection": "docs", "content": "Your content here"}'`}
               </pre>
@@ -949,7 +949,7 @@ function MCPServerTab({
           </div>
           <div className="bg-background rounded-lg p-4">
             <div className="text-xs text-textTertiary mb-1">Port</div>
-            <div className="text-xl font-bold text-textPrimary">9600</div>
+            <div className="text-xl font-bold text-textPrimary">47100</div>
           </div>
         </div>
       </div>

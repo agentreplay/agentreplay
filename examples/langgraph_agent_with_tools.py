@@ -23,7 +23,7 @@ Setup:
     2. Create .env file with:
        AGENTREPLAY_ENABLED=true
        AGENTREPLAY_PROJECT_ID=11635
-       AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+       AGENTREPLAY_OTLP_ENDPOINT=localhost:47117
        AZURE_OPENAI_API_KEY=your-key
        AZURE_OPENAI_ENDPOINT=your-endpoint
        AZURE_OPENAI_DEPLOYMENT=gpt-4.1
@@ -42,7 +42,7 @@ load_dotenv()
 import agentreplay
 agentreplay.init_otel_instrumentation(
     service_name=os.getenv("AGENTREPLAY_SERVICE_NAME", "langgraph-demo"),
-    otlp_endpoint=os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:4317"),
+    otlp_endpoint=os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:47117"),
     project_id=int(os.getenv("AGENTREPLAY_PROJECT_ID", "27986")),
     tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     debug=True  # Show initialization logs
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         print("-" * 60)
         
         print("\n✅ Complete! Check Agentreplay UI:")
-        print("   http://localhost:5173")
+        print("   http://localhost:47173")
         print("\nYou should see:")
         print("   - 2 agents: researcher → writer")
         print("   - Tool calls (web search)")

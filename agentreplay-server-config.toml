@@ -15,7 +15,7 @@
 # Agentreplay Server Configuration
 
 [server]
-listen_addr = "127.0.0.1:9600"
+listen_addr = "127.0.0.1:47100"
 max_connections = 1000
 request_timeout_secs = 30
 

@@ -320,11 +320,11 @@ impl TraceService for OtlpTraceService {
     }
 }
 
-/// Start OTLP gRPC server on port 4317
+/// Start OTLP gRPC server on port 47117
 pub async fn start_otlp_server(project_manager: Arc<ProjectManager>) -> Result<()> {
     use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
 
-    let addr = "0.0.0.0:4317".parse()?;
+    let addr = "0.0.0.0:47117".parse()?;
     let service = OtlpTraceService::new(project_manager);
 
     info!("🚀 OTLP gRPC server starting on {}", addr);

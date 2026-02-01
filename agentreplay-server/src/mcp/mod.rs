@@ -51,12 +51,12 @@
 //!
 //! ## Usage
 //!
-//! The MCP server runs on a configurable port (default 9601) and accepts
+//! The MCP server runs on a configurable port (default 47101) and accepts
 //! JSON-RPC 2.0 messages over HTTP or WebSocket.
 //!
 //! ```rust,ignore
 //! let mcp_server = MCPServer::new(app_state.clone());
-//! mcp_server.run(9601).await?;
+//! mcp_server.run(47101).await?;
 //! ```
 
 pub mod context;

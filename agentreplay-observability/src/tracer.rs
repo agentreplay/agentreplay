@@ -27,7 +27,7 @@ use std::time::Duration;
 /// Configuration for OpenTelemetry tracing
 #[derive(Debug, Clone)]
 pub struct OtelConfig {
-    /// OTLP endpoint (e.g., "http://localhost:4317" for gRPC)
+    /// OTLP endpoint (e.g., "http://localhost:47117" for gRPC)
     pub otlp_endpoint: String,
 
     /// Service name for resource attribute
@@ -72,7 +72,7 @@ impl Default for OtelConfig {
     fn default() -> Self {
         Self {
             otlp_endpoint: std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
+                .unwrap_or_else(|_| "http://localhost:47117".to_string()),
             service_name: "agentreplay".to_string(),
             service_version: env!("CARGO_PKG_VERSION").to_string(),
             sampler: SamplerConfig::TraceIdRatio(0.1), // 10% default

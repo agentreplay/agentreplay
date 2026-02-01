@@ -48,7 +48,7 @@ function getApiBaseUrl(): string {
   const isTauri = typeof window !== 'undefined' &&
     ('__TAURI__' in window || '__TAURI_INTERNALS__' in window);
   if (isTauri) {
-    return 'http://127.0.0.1:9600';
+    return 'http://127.0.0.1:47100';
   }
   if (typeof window !== 'undefined' && window.location.port === '5173') {
     return ''; // Use Vite proxy

@@ -15,7 +15,7 @@
 // Langfuse API client for Agentreplay UI
 import axios from 'axios';
 
-const LANGFUSE_BASE_URL = process.env.NEXT_PUBLIC_LANGFUSE_URL || 'http://localhost:9600';
+const LANGFUSE_BASE_URL = process.env.NEXT_PUBLIC_LANGFUSE_URL || 'http://localhost:47100';
 
 // Retry configuration
 interface RetryConfig {

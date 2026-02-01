@@ -41,22 +41,22 @@ LOG_FILE="logs/agentreplay-server-$(date +%Y%m%d-%H%M%S).log"
 
 # Kill any existing processes
 echo -e "${BLUE}Cleaning up existing processes...${NC}"
-lsof -ti :9600 | xargs kill -9 2>/dev/null || true
-lsof -ti :9601 | xargs kill -9 2>/dev/null || true  # MCP Server
-lsof -ti :5173 | xargs kill -9 2>/dev/null || true
-lsof -ti :4317 | xargs kill -9 2>/dev/null || true
+lsof -ti :47100 | xargs kill -9 2>/dev/null || true
+lsof -ti :47101 | xargs kill -9 2>/dev/null || true  # MCP Server
+lsof -ti :47173 | xargs kill -9 2>/dev/null || true
+lsof -ti :47117 | xargs kill -9 2>/dev/null || true
 sleep 1
 
 # Start backend server in background with logging
-echo -e "${GREEN}Starting Agentreplay server on port 9600...${NC}"
+echo -e "${GREEN}Starting Agentreplay server on port 47100...${NC}"
 echo -e "${BLUE}📝 Logging to: ${LOG_FILE}${NC}"
 RUST_LOG=info,agentreplay_server=debug ./target/release/agentreplay-server --config agentreplay-server-config.toml > "${LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to be ready
-echo -e "${BLUE}Waiting for HTTP server (port 9600)...${NC}"
+echo -e "${BLUE}Waiting for HTTP server (port 47100)...${NC}"
 for i in {1..30}; do
-  if curl -s http://localhost:9600/health > /dev/null 2>&1; then
+  if curl -s http://localhost:47100/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ HTTP server is ready!${NC}"
     break
   fi
@@ -71,7 +71,7 @@ done
 # Wait for OTLP gRPC server to be ready
 echo -e "${BLUE}Waiting for OTLP gRPC server (port 4317)...${NC}"
 for i in {1..30}; do
-  if lsof -i:4317 > /dev/null 2>&1; then
+  if lsof -i:47117 > /dev/null 2>&1; then
     echo -e "${GREEN}✅ OTLP gRPC server is ready!${NC}"
     break
   fi
@@ -83,9 +83,9 @@ for i in {1..30}; do
 done
 
 # Wait for MCP server to be ready
-echo -e "${BLUE}Waiting for MCP server (port 9601)...${NC}"
+echo -e "${BLUE}Waiting for MCP server (port 47101)...${NC}"
 for i in {1..30}; do
-  if lsof -i:9601 > /dev/null 2>&1; then
+  if lsof -i:47101 > /dev/null 2>&1; then
     echo -e "${GREEN}✅ MCP server is ready!${NC}"
     break
   fi
@@ -100,10 +100,10 @@ done
 echo -e "${GREEN}Starting Vite dev server on port 5173...${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${YELLOW}Agentreplay is running:${NC}"
-echo -e "${YELLOW}  HTTP API:    http://localhost:9600${NC}"
-echo -e "${YELLOW}  MCP Server:  http://localhost:9601${NC}"
-echo -e "${YELLOW}  OTLP gRPC:   localhost:4317${NC}"
-echo -e "${YELLOW}  UI:          http://localhost:5173${NC}"
+echo -e "${YELLOW}  HTTP API:    http://localhost:47100${NC}"
+echo -e "${YELLOW}  MCP Server:  http://localhost:47101${NC}"
+echo -e "${YELLOW}  OTLP gRPC:   localhost:47117${NC}"
+echo -e "${YELLOW}  UI:          http://localhost:47173${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 cd agentreplay-ui && npm run dev

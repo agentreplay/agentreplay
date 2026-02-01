@@ -196,7 +196,7 @@ export default function Sidebar() {
         collapsed ? 'px-1' : 'px-3'
       )}>
         <img
-          src="/icons/32x32.png"
+          src="/logo.svg"
           alt="Agentreplay"
           className={cn(
             'rounded-lg shadow-lg transition-all duration-200',

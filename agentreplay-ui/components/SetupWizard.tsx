@@ -45,14 +45,14 @@ const SDKS: Record<SdkType, {
 }> = {
   python: {
     label: 'Python',
-    installCmd: 'pip install agentreplay-client && agentreplay-install',
+    installCmd: 'pip install agentreplay && agentreplay-install',
     installLabel: 'Install via pip',
     verifyCode: (projectId) => `import os
 from agentreplay_client import AgentreplayClient
 
 # Initialize client
 client = AgentreplayClient(
-    url=os.getenv("AGENTREPLAY_URL", "http://127.0.0.1:9600"),
+    url=os.getenv("AGENTREPLAY_URL", "http://127.0.0.1:47100"),
     tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     project_id=int(os.getenv("AGENTREPLAY_PROJECT_ID", "${projectId}")),
 )
@@ -74,7 +74,7 @@ print(f"🚀 Visit http://localhost:5173/traces to see your data")`
 
 // Initialize client
 const client = new AgentreplayClient({
-  url: process.env.AGENTREPLAY_URL || 'http://127.0.0.1:9600',
+  url: process.env.AGENTREPLAY_URL || 'http://127.0.0.1:47100',
   tenantId: parseInt(process.env.AGENTREPLAY_TENANT_ID || '1'),
   projectId: parseInt(process.env.AGENTREPLAY_PROJECT_ID || '${projectId}'),
 });
@@ -130,16 +130,16 @@ func getEnvInt(key string, defaultVal int) int {
   },
   rust: {
     label: 'Rust',
-    installCmd: 'cargo add agentreplay-client',
+    installCmd: 'cargo add agentreplay',
     installLabel: 'Install via cargo',
-    verifyCode: (projectId) => `use agentreplay_client::AgentreplayClient;
+    verifyCode: (projectId) => `use agentreplay::AgentreplayClient;
 use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize client
     let client = AgentreplayClient::new(
-        env::var("AGENTREPLAY_URL").unwrap_or("http://127.0.0.1:9600".to_string()),
+        env::var("AGENTREPLAY_URL").unwrap_or("http://127.0.0.1:47100".to_string()),
         env::var("AGENTREPLAY_TENANT_ID").unwrap_or("1".to_string()).parse()?,
         env::var("AGENTREPLAY_PROJECT_ID").unwrap_or("${projectId}".to_string()).parse()?,
     );

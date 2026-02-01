@@ -19,11 +19,11 @@ const nextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:9600/api/v1/:path*',
+        destination: 'http://localhost:47100/api/v1/:path*',
       },
       {
         source: '/api/langfuse/:path*',
-        destination: 'http://localhost:9600/api/:path*',
+        destination: 'http://localhost:47100/api/:path*',
       },
       {
         source: '/api/prometheus/:path*',

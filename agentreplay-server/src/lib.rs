@@ -316,7 +316,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
                 ║  Binding to: {}                                        ║\n\
                 ║                                                               ║\n\
                 ║  To allow NoAuth mode, either:                               ║\n\
-                ║    1. Bind to localhost (e.g., 127.0.0.1:9600)              ║\n\
+                ║    1. Bind to localhost (e.g., 127.0.0.1:47100)              ║\n\
                 ║    2. Set: export AGENTREPLAY_ALLOW_NOAUTH=true               ║\n\
                 ║                                                               ║\n\
                 ║  For production, enable authentication in your config:       ║\n\
@@ -745,7 +745,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         // Add tracing
         .layer(TraceLayer::new_for_http());
 
-    // Start OTLP gRPC server on port 4317 in parallel (if project manager available)
+    // Start OTLP gRPC server on port 47117 in parallel (if project manager available)
     let otlp_handle = if let Some(pm) = pm_for_otlp {
         Some(tokio::spawn(async move {
             if let Err(e) = otlp_service::start_otlp_server(pm).await {
@@ -757,7 +757,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         None
     };
 
-    // Start MCP server on port 9601 for Claude Desktop / Cursor integration
+    // Start MCP server on port 47101 for Claude Desktop / Cursor integration
     let mcp_handle = tokio::spawn(async move {
         let causal_index = db_for_mcp.causal_index();
         let mcp_router = mcp::mcp_router(state_for_mcp, causal_index);
@@ -772,7 +772,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
             )
             .layer(TraceLayer::new_for_http());
 
-        let mcp_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 9601));
+        let mcp_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 47101));
         tracing::info!("🔌 MCP Server listening on http://{}", mcp_addr);
 
         match tokio::net::TcpListener::bind(mcp_addr).await {
@@ -782,7 +782,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
                 }
             }
             Err(e) => {
-                tracing::error!("Failed to bind MCP server on port 9601: {}", e);
+                tracing::error!("Failed to bind MCP server on port 47101: {}", e);
             }
         }
     });

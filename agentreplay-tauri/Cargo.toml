@@ -14,7 +14,7 @@
 
 [package]
 name = "agentreplay"
-version = "0.1.1"
+version = "0.1.1-alpha"
 description = "Agentreplay Desktop - AgentFlow Database for AI Observability"
 authors = ["Agentreplay Contributors"]
 license = "Apache-2.0"

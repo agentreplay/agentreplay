@@ -20,7 +20,7 @@ export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentCon
 
     // Default env vars if not provided
     const effectiveEnvVars = envVars || {
-        AGENTREPLAY_URL: 'http://localhost:9600',
+        AGENTREPLAY_URL: 'http://localhost:47100',
         AGENTREPLAY_TENANT_ID: 'default',
         AGENTREPLAY_PROJECT_ID: projectId,
     };
@@ -166,7 +166,7 @@ export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentCon
                                             "command": "node",
                                             "args": [bridgePath],
                                             "env": {
-                                                "AGENTREPLAY_URL": "http://127.0.0.1:9601/mcp"
+                                                "AGENTREPLAY_URL": "http://127.0.0.1:47101/mcp"
                                             }
                                         }
                                     };
