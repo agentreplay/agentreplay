@@ -31,7 +31,7 @@ class AgentreplayConfig:
     Environment Variables:
         AGENTREPLAY_ENABLED: Enable/disable observability (default: true)
         AGENTREPLAY_API_KEY: API key for authentication
-        AGENTREPLAY_ENDPOINT: Agentreplay server endpoint (default: http://localhost:9600)
+        AGENTREPLAY_ENDPOINT: Agentreplay server endpoint (default: http://localhost:47100)
         AGENTREPLAY_PROJECT: Project identifier
         AGENTREPLAY_SERVICE_NAME: Service name for identification
         AGENTREPLAY_ENVIRONMENT: Environment (production/staging/development)
@@ -56,7 +56,7 @@ class AgentreplayConfig:
     # Core settings
     enabled: bool = True
     api_key: Optional[str] = None
-    endpoint: str = "http://localhost:9600"
+    endpoint: str = "http://localhost:47100"
     project: Optional[str] = None
     
     # Service identification
@@ -114,7 +114,7 @@ class AgentreplayConfig:
             return endpoint
         
         # Default
-        return "http://localhost:9600"
+        return "http://localhost:47100"
     
     @staticmethod
     def _get_bool_env(key: str, default: bool) -> bool:

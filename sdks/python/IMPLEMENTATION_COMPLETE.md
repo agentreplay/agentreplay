@@ -176,7 +176,7 @@ OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
 **Before:**
 ```python
 from agentreplay.otel_exporter import Agent ReplaySpanExporter
-exporter = Agent ReplaySpanExporter(url="http://localhost:9600/api/v1/traces")
+exporter = Agent ReplaySpanExporter(url="http://localhost:47100/api/v1/traces")
 ```
 
 **After:**
@@ -333,7 +333,7 @@ x-agentreplay-project-id: 0
 
 ```bash
 # Check backend health
-curl http://localhost:9600/health
+curl http://localhost:47100/health
 
 # Test OTLP endpoint (should return 400 for empty body, but means it's working)
 curl -X POST http://localhost:4318/v1/traces \
@@ -371,7 +371,7 @@ This verifies all files exist and contain expected content.
 3. **Set Environment:**
    ```bash
    export AGENTREPLAY_ENABLED=true
-   export AGENTREPLAY_URL=http://localhost:9600
+   export AGENTREPLAY_URL=http://localhost:47100
    export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
    export AGENTREPLAY_DEBUG=true
    export OPENAI_API_KEY=your-key
@@ -383,7 +383,7 @@ This verifies all files exist and contain expected content.
    ```
 
 5. **Check UI:**
-   Open http://localhost:5173 and verify traces appear with:
+   Open http://localhost:47173 and verify traces appear with:
    - Agent context (agent_id, session_id)
    - Streaming content captured
    - Tool calls visible

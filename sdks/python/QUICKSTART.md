@@ -90,7 +90,7 @@ export AGENTREPLAY_ENABLED=true  # Enable auto-instrumentation
 ### Optional
 
 ```bash
-export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317  # Default: localhost:4317
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:47117  # Default: localhost:47117
 export AGENTREPLAY_PROJECT_ID=0                  # Default: 0
 export AGENTREPLAY_TENANT_ID=1                   # Default: 1
 export AGENTREPLAY_SERVICE_NAME=my-app           # Default: python-app
@@ -111,7 +111,7 @@ python app.py  # ✅ Auto-traces
 
 ```bash
 export AGENTREPLAY_ENABLED=true
-export AGENTREPLAY_OTLP_ENDPOINT=localhost:4317
+export AGENTREPLAY_OTLP_ENDPOINT=localhost:47117
 python app.py  # ✅ Auto-traces (SAME UX!)
 ```
 
@@ -287,7 +287,7 @@ Checks AGENTREPLAY_ENABLED
     ↓
 Calls auto_instrument()
     ↓
-Sets up OTLP gRPC exporter (localhost:4317)
+Sets up OTLP gRPC exporter (localhost:47117)
     ↓
 Auto-discovers libraries (OpenAI, LangChain, etc.)
     ↓
@@ -320,7 +320,7 @@ Agent Replay uses **official OpenTelemetry instrumentations**:
 ### OTLP Protocol
 
 - **Protocol**: OTLP over gRPC (W3C standard)
-- **Endpoint**: `localhost:4317` (binary + multiplexing)
+- **Endpoint**: `localhost:47117` (binary + multiplexing)
 - **Format**: Protobuf (efficient serialization)
 - **Batching**: Automatic via `BatchSpanProcessor`
 - **Flushing**: Automatic on program exit via `atexit`
@@ -346,7 +346,7 @@ Agent Replay uses **official OpenTelemetry instrumentations**:
 
 3. **Check server is running:**
    ```bash
-   lsof -i:4317  # Should show agentreplay-server listening
+   lsof -i:47117  # Should show agentreplay-server listening
    ```
 
 4. **View server logs:**
@@ -439,6 +439,6 @@ python app_b.py
 - ✅ Install SDK: `pip install agentreplay`
 - ✅ Set env vars: `export AGENTREPLAY_ENABLED=true`
 - ✅ Run your code: `python your_app.py`
-- ✅ View traces: `http://localhost:5173`
+- ✅ View traces: `http://localhost:47173`
 
 **That's it! Zero code changes, automatic observability.** 🎉

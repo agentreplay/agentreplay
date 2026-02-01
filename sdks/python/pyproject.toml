@@ -139,9 +139,9 @@ all = [
 [project.urls]
 Homepage = "https://agentreplay.dev"
 Documentation = "https://docs.agentreplay.dev"
-Repository = "https://github.com/sochdb/agentreplay"
-Issues = "https://github.com/sochdb/agentreplay/issues"
-Changelog = "https://github.com/sochdb/agentreplay/blob/main/CHANGELOG.md"
+Repository = "https://github.com/agentreplay/agentreplay"
+Issues = "https://github.com/agentreplay/agentreplay/issues"
+Changelog = "https://github.com/agentreplay/agentreplay/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

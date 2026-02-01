@@ -33,11 +33,11 @@ pip install agentreplay[all]
 ## Quick Start
 
 ```python
-from agentreplay import Agent ReplayClient, SpanType
+from agentreplay import AgentreplayClient, SpanType
 
 # Initialize client
-client = Agent ReplayClient(
-    url="http://localhost:8080",
+client = AgentreplayClient(
+    url="http://localhost:47100",
     tenant_id=1,
     project_id=0
 )

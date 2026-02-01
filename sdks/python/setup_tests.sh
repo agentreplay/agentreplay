@@ -73,9 +73,9 @@ fi
 # Check if backend is running
 echo ""
 echo "5. Checking Agentreplay backend..."
-if curl -s http://localhost:9600/health > /dev/null 2>&1; then
+if curl -s http://localhost:47100/health > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Backend is running${NC}"
-    curl -s http://localhost:9600/health | python3 -m json.tool 2>/dev/null || echo ""
+    curl -s http://localhost:47100/health | python3 -m json.tool 2>/dev/null || echo ""
 else
     echo -e "${YELLOW}⚠ Backend not running${NC}"
     echo "  Start it: cd ../.. && ./start-web.sh"
@@ -117,7 +117,7 @@ if [ "$ALL_VARS_SET" = "false" ] || [ ! -f ".env" ]; then
     cat > .env << EOF
 # Agentreplay Configuration
 AGENTREPLAY_ENABLED=true
-AGENTREPLAY_URL=http://localhost:9600
+AGENTREPLAY_URL=http://localhost:47100
 AGENTREPLAY_TENANT_ID=1
 AGENTREPLAY_PROJECT_ID=0
 AGENTREPLAY_DEBUG=true
@@ -157,7 +157,7 @@ echo "3. Run examples:"
 echo -e "   ${GREEN}cd ../../examples && python3 pure_langgraph_example.py${NC}"
 echo ""
 echo "4. Check UI:"
-echo -e "   ${GREEN}http://localhost:5173${NC}"
+echo -e "   ${GREEN}http://localhost:47173${NC}"
 echo ""
 echo "Notes:"
 echo "- Set OPENAI_API_KEY in .env for real tests"

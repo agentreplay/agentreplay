@@ -20,7 +20,7 @@ No custom span processors or framework-specific code.
 
 Environment Variables:
     AGENTREPLAY_ENABLED: Set to "1", "true", "yes" to enable
-    AGENTREPLAY_OTLP_ENDPOINT: OTLP gRPC endpoint (default: localhost:4317)
+    AGENTREPLAY_OTLP_ENDPOINT: OTLP gRPC endpoint (default: localhost:47117)
     AGENTREPLAY_TENANT_ID: Tenant ID (default: 1)
     AGENTREPLAY_PROJECT_ID: Project ID (default: 0)
     AGENTREPLAY_SERVICE_NAME: Service name (default: "python-app")
@@ -64,7 +64,7 @@ def init_from_env(force: bool = False) -> bool:
         return False
     
     # Get configuration
-    otlp_endpoint = os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:4317")
+    otlp_endpoint = os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:47117")
     tenant_id = int(os.getenv("AGENTREPLAY_TENANT_ID", "1"))
     project_id = int(os.getenv("AGENTREPLAY_PROJECT_ID", "0"))
     service_name = os.getenv("AGENTREPLAY_SERVICE_NAME", "python-app")

@@ -16,7 +16,6 @@
 
 from typing import Optional, List, AsyncIterator, Callable, Dict, Any
 
-print("DEBUG: Loading local client.py")
 import httpx
 from agentreplay.models import AgentFlowEdge, QueryFilter, QueryResponse, SpanType
 from agentreplay.span import Span

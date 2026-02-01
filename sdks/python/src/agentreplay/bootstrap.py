@@ -20,7 +20,7 @@ It initializes OpenTelemetry instrumentation with minimal overhead.
 Environment Variables:
     AGENTREPLAY_ENABLED: Set to 'true' to enable auto-instrumentation
     AGENTREPLAY_SERVICE_NAME: Service name for traces (default: 'agentreplay-app')
-    AGENTREPLAY_OTLP_ENDPOINT: OTLP gRPC endpoint (default: 'localhost:4317')
+    AGENTREPLAY_OTLP_ENDPOINT: OTLP gRPC endpoint (default: 'localhost:47117')
     AGENTREPLAY_PROJECT_ID: Project ID for traces
     AGENTREPLAY_TENANT_ID: Tenant ID for traces (default: 1)
     AGENTREPLAY_DEBUG: Enable debug logging (default: false)
@@ -63,7 +63,7 @@ def init_otel_instrumentation(
     
     Args:
         service_name: Service name (default: from env or 'agentreplay-app')
-        otlp_endpoint: OTLP endpoint (default: from env or 'localhost:4317')
+        otlp_endpoint: OTLP endpoint (default: from env or 'localhost:47117')
         project_id: Project ID (default: from env)
         tenant_id: Tenant ID (default: from env or 1)
         capture_content: Capture LLM content (default: from env or True)
@@ -89,7 +89,7 @@ def init_otel_instrumentation(
     service_name = service_name or os.getenv("AGENTREPLAY_SERVICE_NAME", "agentreplay-app")
     otlp_endpoint = otlp_endpoint or os.getenv(
         "AGENTREPLAY_OTLP_ENDPOINT",
-        os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
+        os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:47117")
     )
     
     # Project/tenant IDs

@@ -26,7 +26,7 @@ pip install agentreplay
 
 ```bash
 export AGENTREPLAY_ENABLED=true
-export AGENTREPLAY_URL=http://localhost:9600
+export AGENTREPLAY_URL=http://localhost:47100
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
 
@@ -53,7 +53,7 @@ response = client.chat.completions.create(
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `AGENTREPLAY_ENABLED` | Enable auto-instrumentation | `false` |
-| `AGENTREPLAY_URL` | Agent Replay server URL | `http://localhost:9600` |
+| `AGENTREPLAY_URL` | Agent Replay server URL | `http://localhost:47100` |
 | `AGENTREPLAY_TENANT_ID` | Tenant ID | `1` |
 | `AGENTREPLAY_PROJECT_ID` | Project ID | `0` |
 | `AGENTREPLAY_DEBUG` | Enable debug logging | `false` |
@@ -148,7 +148,7 @@ from agentreplay import init_otel_instrumentation
 
 init_otel_instrumentation(
     service_name="my-app",
-    agentreplay_url="http://localhost:9600",
+    agentreplay_url="http://localhost:47100",
     tenant_id=1,
     project_id=0,
     capture_content=True
@@ -183,10 +183,10 @@ cd /path/to/chronolake
 ```
 
 The backend runs on:
-- HTTP: `http://localhost:9600`
-- OTLP gRPC: `localhost:4317`
+- HTTP: `http://localhost:47100`
+- OTLP gRPC: `localhost:47117`
 - OTLP HTTP: `http://localhost:4318/v1/traces`
-- UI: `http://localhost:5173`
+- UI: `http://localhost:47173`
 
 ## Troubleshooting
 
@@ -195,7 +195,7 @@ The backend runs on:
 1. Check environment variables:
    ```bash
    echo $AGENTREPLAY_ENABLED  # Should be "true"
-   echo $AGENTREPLAY_URL      # Should be "http://localhost:9600"
+   echo $AGENTREPLAY_URL      # Should be "http://localhost:47100"
    ```
 
 2. Enable debug mode:
@@ -206,7 +206,7 @@ The backend runs on:
 
 3. Check backend is running:
    ```bash
-   curl http://localhost:9600/health
+   curl http://localhost:47100/health
    ```
 
 4. Verify OTLP endpoint:

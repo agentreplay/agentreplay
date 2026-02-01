@@ -50,7 +50,7 @@ def setup_tracer_provider(
     
     Args:
         service_name: Service name for resource attributes
-        otlp_endpoint: OTLP gRPC endpoint (e.g., 'localhost:4317')
+        otlp_endpoint: OTLP gRPC endpoint (e.g., 'localhost:47117')
         tenant_id: Agentreplay tenant ID
         project_id: Agentreplay project ID
         debug: Enable debug logging
@@ -61,7 +61,7 @@ def setup_tracer_provider(
     Example:
         >>> provider = setup_tracer_provider(
         ...     service_name="my-agent",
-        ...     otlp_endpoint="localhost:4317",
+        ...     otlp_endpoint="localhost:47117",
         ...     project_id=27986
         ... )
     """

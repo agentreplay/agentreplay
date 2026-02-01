@@ -39,7 +39,7 @@ _instrumented = False
 
 def auto_instrument(
     service_name: str,
-    otlp_endpoint: str = "localhost:4317",
+    otlp_endpoint: str = "localhost:47117",
     tenant_id: int = 1,
     project_id: int = 0,
     capture_content: bool = True,
@@ -52,7 +52,7 @@ def auto_instrument(
     
     Args:
         service_name: Name of your service
-        otlp_endpoint: OTLP gRPC endpoint (default: localhost:4317)
+        otlp_endpoint: OTLP gRPC endpoint (default: localhost:47117)
         tenant_id: Tenant ID (added to resource attributes)
         project_id: Project ID (added to resource attributes)
         capture_content: Capture LLM request/response content (default: True)
@@ -200,7 +200,7 @@ def setup_instrumentation(
     
     Args:
         service_name: Service name (default: from env or 'default-service')
-        otlp_endpoint: OTLP endpoint (default: from env or 'localhost:4317')
+        otlp_endpoint: OTLP endpoint (default: from env or 'localhost:47117')
         tenant_id: Tenant ID (default: from env or 1)
         project_id: Project ID (default: from env or 0)
         capture_content: Capture LLM content (default: from env or True)
@@ -208,7 +208,7 @@ def setup_instrumentation(
     """
     # Read from environment
     service_name = service_name or os.getenv("AGENTREPLAY_SERVICE_NAME", "default-service")
-    otlp_endpoint = otlp_endpoint or os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:4317")
+    otlp_endpoint = otlp_endpoint or os.getenv("AGENTREPLAY_OTLP_ENDPOINT", "localhost:47117")
     
     if tenant_id is None:
         tenant_id = int(os.getenv("AGENTREPLAY_TENANT_ID", "1"))

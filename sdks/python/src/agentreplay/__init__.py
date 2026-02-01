@@ -41,7 +41,7 @@ from agentreplay.auto_instrument import auto_instrument, setup_instrumentation
 from agentreplay.bootstrap import init_otel_instrumentation, is_initialized
 from agentreplay.otel_bridge import get_tracer
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 __all__ = [
     # Core client

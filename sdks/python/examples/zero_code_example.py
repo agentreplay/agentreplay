@@ -22,7 +22,7 @@ This example shows:
 
 Setup:
     export AGENTREPLAY_ENABLED=true
-    export AGENTREPLAY_URL=http://localhost:9600
+    export AGENTREPLAY_URL=http://localhost:47100
     export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
     export AGENTREPLAY_DEBUG=true
     export OPENAI_API_KEY=your-key-here
@@ -230,7 +230,7 @@ def main():
         print("\n" + "="*60)
         print("✅ All examples completed!")
         print("="*60)
-        print("\nCheck Agentreplay UI at http://localhost:5173")
+        print("\nCheck Agentreplay UI at http://localhost:47173")
         print("You should see 5+ traces with:")
         print("  - Simple call")
         print("  - Streaming call (with full content)")
