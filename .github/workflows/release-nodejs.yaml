@@ -403,7 +403,8 @@ jobs:
             echo "Package validated but NOT published." >> $GITHUB_STEP_SUMMARY
           else
             echo "🚀 Publishing to npm..."
-            npm publish --access public --provenance
+            # Provenance requires a public repo. For private repos, publish without provenance.
+            npm publish --access public
             echo "## ✅ Published to npm" >> $GITHUB_STEP_SUMMARY
             echo "Package: [\`${{ env.PACKAGE_NAME }}@${{ needs.setup.outputs.version }}\`](https://www.npmjs.com/package/${{ env.PACKAGE_NAME }}/v/${{ needs.setup.outputs.version }})" >> $GITHUB_STEP_SUMMARY
           fi
