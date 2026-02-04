@@ -59,7 +59,62 @@ export AGENTREPLAY_PROJECT_ID="my-project"
 export AGENTREPLAY_BASE_URL="https://api.agentreplay.io"
 ```
 
-### 2. Initialize and Trace
+### 2. Enable Auto-Instrumentation
+
+After installing the package, run the install command to enable zero-code auto-instrumentation:
+
+```bash
+# Run this once after pip install
+agentreplay-install
+```
+
+This installs a `.pth` file that automatically initializes Agentreplay when Python starts, enabling automatic tracing of OpenAI, Anthropic, and other LLM libraries **without any code changes**.
+
+#### Option A: Zero-Code (after running agentreplay-install)
+
+```bash
+# Just run your script - instrumentation happens automatically!
+python my_app.py
+```
+
+#### Option B: Code-Based Initialization
+
+Add these two lines at the **very beginning** of your main file, before any other imports:
+
+```python
+import agentreplay
+agentreplay.init()  # Must be called before importing OpenAI, Anthropic, etc.
+
+# Now import your LLM clients - they're automatically traced!
+from openai import OpenAI
+
+client = OpenAI()
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+# All OpenAI calls are automatically traced!
+
+# Ensure traces are sent before exit
+agentreplay.flush()
+```
+
+> ⚠️ **Important**: `agentreplay.init()` must be called **before** importing OpenAI, Anthropic, or other LLM libraries for auto-instrumentation to work.
+
+#### Managing Auto-Instrumentation
+
+```bash
+# Install auto-instrumentation (run once after pip install)
+agentreplay-install
+
+# Check if installed
+agentreplay-install --check
+
+# Uninstall auto-instrumentation
+agentreplay-install --uninstall
+```
+
+### 3. Manual Tracing with Decorators
 
 ```python
 import agentreplay

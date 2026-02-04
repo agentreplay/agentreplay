@@ -129,7 +129,7 @@ from agentreplay.privacy import (
     privacy_context,
 )
 
-__version__ = "0.4.2"
+__version__ = "0.1.2"
 
 __all__ = [
     # ==========================================================================

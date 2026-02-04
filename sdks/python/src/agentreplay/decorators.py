@@ -35,8 +35,12 @@ import time
 import logging
 from typing import (
     Optional, Callable, TypeVar, Any, Dict, Union, 
-    overload, ParamSpec, Awaitable
+    overload, Awaitable
 )
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec
 from contextvars import ContextVar
 
 logger = logging.getLogger(__name__)
