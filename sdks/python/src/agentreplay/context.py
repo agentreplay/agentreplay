@@ -166,3 +166,136 @@ def set_user_id(user_id: str):
         Token that can be used to reset the context
     """
     return _user_id.set(user_id)
+
+
+# =============================================================================
+# Ergonomic set_context Function
+# =============================================================================
+
+# Global context for all spans (merged with span-level context)
+_global_context: dict = {}
+
+
+def set_context(
+    *,
+    user_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    workflow_id: Optional[str] = None,
+    **extra: str,
+) -> None:
+    """Set global context that applies to all subsequent spans.
+    
+    This is a convenience function for setting context that should
+    apply to all traces/spans. The context persists until reset.
+    
+    For request-scoped context, use the `AgentContext` context manager
+    or pass context directly to `@traceable` or `trace()`.
+    
+    Args:
+        user_id: User identifier
+        session_id: Session identifier
+        agent_id: Agent identifier
+        workflow_id: Workflow identifier
+        **extra: Additional key-value pairs
+        
+    Example:
+        >>> from agentreplay import init, set_context
+        >>> 
+        >>> init()
+        >>> set_context(user_id="user-123", session_id="session-456")
+        >>> 
+        >>> # All subsequent traces include this context
+        >>> @traceable
+        >>> def my_function():
+        ...     return "hello"
+    """
+    global _global_context
+    
+    if user_id is not None:
+        _global_context["user_id"] = user_id
+        set_user_id(user_id)
+    
+    if session_id is not None:
+        _global_context["session_id"] = session_id
+        set_session_id(session_id)
+    
+    if agent_id is not None:
+        _global_context["agent_id"] = agent_id
+        set_agent_id(agent_id)
+    
+    if workflow_id is not None:
+        _global_context["workflow_id"] = workflow_id
+        set_workflow_id(workflow_id)
+    
+    # Store extra context
+    _global_context.update(extra)
+
+
+def get_global_context() -> dict:
+    """Get the current global context.
+    
+    Returns:
+        Dictionary of global context key-value pairs
+    """
+    return _global_context.copy()
+
+
+def clear_context() -> None:
+    """Clear all global context."""
+    global _global_context
+    _global_context = {}
+
+
+def with_context(**context) -> "ContextScope":
+    """Create a context scope for the current async context.
+    
+    This is like `set_context` but only applies within the current
+    async task or thread, and automatically cleans up when the scope exits.
+    
+    Args:
+        **context: Key-value pairs to set in context
+        
+    Returns:
+        ContextScope context manager
+        
+    Example:
+        >>> async def handle_request(user_id: str):
+        ...     with with_context(user_id=user_id, request_id="req-123"):
+        ...         # Context only applies within this block
+        ...         result = await my_traced_function()
+        ...     return result
+    """
+    return ContextScope(**context)
+
+
+class ContextScope:
+    """Context manager for request-scoped context.
+    
+    Automatically sets and resets context variables.
+    """
+    
+    def __init__(self, **context):
+        self.context = context
+        self.tokens = []
+    
+    def __enter__(self):
+        if "user_id" in self.context:
+            self.tokens.append(_user_id.set(self.context["user_id"]))
+        if "session_id" in self.context:
+            self.tokens.append(_session_id.set(self.context["session_id"]))
+        if "agent_id" in self.context:
+            self.tokens.append(_agent_id.set(self.context["agent_id"]))
+        if "workflow_id" in self.context:
+            self.tokens.append(_workflow_id.set(self.context["workflow_id"]))
+        return self
+    
+    def __exit__(self, *args):
+        for token in reversed(self.tokens):
+            token.var.reset(token)
+    
+    async def __aenter__(self):
+        return self.__enter__()
+    
+    async def __aexit__(self, *args):
+        return self.__exit__(*args)

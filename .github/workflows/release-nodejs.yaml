@@ -1,0 +1,554 @@
+# =============================================================================
+# Agentreplay Node.js SDK Release Pipeline
+# =============================================================================
+#
+# WORKFLOW OVERVIEW:
+# 
+# This workflow provides a complete, production-ready release pipeline for the
+# @agentreplay/agentreplay npm package with:
+#
+# 1. Quality Gates (PARALLEL)
+#    - Lint & Format Check
+#    - Type Check
+#    - Unit Tests (Node 18, 20, 22)
+#    - Build Verification
+#    - Bundle Size Check
+#
+# 2. Security Audit
+#    - npm audit for vulnerabilities
+#    - License compliance check
+#
+# 3. Publish to npm (SEQUENTIAL)
+#    - Build production bundle
+#    - Publish with provenance
+#    - Create GitHub Release
+#
+# 4. Post-Release Verification
+#    - Verify package on npm
+#    - Test installation from registry
+#
+# =============================================================================
+# REQUIRED SETUP:
+# =============================================================================
+#
+# 1. Repository Settings:
+#    - Go to Settings → Environments
+#    - Create environment: "npm-publish"
+#    - Add protection rules (optional):
+#      - Required reviewers
+#      - Wait timer
+#
+# 2. Environment Secrets (in "npm-publish" environment):
+#    - NPM_TOKEN: npm access token with publish permissions
+#      Create at: https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+#      Token type: "Automation" (for CI/CD)
+#      Permissions: Read and write
+#
+# 3. Repository Secrets (optional, for Slack notifications):
+#    - SLACK_WEBHOOK_URL: Incoming webhook URL
+#
+# 4. npm Organization:
+#    - Ensure @agentreplay org exists on npm
+#    - NPM_TOKEN owner must be a member with publish rights
+#
+# =============================================================================
+# TRIGGERING:
+# =============================================================================
+#
+# Option 1: Manual dispatch (recommended for production)
+#   - Go to Actions → Release → Run workflow
+#   - Enter version (e.g., "0.2.0")
+#   - Choose dry_run for testing
+#
+# Option 2: Tag push (automatic)
+#   - git tag js-v0.2.0
+#   - git push origin js-v0.2.0
+#
+# =============================================================================
+
+name: Release Node.js SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.2.0) - without "v" prefix'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run - validate and build but do not publish'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: 'Skip tests (use for hotfixes only)'
+        required: false
+        default: false
+        type: boolean
+
+  push:
+    tags:
+      - 'js-v*'
+
+# Prevent concurrent releases
+concurrency:
+  group: release-nodejs-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  PACKAGE_NAME: '@agentreplay/agentreplay'
+  SDK_PATH: 'sdks/js'
+
+jobs:
+  # ===========================================================================
+  # Validate Input & Setup
+  # ===========================================================================
+  setup:
+    name: Setup & Validate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_dry_run: ${{ steps.version.outputs.is_dry_run }}
+      should_skip_tests: ${{ steps.version.outputs.should_skip_tests }}
+    steps:
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            DRY_RUN="${{ inputs.dry_run }}"
+            SKIP_TESTS="${{ inputs.skip_tests }}"
+          else
+            # Extract version from tag (js-v0.2.0 -> 0.2.0)
+            VERSION="${GITHUB_REF#refs/tags/js-v}"
+            DRY_RUN="false"
+            SKIP_TESTS="false"
+          fi
+          
+          # Validate semver format
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-prerelease"
+            exit 1
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          echo "should_skip_tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
+          
+          echo "## 📦 Release Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`$VERSION\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dry Run | $DRY_RUN |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skip Tests | $SKIP_TESTS |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Quality Gates - Run in Parallel
+  # ===========================================================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Run linter
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm run lint || echo "::warning::Linting issues found"
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Run type check
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm run typecheck
+
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should_skip_tests != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm test
+
+      - name: Upload coverage
+        if: matrix.node-version == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ${{ env.SDK_PATH }}/coverage/
+          retention-days: 7
+
+  build:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Build package
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm run build
+
+      - name: Verify build output
+        working-directory: ${{ env.SDK_PATH }}
+        run: |
+          echo "## 📁 Build Output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          
+          # Verify required files exist
+          for file in dist/index.js dist/index.mjs dist/index.d.ts; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All required build files present"
+
+      - name: Check bundle size
+        working-directory: ${{ env.SDK_PATH }}
+        run: |
+          SIZE=$(wc -c < dist/index.mjs)
+          SIZE_KB=$((SIZE / 1024))
+          
+          echo "## 📊 Bundle Size" >> $GITHUB_STEP_SUMMARY
+          echo "ESM bundle: ${SIZE_KB}KB (${SIZE} bytes)" >> $GITHUB_STEP_SUMMARY
+          
+          # Warn if bundle is too large (> 50KB)
+          if [ $SIZE_KB -gt 50 ]; then
+            echo "::warning::Bundle size is ${SIZE_KB}KB, consider optimization"
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            ${{ env.SDK_PATH }}/dist/
+            ${{ env.SDK_PATH }}/package.json
+          retention-days: 7
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Run security audit
+        working-directory: ${{ env.SDK_PATH }}
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate || echo "::warning::Security vulnerabilities found"
+          npm audit --json > audit.json || true
+          
+          # Count vulnerabilities
+          HIGH=$(cat audit.json | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL=$(cat audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ $CRITICAL critical vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ $HIGH high severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "✅ No critical vulnerabilities" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Publish to npm
+  # ===========================================================================
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: [setup, lint, typecheck, test, build, security]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      needs.lint.result == 'success' &&
+      needs.typecheck.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      needs.build.result == 'success' &&
+      needs.security.result == 'success'
+    environment:
+      name: npm-publish
+      url: https://www.npmjs.com/package/@agentreplay/agentreplay
+    permissions:
+      contents: write
+      id-token: write # Required for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: ${{ env.SDK_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm ci
+
+      - name: Update package version
+        working-directory: ${{ env.SDK_PATH }}
+        run: |
+          npm version ${{ needs.setup.outputs.version }} --no-git-tag-version --allow-same-version
+          echo "Updated package.json version to ${{ needs.setup.outputs.version }}"
+
+      - name: Build for production
+        working-directory: ${{ env.SDK_PATH }}
+        run: npm run build
+
+      - name: Create package tarball
+        working-directory: ${{ env.SDK_PATH }}
+        run: |
+          npm pack
+          echo "## 📦 Package Contents" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tar -tf *.tgz >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-${{ needs.setup.outputs.version }}
+          path: ${{ env.SDK_PATH }}/*.tgz
+          retention-days: 30
+
+      - name: Publish to npm
+        working-directory: ${{ env.SDK_PATH }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ needs.setup.outputs.is_dry_run }}" = "true" ]; then
+            echo "🔍 DRY RUN - Validating package..."
+            npm publish --dry-run --access public
+            echo "## 🔍 Dry Run Complete" >> $GITHUB_STEP_SUMMARY
+            echo "Package validated but NOT published." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚀 Publishing to npm..."
+            npm publish --access public --provenance
+            echo "## ✅ Published to npm" >> $GITHUB_STEP_SUMMARY
+            echo "Package: [\`${{ env.PACKAGE_NAME }}@${{ needs.setup.outputs.version }}\`](https://www.npmjs.com/package/${{ env.PACKAGE_NAME }}/v/${{ needs.setup.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create GitHub Release
+        if: needs.setup.outputs.is_dry_run != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: js-v${{ needs.setup.outputs.version }}
+          name: "@agentreplay/agentreplay v${{ needs.setup.outputs.version }}"
+          draft: false
+          prerelease: ${{ contains(needs.setup.outputs.version, '-') }}
+          generate_release_notes: true
+          files: ${{ env.SDK_PATH }}/*.tgz
+          body: |
+            ## @agentreplay/agentreplay v${{ needs.setup.outputs.version }}
+            
+            High-performance observability SDK for LLM agents and AI applications.
+            
+            ### Installation
+            
+            ```bash
+            npm install @agentreplay/agentreplay
+            # or
+            yarn add @agentreplay/agentreplay
+            # or
+            pnpm add @agentreplay/agentreplay
+            ```
+            
+            ### Quick Start
+            
+            ```typescript
+            import { init, wrapOpenAI, flush } from '@agentreplay/agentreplay';
+            import OpenAI from 'openai';
+            
+            init();
+            const openai = wrapOpenAI(new OpenAI());
+            
+            const response = await openai.chat.completions.create({
+              model: 'gpt-4o',
+              messages: [{ role: 'user', content: 'Hello!' }]
+            });
+            
+            await flush();
+            ```
+            
+            ### What's New
+            
+            See the [CHANGELOG](https://github.com/agentreplay/agentreplay/blob/main/sdks/js/CHANGELOG.md) for details.
+            
+            ### Links
+            
+            - 📦 [npm package](https://www.npmjs.com/package/@agentreplay/agentreplay)
+            - 📖 [Documentation](https://agentreplay.dev/docs/sdks/javascript)
+            - 🐛 [Report an issue](https://github.com/agentreplay/agentreplay/issues)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===========================================================================
+  # Post-Release Verification
+  # ===========================================================================
+  verify:
+    name: Verify Release
+    runs-on: ubuntu-latest
+    needs: [setup, publish]
+    if: needs.setup.outputs.is_dry_run != 'true'
+    steps:
+      - name: Wait for npm propagation
+        run: sleep 30
+
+      - name: Verify package on npm
+        run: |
+          echo "🔍 Verifying package on npm registry..."
+          
+          # Check package exists
+          npm view ${{ env.PACKAGE_NAME }}@${{ needs.setup.outputs.version }} version
+          
+          # Verify package info
+          echo "## 📋 Package Info" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          npm view ${{ env.PACKAGE_NAME }}@${{ needs.setup.outputs.version }} --json >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Test installation
+        run: |
+          mkdir -p /tmp/test-install
+          cd /tmp/test-install
+          npm init -y
+          npm install ${{ env.PACKAGE_NAME }}@${{ needs.setup.outputs.version }}
+          
+          # Verify import works
+          node -e "const sdk = require('${{ env.PACKAGE_NAME }}'); console.log('✅ Package imports successfully'); console.log('Exports:', Object.keys(sdk));"
+          
+          echo "## ✅ Installation Test Passed" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    needs: [setup, lint, typecheck, test, build, security, publish, verify]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🚀 Release Summary: @agentreplay/agentreplay v${{ needs.setup.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.setup.outputs.is_dry_run }}" = "true" ]; then
+            echo "**Mode:** 🧪 Dry Run (no publish)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode:** 🚀 Production Release" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Setup | ${{ needs.setup.result == 'success' && '✅' || '❌' }} ${{ needs.setup.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || '❌' }} ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type Check | ${{ needs.typecheck.result == 'success' && '✅' || '❌' }} ${{ needs.typecheck.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result == 'success' && '✅' || (needs.test.result == 'skipped' && '⏭️' || '❌') }} ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅' || '❌' }} ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish | ${{ needs.publish.result == 'success' && '✅' || '❌' }} ${{ needs.publish.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Verify | ${{ needs.verify.result == 'success' && '✅' || (needs.verify.result == 'skipped' && '⏭️' || '❌') }} ${{ needs.verify.result }} |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.publish.result }}" = "success" ] && [ "${{ needs.setup.outputs.is_dry_run }}" != "true" ]; then
+            echo "## 🎉 Release Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Install" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "npm install @agentreplay/agentreplay@${{ needs.setup.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Links" >> $GITHUB_STEP_SUMMARY
+            echo "- 📦 [npm](https://www.npmjs.com/package/@agentreplay/agentreplay/v/${{ needs.setup.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+            echo "- 🏷️ [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/js-v${{ needs.setup.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Release pipeline failed! Check the summary for details."

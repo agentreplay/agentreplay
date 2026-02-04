@@ -16,6 +16,7 @@
 //!
 //! Fundamental data structures and types for the AgentFlow Format.
 
+pub mod coding_session;
 pub mod config;
 pub mod context;
 pub mod edge;
@@ -51,6 +52,12 @@ pub mod tool_definition;
 #[cfg(test)]
 mod edge_validation_tests;
 
+pub use coding_session::{
+    CodingAgent, CodingObservation, CodingSession, SessionEventType, SessionState,
+    SessionSummary, ToolAction, CODING_OBSERVATION_PREFIX, CODING_SESSION_PREFIX,
+    CODING_SUMMARY_PREFIX, encode_observation_key, encode_session_key, encode_summary_key,
+    generate_observation_id, generate_session_id,
+};
 pub use config::{TimestampConfig, DEFAULT_MAX_TIMESTAMP, DEFAULT_MIN_TIMESTAMP};
 pub use edge::{
     checked_timestamp_add, checked_timestamp_sub, validate_timestamp, AgentFlowEdge, Environment,

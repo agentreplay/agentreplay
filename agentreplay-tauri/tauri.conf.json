@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Agent Replay",
+  "productName": "Agent Replay Alpha",
   "version": "0.1.1-alpha",
   "identifier": "io.agentreplay.desktop",
   "build": {
@@ -49,7 +49,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Agentreplay",
+        "title": "Agent Replay (Alpha)",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,

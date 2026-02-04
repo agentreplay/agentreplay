@@ -45,6 +45,7 @@ import MetricsDemoPage from './pages/MetricsDemoPage';
 import ToolsPage from './pages/ToolsPage';
 import EvalPipelinePage from './pages/EvalPipelinePage';
 import CostManagementPage from './pages/CostManagementPage';
+import CodingSessions from './pages/CodingSessions';
 
 import ServerStatus from '../components/ServerStatus';
 
@@ -121,6 +122,8 @@ function AppContent() {
       <Route element={<Layout />}>
         <Route path="/projects/:projectId/traces" element={<Traces />} />
         <Route path="/projects/:projectId/traces/:traceId" element={<TraceDetail />} />
+        <Route path="/projects/:projectId/coding-sessions" element={<CodingSessions />} />
+        <Route path="/projects/:projectId/coding-sessions/:sessionId" element={<CodingSessions />} />
         <Route path="/projects/:projectId/agents" element={<Agents />} />
         <Route path="/projects/:projectId/timeline" element={<Navigate to="../analytics" replace />} />
         <Route path="/projects/:projectId/search" element={<Search />} />

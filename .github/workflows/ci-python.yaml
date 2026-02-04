@@ -1,0 +1,214 @@
+# Python SDK CI Workflow
+# Runs on all PRs and pushes to main for the Python SDK
+
+name: CI Python SDK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sdks/python/**'
+      - '.github/workflows/ci-python.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sdks/python/**'
+      - '.github/workflows/ci-python.yaml'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+      
+      - name: Run Ruff linter
+        run: ruff check src/ --output-format=github
+        continue-on-error: true
+      
+      - name: Run Ruff formatter check
+        run: ruff format --check src/
+        continue-on-error: true
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy types-requests
+          pip install -e . || pip install .
+      
+      - name: Run mypy
+        run: mypy src/agentreplay --ignore-missing-imports
+        continue-on-error: true
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-cov
+          pip install -e . || pip install .
+      
+      - name: Run tests
+        run: |
+          if [ -d "tests" ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
+            pytest tests/ -v --cov=agentreplay --cov-report=xml --cov-report=term-missing
+          else
+            echo "No tests found, running import tests only"
+          fi
+      
+      - name: Test imports
+        run: |
+          python -c "
+          import agentreplay
+          print(f'✅ Version: {agentreplay.__version__}')
+          
+          # Test all main exports
+          from agentreplay import (
+              init, flush, shutdown, reset,
+              traceable, observe, trace, start_span,
+              wrap_openai, wrap_anthropic,
+              set_context, get_global_context, clear_context,
+              configure_privacy, redact_payload, hash_pii,
+              SpanKind, ActiveSpan,
+          )
+          print('✅ All modern API imports work')
+          
+          # Test core exports
+          from agentreplay import (
+              AgentreplayClient, BatchingAgentreplayClient,
+              AgentreplayConfig, AgentContext,
+          )
+          print('✅ All core API imports work')
+          "
+      
+      - name: Test decorator functionality
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          
+          from agentreplay import traceable, trace, SpanKind
+          import asyncio
+          
+          @traceable
+          def sync_fn(x: int) -> int:
+              return x * 2
+          
+          @traceable(name='custom', kind=SpanKind.TOOL)
+          async def async_fn(x: int) -> int:
+              await asyncio.sleep(0.001)
+              return x * 3
+          
+          # Test sync
+          assert sync_fn(5) == 10, 'Sync function failed'
+          print('✅ Sync decorator works')
+          
+          # Test async
+          result = asyncio.run(async_fn(5))
+          assert result == 15, 'Async function failed'
+          print('✅ Async decorator works')
+          
+          # Test context manager
+          with trace('test_span') as span:
+              span.set_attribute('key', 'value')
+          print('✅ trace() context manager works')
+          "
+      
+      - name: Test privacy functionality
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          
+          from agentreplay import configure_privacy, redact_payload, hash_pii
+          
+          configure_privacy(use_builtin_patterns=True)
+          
+          data = {
+              'email': 'test@example.com',
+              'card': '4111-1111-1111-1111',
+          }
+          
+          redacted = redact_payload(data)
+          assert 'test@example.com' not in str(redacted)
+          assert '4111' not in str(redacted)
+          print('✅ Privacy redaction works')
+          
+          hashed = hash_pii('user@example.com')
+          assert hashed.startswith('[HASH:')
+          print('✅ PII hashing works')
+          "
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+      
+      - name: Build package
+        run: python -m build
+      
+      - name: Check package
+        run: twine check dist/*
+      
+      - name: List built packages
+        run: ls -la dist/

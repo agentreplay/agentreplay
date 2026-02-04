@@ -31,6 +31,8 @@ use axum::{
 use agentreplay_core::{
     AgentFlowEdge, ModelComparisonRequest, ModelPricingRegistry, ModelSelection,
     EvalDataset, TestCase, EvalRun, RunResult, SpanType, PromptTemplate,
+    CodingAgent, CodingObservation, CodingSession, SessionState, SessionSummary, ToolAction,
+    generate_observation_id, generate_session_id,
 };
 use agentreplay_storage::VersionStore;
 use governor::{Quota, RateLimiter};
@@ -274,6 +276,13 @@ pub async fn start_embedded_server(host: String, port: u16, tauri_state: AppStat
         .route("/api/v1/tools/mcp/servers", get(list_mcp_servers_handler).post(connect_mcp_server_handler))
         .route("/api/v1/tools/mcp/servers/:server_id/sync", post(sync_mcp_server_handler))
         .route("/api/v1/tools/mcp/servers/:server_id", delete(disconnect_mcp_server_handler))
+        // Coding Sessions endpoints (IDE/coding agent traces)
+        .route("/api/v1/coding-sessions", get(list_coding_sessions_handler).post(init_coding_session_handler))
+        .route("/api/v1/coding-sessions/:session_id", get(get_coding_session_handler).delete(delete_coding_session_handler))
+        .route("/api/v1/coding-sessions/:session_id/observations", get(list_observations_handler).post(add_observation_handler))
+        .route("/api/v1/coding-sessions/:session_id/summarize", post(summarize_coding_session_handler))
+        // Context injection endpoint for coding agents
+        .route("/api/v1/context", get(get_context_handler))
         .with_state(server_state.clone());
 
     // MCP Router is now handled by start_mcp_server on a separate port
@@ -353,39 +362,22 @@ async fn query_traces(
     let max_latency_ms = params.get("max_latency_ms").and_then(|s| s.parse::<u64>().ok());
     let full_text_search = params.get("full_text_search").cloned();
 
-    // Query the database - FIX: Include project_id=0 (unassigned) traces when filtering by project
+    // Query the database - STRICT: Only return traces for the specified project
     let edges = if let Some(pid) = project_id {
-        let mut all_edges = Vec::new();
-        
-        // Query specific project
-        if let Ok(project_edges) = state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(pid)) {
-            all_edges.extend(project_edges);
-        }
-        
-        // Also query project_id=0 (default/unassigned traces) if requested project isn't 0
-        if pid != 0 {
-            if let Ok(default_edges) = state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(0)) {
-                all_edges.extend(default_edges);
+        // Query only the specific project - no fallback to other projects
+        match state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(pid)) {
+            Ok(edges) => edges,
+            Err(e) => {
+                tracing::error!("Failed to query traces for project {}: {}", pid, e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": "Failed to query traces"})),
+                )
+                    .into_response();
             }
-        }
-        
-        // If still no edges, try querying all traces (full fallback for backwards compatibility)
-        if all_edges.is_empty() {
-            match state.tauri_state.db.query_temporal_range(start_ts, end_ts) {
-                Ok(edges) => edges,
-                Err(e) => {
-                    tracing::error!("Failed to query traces: {}", e);
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(serde_json::json!({"error": "Failed to query traces"})),
-                    )
-                        .into_response();
-                }
-            }
-        } else {
-            all_edges
         }
     } else {
+        // No project filter - return all traces (only when explicitly not filtering by project)
         match state.tauri_state.db.query_temporal_range(start_ts, end_ts) {
             Ok(edges) => edges,
             Err(e) => {
@@ -9020,4 +9012,656 @@ async fn store_prompt_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     
     Ok(StatusCode::CREATED)
+}
+
+// ============================================================================
+// Coding Sessions Handlers (IDE/Coding Agent Traces)
+// ============================================================================
+
+/// Request body for initializing a coding session
+#[derive(Debug, Deserialize)]
+pub struct InitCodingSessionRequest {
+    /// The coding agent type (claude-code, cursor, copilot, etc.)
+    pub agent: String,
+    /// Working directory for the session
+    pub working_directory: String,
+    /// Optional git repository URL
+    pub git_repo: Option<String>,
+    /// Optional git branch
+    pub git_branch: Option<String>,
+    /// Optional project ID (defaults to current project)
+    pub project_id: Option<u16>,
+    /// Optional metadata
+    pub metadata: Option<HashMap<String, String>>,
+}
+
+/// Response for coding session initialization
+#[derive(Debug, Serialize)]
+pub struct InitCodingSessionResponse {
+    pub session_id: String,
+    pub created: bool,
+}
+
+/// Request body for adding an observation
+#[derive(Debug, Deserialize)]
+pub struct AddObservationRequest {
+    /// The tool action (read, edit, bash, search, etc.)
+    pub action: String,
+    /// Raw tool name
+    pub tool_name: Option<String>,
+    /// File path (for file operations)
+    pub file_path: Option<String>,
+    /// Directory (for list_dir, bash)
+    pub directory: Option<String>,
+    /// Command (for bash)
+    pub command: Option<String>,
+    /// Exit code (for bash)
+    pub exit_code: Option<i32>,
+    /// Search query
+    pub search_query: Option<String>,
+    /// Input content (truncated)
+    pub input_content: Option<String>,
+    /// Output content (truncated)
+    pub output_content: Option<String>,
+    /// Duration in milliseconds
+    pub duration_ms: Option<u32>,
+    /// Tokens used
+    pub tokens_used: Option<u32>,
+    /// Cost in cents
+    pub cost_cents: Option<u32>,
+    /// Success status
+    pub success: Option<bool>,
+    /// Error message
+    pub error: Option<String>,
+    /// Line range (start, end)
+    pub line_range: Option<(u32, u32)>,
+    /// Lines changed
+    pub lines_changed: Option<u32>,
+    /// Additional metadata
+    pub metadata: Option<HashMap<String, String>>,
+}
+
+/// Response for adding an observation
+#[derive(Debug, Serialize)]
+pub struct AddObservationResponse {
+    pub observation_id: String,
+    pub sequence: u32,
+}
+
+/// Response for coding session details
+#[derive(Debug, Serialize)]
+pub struct CodingSessionResponse {
+    pub session_id: String,
+    pub agent: String,
+    pub agent_name: String,
+    pub working_directory: String,
+    pub git_repo: Option<String>,
+    pub git_branch: Option<String>,
+    pub start_time_us: u64,
+    pub end_time_us: Option<u64>,
+    pub state: String,
+    pub total_tokens: u64,
+    pub total_cost_cents: u32,
+    pub observation_count: u32,
+    pub file_reads: u32,
+    pub file_edits: u32,
+    pub bash_commands: u32,
+    pub duration_seconds: f64,
+    pub summary: Option<SessionSummary>,
+}
+
+impl From<CodingSession> for CodingSessionResponse {
+    fn from(s: CodingSession) -> Self {
+        // Calculate duration_seconds before moving fields
+        let duration = s.duration_seconds();
+        CodingSessionResponse {
+            session_id: format!("{:032x}", s.session_id),
+            agent: s.agent.as_str().to_string(),
+            agent_name: s.agent_name,
+            working_directory: s.working_directory,
+            git_repo: s.git_repo,
+            git_branch: s.git_branch,
+            start_time_us: s.start_time_us,
+            end_time_us: s.end_time_us,
+            state: format!("{:?}", s.state).to_lowercase(),
+            total_tokens: s.total_tokens,
+            total_cost_cents: s.total_cost_cents,
+            observation_count: s.observation_count,
+            file_reads: s.file_reads,
+            file_edits: s.file_edits,
+            bash_commands: s.bash_commands,
+            duration_seconds: duration,
+            summary: s.summary,
+        }
+    }
+}
+
+/// Response for observation details
+#[derive(Debug, Serialize)]
+pub struct ObservationResponse {
+    pub observation_id: String,
+    pub session_id: String,
+    pub timestamp_us: u64,
+    pub sequence: u32,
+    pub action: String,
+    pub tool_name: String,
+    pub file_path: Option<String>,
+    pub directory: Option<String>,
+    pub command: Option<String>,
+    pub exit_code: Option<i32>,
+    pub search_query: Option<String>,
+    pub input_content: Option<String>,
+    pub output_content: Option<String>,
+    pub duration_ms: u32,
+    pub tokens_used: u32,
+    pub cost_cents: u32,
+    pub success: bool,
+    pub error: Option<String>,
+    pub line_range: Option<(u32, u32)>,
+    pub lines_changed: Option<u32>,
+}
+
+impl From<CodingObservation> for ObservationResponse {
+    fn from(o: CodingObservation) -> Self {
+        ObservationResponse {
+            observation_id: format!("{:032x}", o.observation_id),
+            session_id: format!("{:032x}", o.session_id),
+            timestamp_us: o.timestamp_us,
+            sequence: o.sequence,
+            action: o.action.as_str().to_string(),
+            tool_name: o.tool_name,
+            file_path: o.file_path,
+            directory: o.directory,
+            command: o.command,
+            exit_code: o.exit_code,
+            search_query: o.search_query,
+            input_content: o.input_content,
+            output_content: o.output_content,
+            duration_ms: o.duration_ms,
+            tokens_used: o.tokens_used,
+            cost_cents: o.cost_cents,
+            success: o.success,
+            error: o.error,
+            line_range: o.line_range,
+            lines_changed: o.lines_changed,
+        }
+    }
+}
+
+/// POST /api/v1/coding-sessions - Initialize a new coding session
+async fn init_coding_session_handler(
+    AxumState(state): AxumState<ServerState>,
+    Json(req): Json<InitCodingSessionRequest>,
+) -> Result<Json<InitCodingSessionResponse>, (StatusCode, String)> {
+    let session_id = generate_session_id();
+    let agent = CodingAgent::parse(&req.agent);
+    let project_id = req.project_id.unwrap_or(1);
+
+    let mut session = CodingSession::new(
+        session_id,
+        1, // tenant_id
+        project_id,
+        agent,
+        &req.agent,
+        &req.working_directory,
+    );
+
+    session.git_repo = req.git_repo;
+    session.git_branch = req.git_branch;
+    if let Some(metadata) = req.metadata {
+        session.metadata = metadata;
+    }
+
+    // Store the session using the proper method
+    state
+        .tauri_state
+        .db
+        .store_coding_session(session)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    info!("Created coding session {} for agent {}", format!("{:032x}", session_id), req.agent);
+
+    Ok(Json(InitCodingSessionResponse {
+        session_id: format!("{:032x}", session_id),
+        created: true,
+    }))
+}
+
+/// GET /api/v1/coding-sessions - List coding sessions
+async fn list_coding_sessions_handler(
+    AxumState(state): AxumState<ServerState>,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let project_id = params.get("project_id").and_then(|s| s.parse::<u16>().ok());
+    let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(50);
+    let agent_filter = params.get("agent").cloned();
+
+    // Get sessions from storage
+    let all_sessions = state
+        .tauri_state
+        .db
+        .list_coding_sessions(project_id, limit)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Apply agent filter if specified
+    let sessions: Vec<CodingSessionResponse> = all_sessions
+        .into_iter()
+        .filter(|s| {
+            if let Some(ref agent) = agent_filter {
+                s.agent.as_str() == agent.as_str()
+            } else {
+                true
+            }
+        })
+        .map(|s| s.into())
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "sessions": sessions,
+        "total": sessions.len()
+    })))
+}
+
+/// GET /api/v1/coding-sessions/:session_id - Get coding session details
+async fn get_coding_session_handler(
+    AxumState(state): AxumState<ServerState>,
+    Path(session_id): Path<String>,
+) -> Result<Json<CodingSessionResponse>, (StatusCode, String)> {
+    // Parse session_id from hex string
+    let session_id_u128 = u128::from_str_radix(&session_id, 16)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid session ID format".to_string()))?;
+
+    let session = state
+        .tauri_state
+        .db
+        .get_coding_session(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Session not found".to_string()))?;
+
+    Ok(Json(session.into()))
+}
+
+/// DELETE /api/v1/coding-sessions/:session_id - Delete a coding session
+async fn delete_coding_session_handler(
+    AxumState(state): AxumState<ServerState>,
+    Path(session_id): Path<String>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    // Parse session_id from hex string
+    let session_id_u128 = u128::from_str_radix(&session_id, 16)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid session ID format".to_string()))?;
+
+    state
+        .tauri_state
+        .db
+        .delete_coding_session(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    info!("Deleted coding session {}", session_id);
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/v1/coding-sessions/:session_id/observations - Add an observation
+async fn add_observation_handler(
+    AxumState(state): AxumState<ServerState>,
+    Path(session_id): Path<String>,
+    Json(req): Json<AddObservationRequest>,
+) -> Result<Json<AddObservationResponse>, (StatusCode, String)> {
+    // Parse session_id from hex string
+    let session_id_u128 = u128::from_str_radix(&session_id, 16)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid session ID format".to_string()))?;
+
+    // Get the session to get the current observation count
+    let session = state
+        .tauri_state
+        .db
+        .get_coding_session(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Session not found".to_string()))?;
+
+    // Create the observation
+    let observation_id = generate_observation_id();
+    let sequence = session.observation_count;
+    let action = ToolAction::parse(&req.action);
+    let tool_name = req.tool_name.unwrap_or_else(|| req.action.clone());
+
+    let mut obs = CodingObservation::new(observation_id, session_id_u128, sequence, action, tool_name);
+
+    obs.file_path = req.file_path;
+    obs.directory = req.directory;
+    obs.command = req.command;
+    obs.exit_code = req.exit_code;
+    obs.search_query = req.search_query;
+    obs.input_content = req.input_content;
+    obs.output_content = req.output_content;
+    obs.duration_ms = req.duration_ms.unwrap_or(0);
+    obs.tokens_used = req.tokens_used.unwrap_or(0);
+    obs.cost_cents = req.cost_cents.unwrap_or(0);
+    obs.success = req.success.unwrap_or(true);
+    obs.error = req.error;
+    obs.line_range = req.line_range;
+    obs.lines_changed = req.lines_changed;
+    if let Some(metadata) = req.metadata {
+        obs.metadata = metadata;
+    }
+
+    // Store the observation
+    state
+        .tauri_state
+        .db
+        .add_coding_observation(obs.clone())
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Update session stats
+    state
+        .tauri_state
+        .db
+        .update_coding_session(session_id_u128, |s| {
+            s.add_observation(&obs);
+        })
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(AddObservationResponse {
+        observation_id: format!("{:032x}", observation_id),
+        sequence,
+    }))
+}
+
+/// GET /api/v1/coding-sessions/:session_id/observations - List observations for a session
+async fn list_observations_handler(
+    AxumState(state): AxumState<ServerState>,
+    Path(session_id): Path<String>,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(100);
+    let action_filter = params.get("action").cloned();
+
+    // Parse session_id from hex string
+    let session_id_u128 = u128::from_str_radix(&session_id, 16)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid session ID format".to_string()))?;
+
+    // Get observations from storage
+    let all_observations = state
+        .tauri_state
+        .db
+        .get_coding_observations(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Apply action filter if specified
+    let mut observations: Vec<ObservationResponse> = all_observations
+        .into_iter()
+        .filter(|o| {
+            if let Some(ref action) = action_filter {
+                o.action.as_str() == action.as_str()
+            } else {
+                true
+            }
+        })
+        .map(|o| o.into())
+        .collect();
+
+    // Sort by sequence
+    observations.sort_by(|a, b| a.sequence.cmp(&b.sequence));
+
+    // Apply limit
+    observations.truncate(limit);
+
+    Ok(Json(serde_json::json!({
+        "observations": observations,
+        "total": observations.len()
+    })))
+}
+
+/// POST /api/v1/coding-sessions/:session_id/summarize - Generate session summary
+async fn summarize_coding_session_handler(
+    AxumState(state): AxumState<ServerState>,
+    Path(session_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Parse session_id from hex string
+    let session_id_u128 = u128::from_str_radix(&session_id, 16)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid session ID format".to_string()))?;
+
+    // Get the session
+    let session = state
+        .tauri_state
+        .db
+        .get_coding_session(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Session not found".to_string()))?;
+
+    // Get all observations for the session
+    let observations = state
+        .tauri_state
+        .db
+        .get_coding_observations(session_id_u128)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let mut files_modified = std::collections::HashSet::new();
+    let mut files_read = std::collections::HashSet::new();
+
+    for obs in &observations {
+        if let Some(ref path) = obs.file_path {
+            match obs.action {
+                ToolAction::Read => { files_read.insert(path.clone()); }
+                ToolAction::Edit | ToolAction::Create => { files_modified.insert(path.clone()); }
+                _ => {}
+            }
+        }
+    }
+
+    // Create a basic summary (could be enhanced with LLM summarization later)
+    let summary = SessionSummary {
+        title: format!("Coding session with {}", session.agent_name),
+        description: format!(
+            "Session in {} with {} observations ({} file reads, {} edits, {} bash commands)",
+            session.working_directory,
+            session.observation_count,
+            session.file_reads,
+            session.file_edits,
+            session.bash_commands
+        ),
+        accomplishments: Vec::new(), // Would be filled by LLM analysis
+        files_modified: files_modified.into_iter().collect(),
+        files_read: files_read.into_iter().collect(),
+        concepts: Vec::new(),
+        decisions: Vec::new(),
+        follow_ups: Vec::new(),
+        generated_at_us: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0),
+    };
+
+    // Update session with summary
+    let summary_clone = summary.clone();
+    state
+        .tauri_state
+        .db
+        .update_coding_session(session_id_u128, move |s| {
+            s.summary = Some(summary_clone);
+            s.state = SessionState::Summarized;
+            s.end_time_us = Some(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_micros() as u64)
+                    .unwrap_or(0)
+            );
+        })
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    info!("Generated summary for coding session {}", session_id);
+
+    Ok(Json(serde_json::json!({
+        "summary": summary,
+        "session_id": session_id
+    })))
+}
+
+/// GET /api/v1/context - Get context for injection into coding agents
+/// 
+/// Generates a context block with recent session history, files worked on,
+/// and relevant patterns for the coding agent to use.
+/// 
+/// Query params:
+/// - project_id: Filter by project (optional)
+/// - working_directory: Filter by working directory (optional)
+/// - limit: Number of recent sessions to include (default: 5)
+/// - format: Output format - "markdown" (default) or "json"
+async fn get_context_handler(
+    AxumState(state): AxumState<ServerState>,
+    axum::extract::Query(params): axum::extract::Query<HashMap<String, String>>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let project_id = params.get("project_id").and_then(|s| s.parse::<u16>().ok());
+    let working_directory = params.get("working_directory").cloned();
+    let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(5);
+    let format = params.get("format").cloned().unwrap_or_else(|| "markdown".to_string());
+
+    // Get recent sessions
+    let sessions = state
+        .tauri_state
+        .db
+        .list_coding_sessions(project_id, limit * 2) // Get extra to filter
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Filter by working directory if specified
+    let filtered_sessions: Vec<_> = sessions
+        .into_iter()
+        .filter(|s| {
+            if let Some(ref wd) = working_directory {
+                s.working_directory.starts_with(wd) || wd.starts_with(&s.working_directory)
+            } else {
+                true
+            }
+        })
+        .take(limit)
+        .collect();
+
+    // Collect files and patterns from sessions
+    let mut files_modified: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut files_read: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut decisions: Vec<String> = Vec::new();
+    let mut recent_accomplishments: Vec<String> = Vec::new();
+
+    for session in &filtered_sessions {
+        // Get observations for this session
+        if let Ok(observations) = state.tauri_state.db.get_coding_observations(session.session_id) {
+            for obs in observations {
+                if let Some(ref path) = obs.file_path {
+                    match obs.action {
+                        ToolAction::Read => { files_read.insert(path.clone()); }
+                        ToolAction::Edit | ToolAction::Create => { files_modified.insert(path.clone()); }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        // Extract from summaries
+        if let Some(ref summary) = session.summary {
+            decisions.extend(summary.decisions.iter().cloned());
+            recent_accomplishments.extend(summary.accomplishments.iter().cloned());
+        }
+    }
+
+    // Limit collections
+    let files_modified: Vec<_> = files_modified.into_iter().take(20).collect();
+    let files_read: Vec<_> = files_read.into_iter().take(20).collect();
+    decisions.truncate(10);
+    recent_accomplishments.truncate(10);
+
+    if format == "json" {
+        // Return JSON format
+        let context = serde_json::json!({
+            "context_version": "1.0",
+            "generated_at": SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            "sessions": filtered_sessions.iter().map(|s| {
+                serde_json::json!({
+                    "id": format!("{:032x}", s.session_id),
+                    "agent": s.agent_name,
+                    "working_directory": s.working_directory,
+                    "start_time": s.start_time_us / 1_000_000,
+                    "observation_count": s.observation_count,
+                    "summary": s.summary.as_ref().map(|sum| sum.description.clone()),
+                })
+            }).collect::<Vec<_>>(),
+            "files_modified": files_modified,
+            "files_read": files_read,
+            "decisions": decisions,
+            "recent_accomplishments": recent_accomplishments,
+        });
+        Ok(Json(context).into_response())
+    } else {
+        // Return Markdown format for context injection
+        let mut md = String::new();
+        md.push_str("<agentreplay-context>\n");
+        md.push_str("# Agent Replay Context\n\n");
+        md.push_str("The following is recalled context from previous coding sessions.\n\n");
+
+        // Recent sessions
+        if !filtered_sessions.is_empty() {
+            md.push_str("## Recent Sessions\n\n");
+            for session in &filtered_sessions {
+                let start_time = session.start_time_us / 1_000_000;
+                let datetime = chrono::DateTime::from_timestamp(start_time as i64, 0)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M").to_string())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                
+                md.push_str(&format!("- **{}** ({}) - {} observations\n", 
+                    session.agent_name,
+                    datetime,
+                    session.observation_count
+                ));
+                
+                if let Some(ref summary) = session.summary {
+                    md.push_str(&format!("  {}\n", summary.description));
+                }
+            }
+            md.push('\n');
+        }
+
+        // Recent decisions
+        if !decisions.is_empty() {
+            md.push_str("## Recent Decisions\n\n");
+            for decision in &decisions {
+                md.push_str(&format!("- {}\n", decision));
+            }
+            md.push('\n');
+        }
+
+        // Recent accomplishments
+        if !recent_accomplishments.is_empty() {
+            md.push_str("## Recent Accomplishments\n\n");
+            for acc in &recent_accomplishments {
+                md.push_str(&format!("- {}\n", acc));
+            }
+            md.push('\n');
+        }
+
+        // Files worked on
+        if !files_modified.is_empty() {
+            md.push_str("## Recently Modified Files\n\n");
+            for file in &files_modified {
+                md.push_str(&format!("- {}\n", file));
+            }
+            md.push('\n');
+        }
+
+        if !files_read.is_empty() {
+            md.push_str("## Recently Read Files\n\n");
+            for file in files_read.iter().take(10) {
+                md.push_str(&format!("- {}\n", file));
+            }
+            md.push('\n');
+        }
+
+        md.push_str("</agentreplay-context>\n");
+
+        Ok((
+            [(axum::http::header::CONTENT_TYPE, "text/markdown")],
+            md
+        ).into_response())
+    }
 }

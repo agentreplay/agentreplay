@@ -19,39 +19,113 @@
  *
  * High-performance observability for LLM agents.
  *
- * @example
+ * @example Quick Start
  * ```typescript
- * import { AgentreplayClient, SpanType } from '@agentreplay/sdk';
+ * import { init, traceable, wrapOpenAI, flush } from '@agentreplay/sdk';
+ * import OpenAI from 'openai';
  *
- * const client = new AgentreplayClient({
- *   url: 'http://localhost:8080',
- *   tenantId: 1
- * });
+ * // Initialize (reads env vars by default)
+ * init();
  *
- * // Create a trace
- * const trace = await client.createTrace({
- *   agentId: 1,
- *   sessionId: 123,
- *   spanType: SpanType.Root
- * });
+ * // Wrap OpenAI client for automatic tracing
+ * const openai = wrapOpenAI(new OpenAI());
  *
- * // Track LLM call
- * await client.createGenAITrace({
- *   agentId: 1,
- *   sessionId: 123,
+ * // All calls are now traced
+ * const response = await openai.chat.completions.create({
  *   model: 'gpt-4o',
- *   inputMessages: [{ role: 'user', content: 'Hello!' }],
- *   output: { role: 'assistant', content: 'Hi!' },
- *   inputUsage: 10,
- *   outputUsage: 5
+ *   messages: [{ role: 'user', content: 'Hello!' }]
  * });
+ *
+ * // Or use traceable for custom functions
+ * const result = await traceable(async () => {
+ *   return someOperation();
+ * }, { name: 'my_operation', kind: 'tool' })();
+ *
+ * // Flush before serverless function exits
+ * await flush();
  * ```
  *
  * @packageDocumentation
  */
 
+// ==================== Core ====================
 export { AgentreplayClient } from './client';
 
+// ==================== Configuration ====================
+export {
+  init,
+  getConfig,
+  isSDKInitialized,
+  resetConfig,
+  type InitOptions,
+  type ResolvedConfig,
+} from './config';
+
+// ==================== Tracing ====================
+export {
+  traceable,
+  withSpan,
+  startSpan,
+  captureException,
+  type TraceableOptions,
+  type WithSpanOptions,
+  type ActiveSpan,
+} from './traceable';
+
+// ==================== Context ====================
+export {
+  getCurrentContext,
+  getCurrentSpan,
+  getCurrentTraceId,
+  withContext,
+  setGlobalContext,
+  getGlobalContext,
+  clearGlobalContext,
+  bindContext,
+  type SpanContext,
+} from './context';
+
+// ==================== Transport ====================
+export {
+  flush,
+  shutdown,
+  getTransportStats,
+  type TransportStats,
+} from './transport';
+
+// ==================== Wrappers ====================
+export {
+  wrapOpenAI,
+  wrapAnthropic,
+  wrapFetch,
+  installFetchTracing,
+  type WrapOpenAIOptions,
+  type WrapFetchOptions,
+} from './wrappers';
+
+// ==================== Privacy ====================
+export {
+  redactPayload,
+  hashPII,
+  truncateValue,
+  safeStringify,
+  emailScrubber,
+  creditCardScrubber,
+  apiKeyScrubber,
+  phoneScrubber,
+  ssnScrubber,
+  builtInScrubbers,
+} from './privacy';
+
+// ==================== Sampling ====================
+export {
+  shouldSample,
+  createSampler,
+  alwaysSample,
+  neverSample,
+} from './sampling';
+
+// ==================== Types ====================
 export {
   SpanType,
   SensitivityFlags,
@@ -71,4 +145,12 @@ export type {
   Environment,
   MetricsDataPoint,
   MetricsResponse,
+  // New types
+  Span,
+  SpanKind,
+  SamplingConfig,
+  SamplingRule,
+  PrivacyConfig,
+  TransportConfig,
+  Scrubber,
 } from './types';

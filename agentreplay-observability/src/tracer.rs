@@ -27,7 +27,7 @@ use std::time::Duration;
 /// Configuration for OpenTelemetry tracing
 #[derive(Debug, Clone)]
 pub struct OtelConfig {
-    /// OTLP endpoint (e.g., "http://localhost:47117" for gRPC)
+    /// OTLP endpoint (e.g., "localhost:47117" for gRPC)
     pub otlp_endpoint: String,
 
     /// Service name for resource attribute

@@ -1,0 +1,560 @@
+#!/bin/bash
+# Agent Replay Hooks - Coding Agent Observability CLI
+# Captures traces from coding agents and forwards to Agent Replay
+#
+# Usage:
+#   agentreplay-hook session-init --platform cursor
+#   agentreplay-hook observation --platform claude  
+#   agentreplay-hook summarize --platform cursor
+#   agentreplay-hook status
+
+set -e
+
+# Configuration (can be overridden by environment)
+AGENTREPLAY_URL="${AGENTREPLAY_URL:-http://127.0.0.1:47100}"
+AGENTREPLAY_PROJECT_ID="${AGENTREPLAY_PROJECT_ID:-1}"
+AGENTREPLAY_HOOK_DEBUG="${AGENTREPLAY_HOOK_DEBUG:-false}"
+AGENTREPLAY_HOOK_LOG="${AGENTREPLAY_HOOK_LOG:-/tmp/agentreplay-hook.log}"
+AGENTREPLAY_SESSION_FILE="${AGENTREPLAY_SESSION_FILE:-/tmp/agentreplay_session_id}"
+
+# Logging function
+log() {
+    if [ "$AGENTREPLAY_HOOK_DEBUG" = "true" ]; then
+        echo "[$(date -Iseconds)] $*" >> "$AGENTREPLAY_HOOK_LOG"
+    fi
+}
+
+log_error() {
+    echo "[$(date -Iseconds)] ERROR: $*" >> "$AGENTREPLAY_HOOK_LOG"
+}
+
+# Read stdin payload
+read_payload() {
+    if [ -t 0 ]; then
+        echo "{}"
+    else
+        cat
+    fi
+}
+
+# Get or create session ID
+get_session_id() {
+    local payload="$1"
+    local platform="$2"
+    
+    # Try to extract from payload based on platform
+    if [ "$platform" = "cursor" ]; then
+        local session_id=$(echo "$payload" | jq -r '.conversation_id // .session_id // empty' 2>/dev/null)
+        if [ -n "$session_id" ] && [ "$session_id" != "null" ]; then
+            echo "$session_id"
+            return
+        fi
+    elif [ "$platform" = "claude" ]; then
+        local session_id=$(echo "$payload" | jq -r '.session_id // .conversation_id // empty' 2>/dev/null)
+        if [ -n "$session_id" ] && [ "$session_id" != "null" ]; then
+            echo "$session_id"
+            return
+        fi
+    fi
+    
+    # Check for stored session
+    if [ -f "$AGENTREPLAY_SESSION_FILE" ]; then
+        cat "$AGENTREPLAY_SESSION_FILE"
+        return
+    fi
+    
+    # No session found
+    echo ""
+}
+
+# Initialize a coding session
+session_init() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    log "session-init: platform=$platform"
+    log "session-init payload: $payload"
+    
+    # Extract working directory
+    local cwd=$(echo "$payload" | jq -r '.cwd // .workspace_roots[0] // .working_directory // empty' 2>/dev/null)
+    if [ -z "$cwd" ] || [ "$cwd" = "null" ]; then
+        cwd=$(pwd)
+    fi
+    
+    # Extract git info
+    local git_branch=""
+    local git_repo=""
+    if [ -d "$cwd/.git" ] || git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
+        git_branch=$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+        git_repo=$(git -C "$cwd" config --get remote.origin.url 2>/dev/null || echo "")
+    fi
+    
+    # Build request
+    local request=$(jq -n \
+        --arg agent "$platform" \
+        --arg cwd "$cwd" \
+        --arg branch "$git_branch" \
+        --arg repo "$git_repo" \
+        --arg project_id "$AGENTREPLAY_PROJECT_ID" \
+        '{
+            agent: $agent,
+            working_directory: $cwd,
+            git_branch: (if $branch != "" then $branch else null end),
+            git_repo: (if $repo != "" then $repo else null end),
+            project_id: ($project_id | tonumber)
+        }')
+    
+    log "session-init request: $request"
+    
+    # Send to API
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "$request" \
+        "${AGENTREPLAY_URL}/api/v1/coding-sessions" 2>&1)
+    
+    log "session-init response: $response"
+    
+    # Extract and store session ID
+    local session_id=$(echo "$response" | jq -r '.session_id // empty' 2>/dev/null)
+    if [ -n "$session_id" ] && [ "$session_id" != "null" ]; then
+        echo "$session_id" > "$AGENTREPLAY_SESSION_FILE"
+        log "Session created: $session_id"
+    else
+        log_error "Failed to create session: $response"
+    fi
+    
+    echo '{"continue": true}'
+}
+
+# Record an observation
+observation() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    log "observation: platform=$platform"
+    log "observation payload: $payload"
+    
+    # Get session ID
+    local session_id=$(get_session_id "$payload" "$platform")
+    if [ -z "$session_id" ]; then
+        # Try to init session first
+        log "No session found, attempting to init"
+        echo "$payload" | session_init "$platform" >/dev/null
+        session_id=$(cat "$AGENTREPLAY_SESSION_FILE" 2>/dev/null || echo "")
+    fi
+    
+    if [ -z "$session_id" ]; then
+        log_error "No session ID available, skipping observation"
+        echo '{"continue": true}'
+        return
+    fi
+    
+    # Detect action type from payload
+    local action="other"
+    local tool_name=""
+    local file_path=""
+    local command=""
+    local input_content=""
+    local output_content=""
+    
+    # Try to extract tool/action info based on platform
+    if [ "$platform" = "cursor" ]; then
+        tool_name=$(echo "$payload" | jq -r '.tool_name // .type // .action // empty' 2>/dev/null)
+        file_path=$(echo "$payload" | jq -r '.file_path // .path // .file // empty' 2>/dev/null)
+        command=$(echo "$payload" | jq -r '.command // .cmd // empty' 2>/dev/null)
+        input_content=$(echo "$payload" | jq -r '.input // .content // empty' 2>/dev/null | head -c 1000)
+        output_content=$(echo "$payload" | jq -r '.output // .result // empty' 2>/dev/null | head -c 1000)
+    elif [ "$platform" = "claude" ]; then
+        tool_name=$(echo "$payload" | jq -r '.tool // .tool_name // .type // empty' 2>/dev/null)
+        file_path=$(echo "$payload" | jq -r '.file_path // .path // empty' 2>/dev/null)
+        command=$(echo "$payload" | jq -r '.command // .input.command // empty' 2>/dev/null)
+        input_content=$(echo "$payload" | jq -r '.input // empty' 2>/dev/null | head -c 1000)
+        output_content=$(echo "$payload" | jq -r '.output // .result // empty' 2>/dev/null | head -c 1000)
+    fi
+    
+    # Map tool name to action
+    case "$tool_name" in
+        read_file|Read|view|View)
+            action="read"
+            ;;
+        write_file|Write|edit_file|Edit|str_replace_editor|str_replace)
+            action="edit"
+            ;;
+        create_file|Create|new)
+            action="create"
+            ;;
+        delete_file|Delete|remove)
+            action="delete"
+            ;;
+        bash|Bash|shell|terminal|execute|run_terminal_command)
+            action="bash"
+            ;;
+        search|grep|find|codebase_search|grep_search|semantic_search)
+            action="search"
+            ;;
+        list_dir|ls|List|directory)
+            action="list_dir"
+            ;;
+        git*)
+            action="git"
+            ;;
+        user_message|human|prompt)
+            action="user_message"
+            ;;
+        response|assistant|agent_response)
+            action="agent_response"
+            ;;
+        *)
+            action="other"
+            ;;
+    esac
+    
+    # Build observation request
+    local request=$(jq -n \
+        --arg action "$action" \
+        --arg tool_name "$tool_name" \
+        --arg file_path "$file_path" \
+        --arg command "$command" \
+        --arg input_content "$input_content" \
+        --arg output_content "$output_content" \
+        '{
+            action: $action,
+            tool_name: (if $tool_name != "" then $tool_name else $action end),
+            file_path: (if $file_path != "" and $file_path != "null" then $file_path else null end),
+            command: (if $command != "" and $command != "null" then $command else null end),
+            input_content: (if $input_content != "" and $input_content != "null" then $input_content else null end),
+            output_content: (if $output_content != "" and $output_content != "null" then $output_content else null end),
+            success: true
+        }')
+    
+    log "observation request: $request"
+    
+    # Send to API
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "$request" \
+        "${AGENTREPLAY_URL}/api/v1/coding-sessions/${session_id}/observations" 2>&1)
+    
+    log "observation response: $response"
+    
+    echo '{"continue": true}'
+}
+
+# Summarize and optionally end session
+summarize() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    log "summarize: platform=$platform"
+    
+    # Get session ID
+    local session_id=$(get_session_id "$payload" "$platform")
+    if [ -z "$session_id" ]; then
+        session_id=$(cat "$AGENTREPLAY_SESSION_FILE" 2>/dev/null || echo "")
+    fi
+    
+    if [ -z "$session_id" ]; then
+        log_error "No session ID available, skipping summarize"
+        echo '{"continue": true}'
+        return
+    fi
+    
+    # Call summarize endpoint
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d '{}' \
+        "${AGENTREPLAY_URL}/api/v1/coding-sessions/${session_id}/summarize" 2>&1)
+    
+    log "summarize response: $response"
+    
+    # Clear stored session
+    rm -f "$AGENTREPLAY_SESSION_FILE"
+    
+    echo '{"continue": true}'
+}
+
+# User message hook
+user_message() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    # Get session ID
+    local session_id=$(get_session_id "$payload" "$platform")
+    if [ -z "$session_id" ]; then
+        session_id=$(cat "$AGENTREPLAY_SESSION_FILE" 2>/dev/null || echo "")
+    fi
+    
+    if [ -z "$session_id" ]; then
+        echo '{"continue": true}'
+        return
+    fi
+    
+    local content=$(echo "$payload" | jq -r '.content // .message // .text // empty' 2>/dev/null | head -c 1000)
+    
+    local request=$(jq -n \
+        --arg content "$content" \
+        '{
+            action: "user_message",
+            tool_name: "user_message",
+            input_content: $content,
+            success: true
+        }')
+    
+    curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "$request" \
+        "${AGENTREPLAY_URL}/api/v1/coding-sessions/${session_id}/observations" >/dev/null 2>&1
+    
+    echo '{"continue": true}'
+}
+
+# Thought hook (for extended thinking)
+thought() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    local session_id=$(get_session_id "$payload" "$platform")
+    if [ -z "$session_id" ]; then
+        session_id=$(cat "$AGENTREPLAY_SESSION_FILE" 2>/dev/null || echo "")
+    fi
+    
+    if [ -z "$session_id" ]; then
+        echo '{"continue": true}'
+        return
+    fi
+    
+    local content=$(echo "$payload" | jq -r '.thought // .content // empty' 2>/dev/null | head -c 1000)
+    
+    local request=$(jq -n \
+        --arg content "$content" \
+        '{
+            action: "think",
+            tool_name: "thinking",
+            input_content: $content,
+            success: true
+        }')
+    
+    curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "$request" \
+        "${AGENTREPLAY_URL}/api/v1/coding-sessions/${session_id}/observations" >/dev/null 2>&1
+    
+    echo '{"continue": true}'
+}
+
+# Fetch and inject context from previous sessions
+context() {
+    local platform="$1"
+    local payload=$(read_payload)
+    
+    log "context: platform=$platform"
+    
+    # Get working directory from payload
+    local cwd=$(echo "$payload" | jq -r '.cwd // .workspace_roots[0] // .working_directory // empty' 2>/dev/null)
+    if [ -z "$cwd" ] || [ "$cwd" = "null" ]; then
+        cwd=$(pwd)
+    fi
+    
+    # Build query params
+    local query="project_id=$AGENTREPLAY_PROJECT_ID&limit=5&format=markdown"
+    if [ -n "$cwd" ]; then
+        local encoded_cwd=$(echo "$cwd" | jq -sRr @uri 2>/dev/null || echo "$cwd")
+        query="$query&working_directory=$encoded_cwd"
+    fi
+    
+    # Fetch context from Agent Replay
+    local context_response=$(curl -s --connect-timeout 2 --max-time 5 \
+        "${AGENTREPLAY_URL}/api/v1/context?${query}" 2>/dev/null)
+    
+    if [ -z "$context_response" ] || [ "$context_response" = "null" ]; then
+        log "No context available from Agent Replay"
+        echo '{"continue": true}'
+        return
+    fi
+    
+    # Check if we got valid context
+    if ! echo "$context_response" | grep -q "agentreplay-context"; then
+        log "Invalid context response: $context_response"
+        echo '{"continue": true}'
+        return
+    fi
+    
+    log "Context fetched successfully"
+    
+    if [ "$platform" = "cursor" ]; then
+        # For Cursor: Write to rules file for automatic injection
+        local cursor_rules_dir="$HOME/.cursor/rules"
+        mkdir -p "$cursor_rules_dir"
+        
+        cat > "$cursor_rules_dir/agentreplay-context.mdc" << EOF
+---
+description: Agent Replay Context - Automatically injected from previous coding sessions
+globs: 
+alwaysApply: true
+---
+
+$context_response
+EOF
+        log "Context written to $cursor_rules_dir/agentreplay-context.mdc"
+    elif [ "$platform" = "claude" ]; then
+        # For Claude Code: Output context for injection into conversation
+        # Claude Code can read this and add to system prompt
+        echo "$context_response"
+    fi
+    
+    echo '{"continue": true}'
+}
+
+# Check status
+status() {
+    echo "Agent Replay Hooks - Coding Agent Observability"
+    echo "================================================"
+    echo "Agent Replay URL: $AGENTREPLAY_URL"
+    echo "Project ID: $AGENTREPLAY_PROJECT_ID"
+    echo "Debug Mode: $AGENTREPLAY_HOOK_DEBUG"
+    echo "Log File: $AGENTREPLAY_HOOK_LOG"
+    echo ""
+    
+    # Check connection
+    echo -n "API Connection: "
+    if curl -s "${AGENTREPLAY_URL}/health" >/dev/null 2>&1; then
+        echo "✓ Connected"
+    else
+        echo "✗ Not connected"
+    fi
+    
+    # Check for active session
+    echo -n "Active Session: "
+    if [ -f "$AGENTREPLAY_SESSION_FILE" ]; then
+        echo "$(cat "$AGENTREPLAY_SESSION_FILE")"
+    else
+        echo "None"
+    fi
+}
+
+# Print usage
+usage() {
+    cat <<EOF
+Agent Replay Hooks - Coding Agent Observability CLI
+
+Usage:
+  agentreplay-hook <command> --platform <platform>
+  agentreplay-hook status
+
+Hook Commands:
+  session-init    Initialize a new coding session
+  observation     Record a tool use observation  
+  summarize       Generate summary and end session
+  user-message    Record a user message
+  thought         Record agent thinking/reasoning
+  context         Fetch and inject context from previous sessions
+
+Platforms:
+  cursor          Cursor IDE
+  claude          Claude Code
+
+Options:
+  --platform      Coding agent platform (cursor, claude)
+  --debug         Enable debug logging
+
+Environment:
+  AGENTREPLAY_URL           API endpoint (default: http://127.0.0.1:47100)
+  AGENTREPLAY_PROJECT_ID    Project ID (default: 1)
+  AGENTREPLAY_HOOK_DEBUG    Enable debug mode (true/false)
+  AGENTREPLAY_HOOK_LOG      Log file path (default: /tmp/agentreplay-hook.log)
+
+Examples:
+  echo '{"cwd": "/path/to/project"}' | agentreplay-hook session-init --platform cursor
+  echo '{"tool": "Read", "path": "main.py"}' | agentreplay-hook observation --platform claude
+  agentreplay-hook summarize --platform cursor
+  agentreplay-hook context --platform claude
+EOF
+}
+
+# Main
+main() {
+    local command=""
+    local subcommand=""
+    local platform=""
+    
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            hook)
+                command="hook"
+                shift
+                subcommand="$1"
+                ;;
+            status)
+                command="status"
+                ;;
+            context)
+                command="context"
+                ;;
+            session-init|observation|summarize|user-message|thought)
+                # Support direct commands without 'hook' prefix
+                command="hook"
+                subcommand="$1"
+                ;;
+            --platform)
+                shift
+                platform="$1"
+                ;;
+            --debug)
+                AGENTREPLAY_HOOK_DEBUG="true"
+                ;;
+            -h|--help|help)
+                usage
+                exit 0
+                ;;
+            *)
+                if [ -z "$subcommand" ] && [ "$command" = "hook" ]; then
+                    subcommand="$1"
+                fi
+                ;;
+        esac
+        shift
+    done
+    
+    case "$command" in
+        hook)
+            case "$subcommand" in
+                session-init)
+                    session_init "$platform"
+                    ;;
+                observation)
+                    observation "$platform"
+                    ;;
+                summarize)
+                    summarize "$platform"
+                    ;;
+                user-message)
+                    user_message "$platform"
+                    ;;
+                thought)
+                    thought "$platform"
+                    ;;
+                context)
+                    context "$platform"
+                    ;;
+                *)
+                    echo "Unknown hook command: $subcommand" >&2
+                    usage
+                    exit 1
+                    ;;
+            esac
+            ;;
+        status)
+            status
+            ;;
+        context)
+            # Direct context command (without hook subcommand)
+            context "$platform"
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

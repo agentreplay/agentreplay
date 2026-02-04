@@ -342,7 +342,17 @@ export default function Traces() {
             return hasId && (hasModel || hasTokens || hasContent || hasDuration || hasDisplayName);
           });
 
-        setRawTraces(mapped);
+        // Additional safety check: filter out any traces that might have wrong project_id
+        const filteredMapped = mapped.filter((trace: TraceRow) => {
+          // If we have metadata with project_id, verify it matches
+          if (trace.metadata?.project_id) {
+            return trace.metadata.project_id === parseInt(effectiveProjectId);
+          }
+          // Otherwise trust the API response since we filtered by project_id
+          return true;
+        });
+
+        setRawTraces(filteredMapped);
         setCurrentPage(page);
       } catch (err) {
         console.error('Failed to load data', err);
@@ -356,6 +366,13 @@ export default function Traces() {
 
   // Fetch initial data and refetch when project changes
   useEffect(() => {
+    // Don't fetch if no project is selected
+    if (!effectiveProjectId) {
+      setRawTraces([]);
+      setIsLoading(false);
+      return;
+    }
+
     // Clear existing traces when project changes
     setRawTraces([]);
     setCurrentPage(1);

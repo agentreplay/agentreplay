@@ -18,7 +18,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentreplay"
-version = "0.1.2"
+version = "0.4.2"
 description = "Agentreplay is a high-performance observability and tracing platform for LLM agents and AI apps, combining semantic search, specialized evals (RAGAS, G-Eval, toxicity), and Git-like versioning of prompts and responses."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -28,7 +28,7 @@ authors = [
 ]
 keywords = [
     "llm", "agents", "tracing", "observability", "ai", "opentelemetry",
-    "ragas", "evaluation", "prompts", "semantic-search"
+    "ragas", "evaluation", "prompts", "semantic-search", "langchain", "openai"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -42,27 +42,32 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Monitoring",
+    "Typing :: Typed",
 ]
 dependencies = [
     "pydantic>=2.0.0",
-    "opentelemetry-api>=1.20.0",
-    "opentelemetry-sdk>=1.20.0",
-    "opentelemetry-exporter-otlp-proto-grpc>=1.20.0",
-    # Official OTEL instrumentations (maintained by OTEL community)
-    "opentelemetry-instrumentation>=0.41b0",
-    # Auto-instrumentation for popular libraries
-    "opentelemetry-instrumentation-openai>=0.48.0",  # For OpenAI SDK auto-tracing
-    # HTTP client (used by Agentreplay client)
     "httpx>=0.24.0",
 ]
 
 [project.optional-dependencies]
+# Full OpenTelemetry support
+otel = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.20.0",
+    "opentelemetry-instrumentation>=0.41b0",
+    "opentelemetry-instrumentation-openai>=0.48.0",
+]
+
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
+    "bandit>=1.7.0",
+    "types-requests>=2.31.0",
 ]
 
 # Framework Integrations
@@ -138,7 +143,7 @@ all = [
 
 [project.urls]
 Homepage = "https://agentreplay.dev"
-Documentation = "https://docs.agentreplay.dev"
+Documentation = "https://agentreplay.dev"
 Repository = "https://github.com/agentreplay/agentreplay"
 Issues = "https://github.com/agentreplay/agentreplay/issues"
 Changelog = "https://github.com/agentreplay/agentreplay/blob/main/CHANGELOG.md"

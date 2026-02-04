@@ -17,8 +17,9 @@
 //! Provides high-level query API combining storage and indexes.
 
 use agentreplay_core::{
-    AgentFlowEdge, AlertEvent, BudgetAlert, ComplianceReport, EvalDataset, EvalMetric, EvalRun,
-    Experiment, ExperimentResult, AgentreplayError, PromptTemplate, Result, SpanType,
+    AgentFlowEdge, AlertEvent, BudgetAlert, ComplianceReport, CodingObservation, CodingSession,
+    EvalDataset, EvalMetric, EvalRun, Experiment, ExperimentResult, AgentreplayError,
+    PromptTemplate, Result, SpanType,
 };
 use agentreplay_index::{CausalIndex, DistanceMetric, Embedding, VectorIndex};
 use agentreplay_storage::UnifiedStorage;
@@ -78,6 +79,10 @@ pub struct Agentreplay {
     pub(crate) alert_events: Arc<RwLock<HashMap<u128, Vec<AlertEvent>>>>,
     /// Compliance reports storage: report_id -> ComplianceReport
     pub(crate) compliance_reports: Arc<RwLock<HashMap<u128, ComplianceReport>>>,
+    /// Coding sessions storage: session_id -> CodingSession
+    pub(crate) coding_sessions: Arc<RwLock<HashMap<u128, CodingSession>>>,
+    /// Coding observations storage: session_id -> Vec<CodingObservation>
+    pub(crate) coding_observations: Arc<RwLock<HashMap<u128, Vec<CodingObservation>>>>,
 }
 
 impl Agentreplay {
@@ -218,6 +223,8 @@ impl Agentreplay {
             budget_alerts: Arc::new(RwLock::new(HashMap::new())),
             alert_events: Arc::new(RwLock::new(HashMap::new())),
             compliance_reports: Arc::new(RwLock::new(HashMap::new())),
+            coding_sessions: Arc::new(RwLock::new(HashMap::new())),
+            coding_observations: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 

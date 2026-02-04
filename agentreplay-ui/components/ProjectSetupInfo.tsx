@@ -33,7 +33,7 @@ export function ProjectSetupInfo({ projectId, projectName }: ProjectSetupInfoPro
     AGENTREPLAY_ENABLED: 'true',
     AGENTREPLAY_SERVICE_NAME: (projectName || 'my-app').toLowerCase().replace(/\\s+/g, '-'),
     AGENTREPLAY_URL: 'http://localhost:47100',
-    AGENTREPLAY_OTLP_ENDPOINT: 'http://localhost:47117',
+    AGENTREPLAY_OTLP_ENDPOINT: 'localhost:47117',
     AGENTREPLAY_TENANT_ID: '1',
     AGENTREPLAY_PROJECT_ID: projectId,
   };

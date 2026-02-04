@@ -308,6 +308,8 @@ export interface AgentreplayClientOptions {
   fetch?: typeof fetch;
   /** Additional headers */
   headers?: Record<string, string>;
+  /** Enable debug logging */
+  debug?: boolean;
 }
 
 /**
@@ -333,4 +335,120 @@ export interface MetricsResponse {
   metric: string;
   /** Data points */
   data: MetricsDataPoint[];
+}
+
+// ==================== New SDK Types ====================
+
+/**
+ * Span kind for categorizing operations.
+ */
+export type SpanKind =
+  | 'request'    // Root request span
+  | 'chain'      // Chain/workflow span
+  | 'llm'        // LLM call
+  | 'tool'       // Tool/function call
+  | 'retriever'  // Vector DB retrieval
+  | 'embedding'  // Text embedding
+  | 'guardrail'  // Safety check
+  | 'cache'      // Cache operation
+  | 'http'       // HTTP request
+  | 'db';        // Database query
+
+/**
+ * Active span interface used by traceable/withSpan.
+ */
+export interface Span {
+  /** Span identifier */
+  spanId: string;
+  /** Trace/session identifier */
+  traceId: string;
+  /** Parent span identifier */
+  parentSpanId: string | null;
+  /** Span name */
+  name: string;
+  /** Span kind */
+  kind: SpanKind;
+  /** Start time in microseconds */
+  startTime: number;
+  /** Span attributes */
+  attributes: Record<string, string>;
+}
+
+/**
+ * Sampling rule for conditional sampling.
+ */
+export interface SamplingRule {
+  /** Condition for this rule */
+  when: {
+    /** Match on error */
+    error?: boolean;
+    /** Match on tag presence */
+    tag?: string;
+    /** Match on path prefix */
+    pathPrefix?: string;
+    /** Custom matcher function */
+    custom?: () => boolean;
+  };
+  /** Sample rate when rule matches (0.0 - 1.0) */
+  sample: number;
+}
+
+/**
+ * Sampling configuration.
+ */
+export interface SamplingConfig {
+  /** Base sampling rate (0.0 - 1.0) */
+  rate?: number;
+  /** Conditional rules (evaluated in order) */
+  rules?: SamplingRule[];
+  /** Key for deterministic sampling (userId, sessionId, traceId) */
+  deterministicKey?: 'userId' | 'sessionId' | 'traceId' | string;
+}
+
+/**
+ * Scrubber for redacting sensitive patterns.
+ */
+export interface Scrubber {
+  /** Scrubber name */
+  name: string;
+  /** Pattern to match */
+  pattern: RegExp;
+  /** Replacement string */
+  replacement: string;
+}
+
+/**
+ * Privacy/redaction configuration.
+ */
+export interface PrivacyConfig {
+  /** Privacy mode */
+  mode: 'none' | 'redact' | 'allowlist';
+  /** Field paths to redact (e.g., 'messages.*.content') */
+  redact?: string[];
+  /** Keys to completely remove */
+  removeKeys?: string[];
+  /** Allowlist of fields to keep (when mode='allowlist') */
+  allowlist?: string[];
+  /** Scrubbers for pattern-based redaction */
+  scrubbers?: Scrubber[];
+}
+
+/**
+ * Transport configuration.
+ */
+export interface TransportConfig {
+  /** Transport mode */
+  mode: 'batch' | 'immediate' | 'console';
+  /** Batch size before flush */
+  batchSize: number;
+  /** Flush interval in milliseconds */
+  flushIntervalMs: number;
+  /** Maximum queue size */
+  maxQueueSize: number;
+  /** Maximum retry attempts */
+  maxRetries: number;
+  /** Base retry delay in milliseconds */
+  retryDelayMs: number;
+  /** Enable compression */
+  compression: boolean;
 }

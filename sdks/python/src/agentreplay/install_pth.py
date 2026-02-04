@@ -50,8 +50,12 @@ def get_site_packages():
         import agentreplay
         agentreplay_dir = os.path.dirname(agentreplay.__file__)
         site_packages = os.path.dirname(agentreplay_dir)
-        if site_packages not in paths:
-            paths.insert(0, site_packages)
+        
+        # Prioritize the directory where agentreplay is actually installed
+        if site_packages in paths:
+            paths.remove(site_packages)
+        paths.insert(0, site_packages)
+            
     except ImportError:
         pass
     

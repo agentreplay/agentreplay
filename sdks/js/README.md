@@ -12,240 +12,280 @@ yarn add @agentreplay/sdk
 pnpm add @agentreplay/sdk
 ```
 
-## Quick Start
+## Quick Start (1-Minute Win)
 
 ```typescript
-import { Agent ReplayClient, SpanType } from '@agentreplay/sdk';
+import { init, wrapOpenAI, flush } from '@agentreplay/sdk';
+import OpenAI from 'openai';
 
-// Initialize the client
-const client = new Agent ReplayClient({
-  url: 'http://localhost:8080',
-  tenantId: 1,
-  projectId: 0  // optional
-});
+// Initialize - reads AGENTREPLAY_URL, AGENTREPLAY_API_KEY from env
+init();
 
-// Create a basic trace
-const trace = await client.createTrace({
-  agentId: 1,
-  sessionId: 123,
-  spanType: SpanType.Root,
-  metadata: { name: 'my-agent' }
-});
+// Wrap OpenAI for automatic tracing
+const openai = wrapOpenAI(new OpenAI());
 
-console.log(`Created trace: ${trace.edgeId}`);
-```
-
-## Tracking LLM Calls
-
-The SDK supports OpenTelemetry GenAI semantic conventions for comprehensive LLM observability:
-
-```typescript
-// Track an LLM call with full context
-const llmTrace = await client.createGenAITrace({
-  agentId: 1,
-  sessionId: 123,
+// All calls are now automatically traced!
+const response = await openai.chat.completions.create({
   model: 'gpt-4o',
-  inputMessages: [
-    { role: 'system', content: 'You are a helpful assistant.' },
-    { role: 'user', content: 'What is the capital of France?' }
-  ],
-  output: { role: 'assistant', content: 'The capital of France is Paris.' },
-  modelParameters: {
-    temperature: 0.7,
-    max_tokens: 1000
+  messages: [{ role: 'user', content: 'Hello!' }]
+});
+
+// Flush before serverless function exits
+await flush();
+```
+
+## Environment Variables
+
+```bash
+AGENTREPLAY_API_KEY=ar_xxx          # API key (optional for local)
+AGENTREPLAY_URL=http://localhost:8080  # Server URL
+AGENTREPLAY_TENANT_ID=1             # Tenant ID
+AGENTREPLAY_PROJECT_ID=0            # Project ID
+AGENTREPLAY_ENVIRONMENT=production  # Environment name
+AGENTREPLAY_DEBUG=1                 # Enable debug logging
+AGENTREPLAY_SAMPLING_RATE=0.1       # Sample 10% of traces
+```
+
+## Configuration
+
+```typescript
+import { init } from '@agentreplay/sdk';
+
+init({
+  apiKey: 'ar_xxx',                    // Or use env var
+  baseUrl: 'https://api.agentreplay.dev',
+  tenantId: 1,
+  projectId: 0,
+  environment: 'production',
+  debug: false,
+  strict: true,                        // Throw if API key missing
+
+  // Sampling
+  sampling: {
+    rate: 0.1,                         // Sample 10%
+    rules: [
+      { when: { error: true }, sample: 1.0 },      // Always sample errors
+      { when: { tag: 'vip' }, sample: 1.0 },       // Always sample VIPs
+    ],
+    deterministicKey: 'userId',        // Stable sampling per user
   },
-  inputUsage: 25,
-  outputUsage: 12,
-  totalUsage: 37,
-  finishReason: 'stop'
+
+  // Privacy - client-side redaction
+  privacy: {
+    mode: 'redact',
+    redact: ['messages.*.content', 'input.apiKey'],
+    scrubbers: [emailScrubber, creditCardScrubber],
+  },
+
+  // Transport
+  transport: {
+    mode: 'batch',                     // 'batch' | 'immediate' | 'console'
+    batchSize: 100,
+    flushIntervalMs: 5000,
+    maxQueueSize: 10000,
+    maxRetries: 3,
+  },
 });
 ```
 
-## Tracking Tool Calls
+## Tracing Functions
+
+### traceable() - Wrap any function
 
 ```typescript
-// Track a tool/function call
-const toolTrace = await client.createToolTrace({
-  agentId: 1,
-  sessionId: 123,
-  toolName: 'web_search',
-  toolInput: { query: 'weather in Paris' },
-  toolOutput: { results: [...] },
-  toolDescription: 'Search the web for information',
-  parentId: llmTrace.edgeId  // Link to parent LLM trace
-});
-```
+import { traceable } from '@agentreplay/sdk';
 
-## Querying Traces
-
-```typescript
-// Query traces with filters
-const results = await client.queryTraces({
-  sessionId: 123,
-  limit: 100
-});
-
-// Query within a time range
-const rangeResults = await client.queryTemporalRange(
-  Date.now() * 1000 - 3600_000_000,  // 1 hour ago (microseconds)
-  Date.now() * 1000,                   // now
-  { agentId: 1 }
+const processQuery = traceable(
+  async (query: string) => {
+    const result = await someOperation(query);
+    return result;
+  },
+  { name: 'process_query', kind: 'chain' }
 );
 
-// Get a specific trace with payload
-const trace = await client.getTrace('abc123');
-
-// Get trace hierarchy
-const tree = await client.getTraceTree('abc123');
+// Call it like normal
+const result = await processQuery('What is the weather?');
 ```
 
-## User Feedback
-
-Capture user satisfaction signals for building evaluation datasets:
+### withSpan() - Scoped spans with access
 
 ```typescript
-// Submit thumbs up/down feedback
-await client.submitFeedback(trace.edgeId, 1);   // thumbs up
-await client.submitFeedback(trace.edgeId, -1);  // thumbs down
+import { withSpan } from '@agentreplay/sdk';
 
-// Add to evaluation dataset
-await client.addToDataset(trace.edgeId, 'bad_responses', {
-  inputData: { prompt: 'Hello' },
-  outputData: { response: '...' }
-});
+const docs = await withSpan(
+  'retrieve_context',
+  { kind: 'retriever', input: { query } },
+  async (span) => {
+    const results = await vectorDb.search(query);
+    span.setOutput({ count: results.length });
+    span.addEvent('search_complete');
+    return results;
+  }
+);
 ```
 
-## Span Types
+### startSpan() - Manual control
 
 ```typescript
-import { SpanType } from '@agentreplay/sdk';
+import { startSpan } from '@agentreplay/sdk';
 
-SpanType.Root        // 0 - Root span
-SpanType.Planning    // 1 - Planning phase
-SpanType.Reasoning   // 2 - Reasoning/thinking
-SpanType.ToolCall    // 3 - Tool/function call
-SpanType.ToolResponse // 4 - Tool response
-SpanType.Synthesis   // 5 - Result synthesis
-SpanType.Response    // 6 - Final response
-SpanType.Error       // 7 - Error state
-SpanType.Retrieval   // 8 - Vector DB retrieval
-SpanType.Embedding   // 9 - Text embedding
-SpanType.HttpCall    // 10 - HTTP API call
-SpanType.Database    // 11 - Database query
-SpanType.Function    // 12 - Generic function
-SpanType.Reranking   // 13 - Result reranking
-SpanType.Parsing     // 14 - Document parsing
-SpanType.Generation  // 15 - Content generation
-SpanType.Custom      // 255 - Custom types
-```
-
-## Configuration Options
-
-```typescript
-interface Agent ReplayClientOptions {
-  url: string;                      // Agent Replay server URL
-  tenantId: number;                 // Tenant identifier
-  projectId?: number;               // Project identifier (default: 0)
-  agentId?: number;                 // Default agent ID (default: 1)
-  timeout?: number;                 // Request timeout in ms (default: 30000)
-  headers?: Record<string, string>; // Additional headers
-  fetch?: typeof fetch;             // Custom fetch implementation
+const span = startSpan('web_search', { kind: 'tool' });
+try {
+  const result = await searchWeb(query);
+  span.end({ output: result });
+} catch (err) {
+  span.end({ error: err });
+  throw err;
 }
 ```
 
-## Framework Integrations
+## Auto-Instrumentation
 
-### With OpenAI
+### OpenAI
 
 ```typescript
+import { wrapOpenAI } from '@agentreplay/sdk';
 import OpenAI from 'openai';
-import { Agent ReplayClient } from '@agentreplay/sdk';
 
-const openai = new OpenAI();
-const agentreplay = new Agent ReplayClient({ url: '...', tenantId: 1 });
+const openai = wrapOpenAI(new OpenAI(), {
+  recordInput: true,      // Record prompts
+  recordOutput: true,     // Record completions
+  recordParameters: true, // Record temperature, etc.
+});
 
-async function chat(messages: OpenAI.ChatCompletionMessageParam[]) {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages,
-    temperature: 0.7
-  });
+// All chat.completions.create and embeddings.create calls traced
+const response = await openai.chat.completions.create({...});
+```
 
-  // Track the call
-  await agentreplay.createGenAITrace({
-    agentId: 1,
-    sessionId: Date.now(),
-    model: response.model,
-    inputMessages: messages.map(m => ({ role: m.role, content: String(m.content) })),
-    output: { role: 'assistant', content: response.choices[0].message.content ?? '' },
-    inputUsage: response.usage?.prompt_tokens,
-    outputUsage: response.usage?.completion_tokens,
-    totalUsage: response.usage?.total_tokens,
-    finishReason: response.choices[0].finish_reason
-  });
+### Anthropic
+
+```typescript
+import { wrapAnthropic } from '@agentreplay/sdk';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = wrapAnthropic(new Anthropic());
+
+const response = await anthropic.messages.create({...});
+```
+
+### Fetch
+
+```typescript
+import { wrapFetch, installFetchTracing } from '@agentreplay/sdk';
+
+// Option 1: Wrap specific fetch
+const tracedFetch = wrapFetch(fetch, {
+  excludeUrls: ['/health', /\.css$/],
+});
+
+// Option 2: Install globally
+installFetchTracing({ excludeUrls: ['/health'] });
+```
+
+## Context Propagation
+
+```typescript
+import { setGlobalContext, withContext, bindContext } from '@agentreplay/sdk';
+
+// Set global context (attached to all spans)
+setGlobalContext({
+  userId: 'user_123',
+  sessionId: 456,
+  tags: { tier: 'premium' },
+});
+
+// Run with specific context
+await withContext({ traceId: 'custom-trace-id' }, async () => {
+  // Spans created here use this context
+});
+
+// Bind context to callbacks
+const boundHandler = bindContext(myHandler);
+eventEmitter.on('data', boundHandler);
+```
+
+## Privacy & Redaction
+
+```typescript
+import {
+  redactPayload,
+  hashPII,
+  emailScrubber,
+  creditCardScrubber,
+  apiKeyScrubber,
+} from '@agentreplay/sdk';
+
+// Configure in init()
+init({
+  privacy: {
+    mode: 'redact',
+    redact: ['messages.*.content', 'user.email'],
+    scrubbers: [emailScrubber, creditCardScrubber, apiKeyScrubber],
+  },
+});
+
+// Or manually
+const redacted = redactPayload(sensitiveData);
+const hashed = hashPII('user@example.com'); // -> 'hash_abc123'
+```
+
+## Serverless & Edge
+
+```typescript
+import { init, flush, shutdown } from '@agentreplay/sdk';
+
+export async function handler(event) {
+  // Init once (idempotent)
+  init();
+
+  // Your logic here...
+
+  // IMPORTANT: Flush before function exits
+  await flush({ timeoutMs: 5000 });
 
   return response;
 }
+
+// For graceful shutdown
+process.on('SIGTERM', async () => {
+  await shutdown();
+  process.exit(0);
+});
 ```
 
-### With LangChain.js
+## Debugging
 
 ```typescript
-import { ChatOpenAI } from '@langchain/openai';
-import { Agent ReplayClient, SpanType } from '@agentreplay/sdk';
+// Enable debug mode
+init({ debug: true });
+// Or: AGENTREPLAY_DEBUG=1
 
-const agentreplay = new Agent ReplayClient({ url: '...', tenantId: 1 });
+// Dry run (prints to console, doesn't send)
+init({
+  transport: { mode: 'console' }
+});
 
-// Create a callback handler
-class Agent ReplayHandler {
-  private sessionId = Date.now();
-
-  async handleLLMStart(llm: any, prompts: string[]) {
-    return agentreplay.createTrace({
-      agentId: 1,
-      sessionId: this.sessionId,
-      spanType: SpanType.Generation,
-      metadata: { prompts }
-    });
-  }
-
-  async handleLLMEnd(output: any, runId: string) {
-    await agentreplay.updateTrace({
-      edgeId: runId,
-      sessionId: this.sessionId,
-      tokenCount: output.llmOutput?.tokenUsage?.totalTokens
-    });
-  }
+// Health check
+const client = new AgentreplayClient({...});
+const result = await client.ping();
+if (!result.success) {
+  console.error('Connection failed:', result.error);
 }
 ```
 
-## TypeScript Support
-
-The SDK is written in TypeScript and provides full type definitions:
+## Span Kinds
 
 ```typescript
-import type {
-  Agent ReplayClientOptions,
-  QueryFilter,
-  QueryResponse,
-  TraceView,
-  SpanInput,
-  GenAIAttributes
-} from '@agentreplay/sdk';
+// Available span kinds for categorization
+type SpanKind =
+  | 'request'    // Root request
+  | 'chain'      // Workflow/chain
+  | 'llm'        // LLM call
+  | 'tool'       // Tool/function
+  | 'retriever'  // Vector DB
+  | 'embedding'  // Embeddings
+  | 'guardrail'  // Safety check
+  | 'cache'      // Cache ops
+  | 'http'       // HTTP request
+  | 'db';        // Database
 ```
-
-## Error Handling
-
-```typescript
-try {
-  const trace = await client.createTrace({...});
-} catch (error) {
-  if (error instanceof Error) {
-    console.error(`Agent Replay error: ${error.message}`);
-  }
-}
-```
-
-## License
-
-MIT

@@ -808,7 +808,7 @@ api_keys_file = "./data/api_keys.json"
 enable_metrics = true
 metrics_port = 9090
 enable_tracing = true
-tracing_endpoint = "http://localhost:47117"
+tracing_endpoint = "localhost:47117"
 ```
 
 ### Environment Variables
@@ -825,7 +825,7 @@ export AGENTREPLAY_API_KEY="your-api-key"
 
 # Observability
 export AGENTREPLAY_ENABLE_METRICS=true
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:47117"
+export OTEL_EXPORTER_OTLP_ENDPOINT="localhost:47117"
 ```
 
 ---

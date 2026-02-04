@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-session-start.sh"
+      },
+      {
+        "command": "~/.cursor/hooks/agentreplay-context.sh"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-context.sh"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-tool.sh"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-tool.sh"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-file-read.sh"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-file-edit.sh"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-shell.sh"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-shell.sh"
+      }
+    ],
+    "userPrompt": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-prompt.sh"
+      }
+    ],
+    "agentResponse": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-response.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-stop.sh"
+      },
+      {
+        "command": "~/.cursor/hooks/agentreplay-context.sh"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "~/.cursor/hooks/agentreplay-session-end.sh"
+      }
+    ]
+  }
+}

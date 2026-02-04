@@ -33,12 +33,14 @@ import {
   GitBranch,
   Keyboard,
   DollarSign,
+  Code,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
 
 const navItems = [
   { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1' },
+  { id: 'coding-sessions', label: 'Coding Sessions', icon: Code, segment: 'coding-sessions', shortcut: '0' },
   { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2' },
   { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3' },
   { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4' },
@@ -63,9 +65,10 @@ export default function Sidebar() {
   // Initialize from localStorage if available
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebar_collapsed') === 'true';
+      const stored = localStorage.getItem('sidebar_collapsed');
+      return stored ? stored === 'true' : true;
     }
-    return false;
+    return true;
   });
 
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -191,18 +194,32 @@ export default function Sidebar() {
       />
 
       {/* Agentreplay Icon/Logo */}
-      <div className={cn(
-        'mb-6 flex items-center justify-center transition-all duration-200',
-        collapsed ? 'px-1' : 'px-3'
-      )}>
-        <img
-          src="/logo.svg"
-          alt="Agentreplay"
-          className={cn(
-            'rounded-lg shadow-lg transition-all duration-200',
-            collapsed ? 'w-10 h-10' : 'w-10 h-10'
+      <div
+        className={cn(
+          'mb-6 flex items-center justify-center transition-all duration-200',
+          collapsed ? 'px-1' : 'px-3'
+        )}
+      >
+        <div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-2')}>
+          <img
+            src="/logo.svg"
+            alt="Agentreplay"
+            className={cn(
+              'rounded-lg shadow-lg transition-all duration-200',
+              collapsed ? 'w-10 h-10' : 'w-10 h-10'
+            )}
+          />
+          {!collapsed && (
+            <span className="flex h-5 items-center rounded-full bg-orange-500 px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-white shadow-sm">
+              Alpha
+            </span>
           )}
-        />
+          {collapsed && (
+            <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-white shadow-sm">
+              Alpha
+            </span>
+          )}
+        </div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-2">

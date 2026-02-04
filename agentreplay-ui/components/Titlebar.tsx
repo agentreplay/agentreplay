@@ -61,6 +61,9 @@ export default function Titlebar() {
             className="w-5 h-5 rounded-md"
           />
           <span>AgentReplay</span>
+          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+            Alpha
+          </span>
         </div>
       </div>
       

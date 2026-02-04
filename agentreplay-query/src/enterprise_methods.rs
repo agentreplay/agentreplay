@@ -19,9 +19,9 @@
 
 use crate::engine::Agentreplay;
 use agentreplay_core::{
-    AgentFlowEdge, AlertEvent, BudgetAlert, ComplianceReport, CostStats, DataPoint,
-    DataPrivacyMetrics, EvalMetric, Experiment, ExperimentResult, AgentreplayError, PromptTemplate,
-    Result, SecurityMetrics,
+    AgentFlowEdge, AlertEvent, BudgetAlert, CodingObservation, CodingSession, ComplianceReport,
+    CostStats, DataPoint, DataPrivacyMetrics, EvalMetric, Experiment, ExperimentResult,
+    AgentreplayError, PromptTemplate, Result, SecurityMetrics,
 };
 use std::collections::HashMap;
 
@@ -684,4 +684,110 @@ impl Agentreplay {
 
         Ok(values)
     }
-}
+
+    // ============================================================================
+    // Coding Sessions Methods (IDE/Coding Agent Traces)
+    // ============================================================================
+
+    /// Store a coding session
+    pub fn store_coding_session(&self, session: CodingSession) -> Result<()> {
+        let mut sessions = self
+            .coding_sessions
+            .write()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        sessions.insert(session.session_id, session);
+        Ok(())
+    }
+
+    /// Get a coding session by ID
+    pub fn get_coding_session(&self, session_id: u128) -> Result<Option<CodingSession>> {
+        let sessions = self
+            .coding_sessions
+            .read()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        Ok(sessions.get(&session_id).cloned())
+    }
+
+    /// List coding sessions with optional filters
+    pub fn list_coding_sessions(&self, project_id: Option<u16>, limit: usize) -> Result<Vec<CodingSession>> {
+        let sessions = self
+            .coding_sessions
+            .read()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        let mut result: Vec<CodingSession> = sessions
+            .values()
+            .filter(|s| project_id.is_none() || Some(s.project_id) == project_id)
+            .cloned()
+            .collect();
+
+        // Sort by start time descending
+        result.sort_by(|a, b| b.start_time_us.cmp(&a.start_time_us));
+        result.truncate(limit);
+        Ok(result)
+    }
+
+    /// Update a coding session
+    pub fn update_coding_session<F>(&self, session_id: u128, update_fn: F) -> Result<()>
+    where
+        F: FnOnce(&mut CodingSession),
+    {
+        let mut sessions = self
+            .coding_sessions
+            .write()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        let session = sessions
+            .get_mut(&session_id)
+            .ok_or_else(|| AgentreplayError::NotFound(format!("Session {} not found", session_id)))?;
+
+        update_fn(session);
+        Ok(())
+    }
+
+    /// Delete a coding session
+    pub fn delete_coding_session(&self, session_id: u128) -> Result<bool> {
+        let mut sessions = self
+            .coding_sessions
+            .write()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        let removed = sessions.remove(&session_id).is_some();
+
+        // Also delete observations
+        if removed {
+            let mut observations = self
+                .coding_observations
+                .write()
+                .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+            observations.remove(&session_id);
+        }
+
+        Ok(removed)
+    }
+
+    /// Add an observation to a session
+    pub fn add_coding_observation(&self, observation: CodingObservation) -> Result<()> {
+        let mut observations = self
+            .coding_observations
+            .write()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        let session_obs = observations
+            .entry(observation.session_id)
+            .or_insert_with(Vec::new);
+        session_obs.push(observation);
+        Ok(())
+    }
+
+    /// Get observations for a session
+    pub fn get_coding_observations(&self, session_id: u128) -> Result<Vec<CodingObservation>> {
+        let observations = self
+            .coding_observations
+            .read()
+            .map_err(|e| AgentreplayError::Internal(format!("Lock poisoned: {}", e)))?;
+
+        Ok(observations.get(&session_id).cloned().unwrap_or_default())
+    }}

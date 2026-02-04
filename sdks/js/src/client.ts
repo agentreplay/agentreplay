@@ -92,12 +92,14 @@ export class AgentreplayClient {
   private readonly headers: Record<string, string>;
   private readonly fetchFn: typeof fetch;
   private sessionCounter = 0;
+  private readonly debug: boolean;
 
   constructor(options: AgentreplayClientOptions) {
     this.url = options.url.replace(/\/$/, '');
     this.tenantId = options.tenantId;
     this.projectId = options.projectId ?? 0;
     this.agentId = options.agentId ?? 1;
+    this.debug = options.debug ?? false;
     this.timeout = options.timeout ?? 30000;
     this.fetchFn = options.fetch ?? fetch;
     this.headers = {
@@ -611,6 +613,38 @@ export class AgentreplayClient {
    */
   async health(): Promise<{ status: string; version?: string }> {
     return this.request('GET', '/api/v1/health');
+  }
+
+  /**
+   * Ping the server to verify connectivity and authentication.
+   * Useful for debugging "why isn't my data showing up" issues.
+   *
+   * @example
+   * ```typescript
+   * const result = await client.ping();
+   * if (result.success) {
+   *   console.log('Connected to', result.version);
+   * } else {
+   *   console.error('Connection failed:', result.error);
+   * }
+   * ```
+   */
+  async ping(): Promise<{ success: boolean; version?: string; latencyMs: number; error?: string }> {
+    const startTime = Date.now();
+    try {
+      const health = await this.health();
+      return {
+        success: true,
+        version: health.version,
+        latencyMs: Date.now() - startTime,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        latencyMs: Date.now() - startTime,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
   }
 
   /**
