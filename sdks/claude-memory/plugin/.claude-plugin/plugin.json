@@ -1,9 +1,0 @@
-{
-  "name": "claude-agentreplay",
-  "version": "0.0.1",
-  "description": "Persistent local-first memory for Claude Code using Agent Replay",
-  "author": {
-    "name": "Agent Replay",
-    "url": "https://agentreplay.dev"
-  }
-}

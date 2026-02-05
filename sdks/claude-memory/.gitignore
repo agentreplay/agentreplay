@@ -1,4 +1,0 @@
-node_modules/
-plugin/scripts/*.cjs
-*.log
-.DS_Store
