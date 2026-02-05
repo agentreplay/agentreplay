@@ -180,6 +180,19 @@ pub async fn list_projects(
             })
             .collect();
 
+        // Always include "Claude Code" project (ID: 49455) even if no traces yet
+        const CLAUDE_CODE_PROJECT_ID: u16 = 49455;
+        if !projects.iter().any(|p| p.project_id == CLAUDE_CODE_PROJECT_ID) {
+            projects.push(Project {
+                project_id: CLAUDE_CODE_PROJECT_ID,
+                name: "Claude Code".to_string(),
+                description: Some("Claude Code coding sessions".to_string()),
+                created_at: 0,
+                trace_count: 0,
+                favorite: false,
+            });
+        }
+
         // Sort by project_id
         projects.sort_by_key(|p| p.project_id);
         projects
