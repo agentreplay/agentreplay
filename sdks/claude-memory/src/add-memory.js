@@ -1,59 +1,53 @@
-/**
- * Add memory - CLI tool to manually add content to Agent Replay
+/*
+ * CLI: Store content in memory
+ * Usage: node add-memory.js "content to remember"
  */
 
-const { AgentReplayClient } = require('./lib/agentreplay-client');
-const { getContainerTag, getProjectName } = require('./lib/container-tag');
-const { loadSettings, getConfig } = require('./lib/settings');
+const { MemoryService } = require('./lib/agentreplay-client');
+const { computeWorkspaceId, extractProjectLabel } = require('./lib/container-tag');
+const { loadConfig, getServerConfig } = require('./lib/settings');
 
-async function main() {
-  const content = process.argv.slice(2).join(' ');
+(async function main() {
+  const args = process.argv.slice(2);
+  const text = args.join(' ').trim();
 
-  if (!content || !content.trim()) {
-    console.log(
-      'No content provided. Usage: node add-memory.cjs "content to save"',
-    );
+  if (!text) {
+    console.log('Usage: add-memory "text to store"');
+    console.log('Example: add-memory "User prefers dark mode"');
     return;
   }
 
-  const settings = loadSettings();
-  const config = getConfig(settings);
-
+  const cfg = loadConfig();
+  const serverCfg = getServerConfig(cfg);
   const cwd = process.cwd();
-  const containerTag = getContainerTag(cwd);
-  const projectName = getProjectName(cwd);
+  const wsId = computeWorkspaceId(cwd);
+  const projectLabel = extractProjectLabel(cwd);
 
-  const client = new AgentReplayClient({
-    url: config.url,
-    tenantId: config.tenantId,
-    projectId: config.projectId,
-    containerTag,
+  const memService = new MemoryService({
+    endpoint: serverCfg.endpoint,
+    tenant: serverCfg.tenant,
+    project: serverCfg.project,
+    collection: wsId,
   });
 
-  // Check if Agent Replay is running
-  const health = await client.healthCheck();
-  if (!health.healthy) {
-    console.log('Agent Replay is not running.');
-    console.log(`Start Agent Replay at ${config.url} to save memories.`);
+  const pingResult = await memService.ping();
+  if (!pingResult.ok) {
+    console.log(`Cannot reach memory server at ${serverCfg.endpoint}`);
+    console.log('Ensure Agent Replay is running.');
     return;
   }
 
   try {
-    const result = await client.addMemory(content, containerTag, {
-      type: 'manual',
-      project: projectName,
-      timestamp: new Date().toISOString(),
+    const result = await memService.store(text, wsId, {
+      kind: 'user_input',
+      project: projectLabel,
+      when: new Date().toISOString(),
     });
 
-    console.log(`Memory saved to project: ${projectName}`);
-    console.log(`ID: ${result.id}`);
-    console.log('Data stored locally on this machine.');
+    console.log(`Stored in: ${projectLabel}`);
+    console.log(`Document: ${result.documentId}`);
+    console.log('Data kept locally on this machine.');
   } catch (err) {
-    console.log(`Error saving memory: ${err.message}`);
+    console.log(`Store failed: ${err.message}`);
   }
-}
-
-main().catch((err) => {
-  console.error(`Fatal error: ${err.message}`);
-  process.exit(1);
-});
+})();

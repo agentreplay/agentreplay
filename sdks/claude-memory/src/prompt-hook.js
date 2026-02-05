@@ -1,27 +1,20 @@
-/**
- * UserPromptSubmit hook - Placeholder for future enhancements
+/*
+ * User prompt hook
+ * Placeholder for prompt-time processing
  */
 
-const { loadSettings, debugLog } = require('./lib/settings');
-const { readStdin, outputSuccess } = require('./lib/stdin');
+const { loadConfig, logDebug } = require('./lib/settings');
+const { parseInput, complete } = require('./lib/stdin');
 
-async function main() {
-  const settings = loadSettings();
+(async function run() {
+  const cfg = loadConfig();
 
   try {
-    const input = await readStdin();
-    const sessionId = input.session_id;
-
-    debugLog(settings, 'UserPromptSubmit', { sessionId });
-
-    outputSuccess();
+    const hookInput = await parseInput();
+    logDebug(cfg, 'Prompt received', { session: hookInput.session_id });
+    complete();
   } catch (err) {
-    debugLog(settings, 'Error', { error: err.message });
-    outputSuccess();
+    logDebug(cfg, 'Prompt hook error', { err: err.message });
+    complete();
   }
-}
-
-main().catch((err) => {
-  console.error(`AgentReplay fatal: ${err.message}`);
-  process.exit(1);
-});
+})();

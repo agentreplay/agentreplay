@@ -1,98 +1,93 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const os = require('node:os');
+/*
+ * Configuration management for the Claude memory plugin
+ * Handles persistent settings and environment overrides
+ */
 
-const SETTINGS_DIR = path.join(os.homedir(), '.agentreplay-claude');
-const SETTINGS_FILE = path.join(SETTINGS_DIR, 'settings.json');
+const nodeFs = require('node:fs');
+const nodePath = require('node:path');
+const nodeOs = require('node:os');
 
-const DEFAULT_SETTINGS = {
-  skipTools: ['Read', 'Glob', 'Grep', 'TodoWrite', 'AskUserQuestion'],
-  captureTools: ['Edit', 'Write', 'Bash', 'Task'],
-  maxProfileItems: 5,
-  debug: false,
-  injectProfile: true,
-  url: 'http://localhost:47100',
+const CONFIG_FOLDER = nodePath.join(nodeOs.homedir(), '.agentreplay-claude');
+const CONFIG_PATH = nodePath.join(CONFIG_FOLDER, 'config.json');
+
+const DEFAULTS = Object.freeze({
+  ignoredTools: ['Read', 'Glob', 'Grep', 'TodoWrite', 'AskUserQuestion'],
+  trackedTools: ['Edit', 'Write', 'Bash', 'Task'],
+  contextLimit: 5,
+  verbose: false,
+  autoInject: true,
+  serverUrl: 'http://localhost:47100',
   tenantId: 1,
   projectId: 1,
-};
+});
 
-function ensureSettingsDir() {
-  if (!fs.existsSync(SETTINGS_DIR)) {
-    fs.mkdirSync(SETTINGS_DIR, { recursive: true });
+function ensureConfigFolder() {
+  if (!nodeFs.existsSync(CONFIG_FOLDER)) {
+    nodeFs.mkdirSync(CONFIG_FOLDER, { recursive: true, mode: 0o700 });
   }
 }
 
-function loadSettings() {
-  const settings = { ...DEFAULT_SETTINGS };
+function loadConfig() {
+  const cfg = { ...DEFAULTS };
+
+  // File-based config
   try {
-    if (fs.existsSync(SETTINGS_FILE)) {
-      const fileContent = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-      Object.assign(settings, JSON.parse(fileContent));
+    if (nodeFs.existsSync(CONFIG_PATH)) {
+      const raw = nodeFs.readFileSync(CONFIG_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      Object.assign(cfg, parsed);
     }
   } catch (err) {
-    console.error(`Settings: Failed to load ${SETTINGS_FILE}: ${err.message}`);
+    logDebug(cfg, 'Config load failed', err.message);
   }
-  
-  // Environment variable overrides
-  if (process.env.AGENTREPLAY_URL) {
-    settings.url = process.env.AGENTREPLAY_URL;
+
+  // Environment overrides
+  const env = process.env;
+  if (env.AGENTREPLAY_URL) cfg.serverUrl = env.AGENTREPLAY_URL;
+  if (env.AGENTREPLAY_TENANT_ID) cfg.tenantId = parseInt(env.AGENTREPLAY_TENANT_ID, 10);
+  if (env.AGENTREPLAY_PROJECT_ID) cfg.projectId = parseInt(env.AGENTREPLAY_PROJECT_ID, 10);
+  if (env.AGENTREPLAY_DEBUG === 'true' || env.AGENTREPLAY_DEBUG === '1') cfg.verbose = true;
+  if (env.AGENTREPLAY_SKIP_TOOLS) {
+    cfg.ignoredTools = env.AGENTREPLAY_SKIP_TOOLS.split(',').map((s) => s.trim()).filter(Boolean);
   }
-  if (process.env.AGENTREPLAY_TENANT_ID) {
-    settings.tenantId = parseInt(process.env.AGENTREPLAY_TENANT_ID, 10);
-  }
-  if (process.env.AGENTREPLAY_PROJECT_ID) {
-    settings.projectId = parseInt(process.env.AGENTREPLAY_PROJECT_ID, 10);
-  }
-  if (process.env.AGENTREPLAY_SKIP_TOOLS) {
-    settings.skipTools = process.env.AGENTREPLAY_SKIP_TOOLS.split(',').map((s) => s.trim());
-  }
-  if (process.env.AGENTREPLAY_DEBUG === 'true') {
-    settings.debug = true;
-  }
-  
-  return settings;
+
+  return cfg;
 }
 
-function saveSettings(settings) {
-  ensureSettingsDir();
-  const toSave = { ...settings };
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(toSave, null, 2));
+function persistConfig(cfg) {
+  ensureConfigFolder();
+  const toWrite = { ...cfg };
+  nodeFs.writeFileSync(CONFIG_PATH, JSON.stringify(toWrite, null, 2), 'utf8');
 }
 
-function getConfig(settings) {
+function getServerConfig(cfg) {
   return {
-    url: settings.url,
-    tenantId: settings.tenantId,
-    projectId: settings.projectId,
+    endpoint: cfg.serverUrl,
+    tenant: cfg.tenantId,
+    project: cfg.projectId,
   };
 }
 
-function shouldCaptureTool(toolName, settings) {
-  if (settings.skipTools.includes(toolName)) return false;
-  if (settings.captureTools && settings.captureTools.length > 0) {
-    return settings.captureTools.includes(toolName);
-  }
+function isToolTracked(toolName, cfg) {
+  if (cfg.ignoredTools.includes(toolName)) return false;
+  if (cfg.trackedTools?.length > 0) return cfg.trackedTools.includes(toolName);
   return true;
 }
 
-function debugLog(settings, message, data) {
-  if (settings.debug) {
-    const timestamp = new Date().toISOString();
-    console.error(
-      data
-        ? `[${timestamp}] ${message}: ${JSON.stringify(data)}`
-        : `[${timestamp}] ${message}`,
-    );
-  }
+function logDebug(cfg, label, detail = null) {
+  if (!cfg.verbose) return;
+  const ts = new Date().toISOString();
+  const msg = detail ? `[${ts}] ${label}: ${JSON.stringify(detail)}` : `[${ts}] ${label}`;
+  process.stderr.write(msg + '\n');
 }
 
 module.exports = {
-  SETTINGS_DIR,
-  SETTINGS_FILE,
-  DEFAULT_SETTINGS,
-  loadSettings,
-  saveSettings,
-  getConfig,
-  shouldCaptureTool,
-  debugLog,
+  CONFIG_FOLDER,
+  CONFIG_PATH,
+  DEFAULTS,
+  loadConfig,
+  persistConfig,
+  getServerConfig,
+  isToolTracked,
+  logDebug,
 };

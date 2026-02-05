@@ -1,0 +1,48 @@
+{
+  "name": "@agentreplay/agentreplay-claude-plugin",
+  "version": "0.2.0",
+  "description": "Agent Replay plugin for Claude Code - observability tracing and persistent memory",
+  "main": "index.js",
+  "bin": {
+    "agentreplay-claude-install": "./bin/install.js"
+  },
+  "scripts": {
+    "build": "node scripts/bundle.js",
+    "postinstall": "node bin/install.js || true",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "files": [
+    "bin/",
+    "plugin/",
+    "src/",
+    "index.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "plugin",
+    "agentreplay",
+    "observability",
+    "tracing",
+    "memory",
+    "llm",
+    "agent"
+  ],
+  "author": "AgentReplay",
+  "license": "MIT",
+  "homepage": "https://agentreplay.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sochdb/agentreplay.git",
+    "directory": "sdks/agentreplay-claude-plugin"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.13",
+    "esbuild": "^0.25.0"
+  }
+}

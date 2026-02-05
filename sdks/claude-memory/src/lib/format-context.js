@@ -1,118 +1,117 @@
-/**
- * Format context for injection into Claude Code sessions
+/*
+ * Context builder for session injection
+ * Transforms memory data into Claude-readable context blocks
  */
 
-function formatRelativeTime(isoTimestamp) {
+// Human-readable time difference
+function humanizeTimestamp(isoStr) {
+  if (!isoStr) return '';
+  
   try {
-    const dt = new Date(isoTimestamp);
-    const now = new Date();
-    const seconds = (now.getTime() - dt.getTime()) / 1000;
-    const minutes = seconds / 60;
-    const hours = seconds / 3600;
-    const days = seconds / 86400;
+    const then = new Date(isoStr).getTime();
+    const now = Date.now();
+    const diffSec = Math.floor((now - then) / 1000);
 
-    if (minutes < 30) return 'just now';
-    if (minutes < 60) return `${Math.floor(minutes)}mins ago`;
-    if (hours < 24) return `${Math.floor(hours)}hrs ago`;
-    if (days < 7) return `${Math.floor(days)}d ago`;
+    if (diffSec < 120) return 'moments ago';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} min ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+    if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
 
-    const month = dt.toLocaleString('en', { month: 'short' });
-    if (dt.getFullYear() === now.getFullYear()) {
-      return `${dt.getDate()} ${month}`;
-    }
-    return `${dt.getDate()} ${month}, ${dt.getFullYear()}`;
+    const d = new Date(isoStr);
+    const mon = d.toLocaleString('en', { month: 'short' });
+    const day = d.getDate();
+    const yr = d.getFullYear();
+    const currYr = new Date().getFullYear();
+    
+    return yr === currYr ? `${mon} ${day}` : `${mon} ${day}, ${yr}`;
   } catch {
     return '';
   }
 }
 
-function deduplicateMemories(staticFacts, dynamicFacts, searchResults) {
-  const seen = new Set();
+// Remove duplicate entries across arrays
+function removeDuplicates(prefs, ctx, related) {
+  const tracker = new Set();
 
-  const uniqueStatic = staticFacts.filter((m) => {
-    if (seen.has(m)) return false;
-    seen.add(m);
+  const uniquePrefs = prefs.filter((item) => {
+    const key = String(item).trim().toLowerCase();
+    if (tracker.has(key)) return false;
+    tracker.add(key);
     return true;
   });
 
-  const uniqueDynamic = dynamicFacts.filter((m) => {
-    if (seen.has(m)) return false;
-    seen.add(m);
+  const uniqueCtx = ctx.filter((item) => {
+    const key = String(item).trim().toLowerCase();
+    if (tracker.has(key)) return false;
+    tracker.add(key);
     return true;
   });
 
-  const uniqueSearch = searchResults.filter((r) => {
-    const content = r.content ?? '';
-    if (!content || seen.has(content)) return false;
-    seen.add(content);
+  const uniqueRelated = related.filter((item) => {
+    const textContent = String(item.text ?? '').trim().toLowerCase();
+    if (!textContent || tracker.has(textContent)) return false;
+    tracker.add(textContent);
     return true;
   });
 
-  return {
-    static: uniqueStatic,
-    dynamic: uniqueDynamic,
-    searchResults: uniqueSearch,
-  };
+  return { prefs: uniquePrefs, ctx: uniqueCtx, related: uniqueRelated };
 }
 
-function formatContext(
-  profileResult,
-  includeProfile = true,
-  includeRelevantMemories = false,
-  maxResults = 10,
-) {
-  if (!profileResult) return null;
+// Build context XML block from profile data
+function buildContextBlock(profileData, includePrefs = true, includeRelated = false, limit = 10) {
+  if (!profileData) return null;
 
-  const staticFacts = profileResult.profile?.static || [];
-  const dynamicFacts = profileResult.profile?.dynamic || [];
-  const searchResults = profileResult.searchResults?.results || [];
+  const rawPrefs = profileData.preferences ?? [];
+  const rawCtx = profileData.context ?? [];
+  const rawRelated = profileData.related?.matches ?? [];
 
-  const deduped = deduplicateMemories(
-    includeProfile ? staticFacts : [],
-    includeProfile ? dynamicFacts : [],
-    includeRelevantMemories ? searchResults : [],
+  const deduped = removeDuplicates(
+    includePrefs ? rawPrefs : [],
+    includePrefs ? rawCtx : [],
+    includeRelated ? rawRelated : []
   );
 
-  const statics = deduped.static.slice(0, maxResults);
-  const dynamics = deduped.dynamic.slice(0, maxResults);
-  const search = deduped.searchResults.slice(0, maxResults);
+  const prefs = deduped.prefs.slice(0, limit);
+  const ctx = deduped.ctx.slice(0, limit);
+  const related = deduped.related.slice(0, limit);
 
-  if (statics.length === 0 && dynamics.length === 0 && search.length === 0) {
+  if (prefs.length === 0 && ctx.length === 0 && related.length === 0) {
     return null;
   }
 
-  const sections = [];
+  const blocks = [];
 
-  if (statics.length > 0) {
-    sections.push(
-      '## User Preferences (Persistent)\n' +
-        statics.map((f) => `- ${f}`).join('\n'),
-    );
+  if (prefs.length > 0) {
+    const items = prefs.map((p) => `• ${p}`).join('\n');
+    blocks.push(`## Preferences\n${items}`);
   }
 
-  if (dynamics.length > 0) {
-    sections.push(
-      '## Recent Context\n' + dynamics.map((f) => `- ${f}`).join('\n'),
-    );
+  if (ctx.length > 0) {
+    const items = ctx.map((c) => `• ${c}`).join('\n');
+    blocks.push(`## Context\n${items}`);
   }
 
-  if (search.length > 0) {
-    const lines = search.map((r) => {
-      const content = r.content ?? '';
-      const score = r.score != null ? `[${Math.round(r.score * 100)}%]` : '';
-      const line = content.length > 200 ? content.slice(0, 200) + '...' : content;
-      return `- ${score} ${line}`;
-    });
-    sections.push('## Relevant Memories\n' + lines.join('\n'));
+  if (related.length > 0) {
+    const items = related.map((r) => {
+      const pct = r.relevance != null ? `${Math.round(r.relevance * 100)}%` : '';
+      const preview = String(r.text ?? '').substring(0, 180);
+      const ellipsis = (r.text?.length ?? 0) > 180 ? '...' : '';
+      return `• [${pct}] ${preview}${ellipsis}`;
+    }).join('\n');
+    blocks.push(`## Related\n${items}`);
   }
 
-  return `<agentreplay-context>
-The following is recalled context from your local Agent Replay memory.
-Data stored locally on this machine.
+  const body = blocks.join('\n\n');
 
-${sections.join('\n\n')}
+  return `<memory-context>
+Recalled from local Agent Replay storage.
 
-</agentreplay-context>`;
+${body}
+</memory-context>`;
 }
 
-module.exports = { formatContext, formatRelativeTime, deduplicateMemories };
+module.exports = {
+  buildContextBlock,
+  humanizeTimestamp,
+  removeDuplicates,
+};

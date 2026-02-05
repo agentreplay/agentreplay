@@ -114,6 +114,21 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
                 if let Ok(discovered) = registry.discover_projects() {
                     tracing::info!("Project registry discovered {} projects", discovered.len());
                 }
+                
+                // Register default "Claude Code" project (deterministic ID: 49455)
+                // This is used by the agentreplay-claude-plugin
+                const CLAUDE_CODE_PROJECT_ID: u16 = 49455;
+                if registry.get_metadata(CLAUDE_CODE_PROJECT_ID).is_none() {
+                    match registry.register_project(
+                        CLAUDE_CODE_PROJECT_ID,
+                        "Claude Code".to_string(),
+                        Some("Claude Code coding sessions (auto-registered)".to_string()),
+                    ) {
+                        Ok(_) => tracing::info!("Registered default 'Claude Code' project (ID: {})", CLAUDE_CODE_PROJECT_ID),
+                        Err(e) => tracing::warn!("Failed to register Claude Code project: {}", e),
+                    }
+                }
+                
                 Some(Arc::new(registry))
             }
             Err(e) => {

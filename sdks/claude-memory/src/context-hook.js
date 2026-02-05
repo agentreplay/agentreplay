@@ -1,98 +1,84 @@
-/**
- * SessionStart hook - Injects relevant memories into Claude Code context
+/*
+ * Session initialization hook
+ * Retrieves relevant memories and injects them into the new session
  */
 
-const { AgentReplayClient } = require('./lib/agentreplay-client');
-const { getContainerTag, getProjectName } = require('./lib/container-tag');
-const { loadSettings, getConfig, debugLog } = require('./lib/settings');
-const { readStdin, writeOutput } = require('./lib/stdin');
-const { formatContext } = require('./lib/format-context');
+const { MemoryService } = require('./lib/agentreplay-client');
+const { computeWorkspaceId, extractProjectLabel } = require('./lib/container-tag');
+const { loadConfig, getServerConfig, logDebug } = require('./lib/settings');
+const { parseInput, respond, complete } = require('./lib/stdin');
+const { buildContextBlock } = require('./lib/format-context');
 
-async function main() {
-  const settings = loadSettings();
+(async function run() {
+  const cfg = loadConfig();
 
   try {
-    const input = await readStdin();
-    const cwd = input.cwd || process.cwd();
-    const containerTag = getContainerTag(cwd);
-    const projectName = getProjectName(cwd);
+    const hookInput = await parseInput();
+    const workDir = hookInput.cwd ?? process.cwd();
+    const wsId = computeWorkspaceId(workDir);
+    const projectLabel = extractProjectLabel(workDir);
 
-    debugLog(settings, 'SessionStart', { cwd, containerTag, projectName });
+    logDebug(cfg, 'Session init', { workDir, wsId, projectLabel });
 
-    const config = getConfig(settings);
-    const client = new AgentReplayClient({
-      url: config.url,
-      tenantId: config.tenantId,
-      projectId: config.projectId,
-      containerTag,
+    const serverCfg = getServerConfig(cfg);
+    const memService = new MemoryService({
+      endpoint: serverCfg.endpoint,
+      tenant: serverCfg.tenant,
+      project: serverCfg.project,
+      collection: wsId,
     });
 
-    // Check if Agent Replay is running
-    const health = await client.healthCheck();
-    if (!health.healthy) {
-      debugLog(settings, 'Agent Replay not running', { error: health.error });
-      writeOutput({
+    // Verify server connectivity
+    const pingResult = await memService.ping();
+    if (!pingResult.ok) {
+      logDebug(cfg, 'Server offline', { reason: pingResult.reason });
+      respond({
         hookSpecificOutput: {
           hookEventName: 'SessionStart',
-          additionalContext: `<agentreplay-status>
-Agent Replay is not running at ${config.url}
-Start Agent Replay to enable persistent memory.
-Memories will be saved once Agent Replay is running.
-</agentreplay-status>`,
+          additionalContext: `<memory-status>
+Memory server unavailable at ${serverCfg.endpoint}
+Launch Agent Replay to enable persistent memory.
+Session continues without historical context.
+</memory-status>`,
         },
       });
       return;
     }
 
-    // Get profile/context for this workspace
-    const profileResult = await client
-      .getProfile(containerTag, projectName)
-      .catch(() => null);
+    // Fetch profile data
+    const profile = await memService.buildProfile(wsId, projectLabel).catch(() => null);
+    const contextXml = buildContextBlock(profile, true, false, cfg.contextLimit);
 
-    const additionalContext = formatContext(
-      profileResult,
-      true,
-      false,
-      settings.maxProfileItems,
-    );
-
-    if (!additionalContext) {
-      writeOutput({
+    if (!contextXml) {
+      respond({
         hookSpecificOutput: {
           hookEventName: 'SessionStart',
-          additionalContext: `<agentreplay-context>
-No previous memories found for ${projectName}.
-Memories will be saved locally as you work.
-All data stays on your machine.
-</agentreplay-context>`,
+          additionalContext: `<memory-status>
+No stored memories for "${projectLabel}".
+Context will accumulate as you work.
+</memory-status>`,
         },
       });
       return;
     }
 
-    debugLog(settings, 'Context generated', {
-      length: additionalContext.length,
-    });
-
-    writeOutput({
-      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext },
-    });
-  } catch (err) {
-    debugLog(settings, 'Error', { error: err.message });
-    console.error(`AgentReplay: ${err.message}`);
-    writeOutput({
+    logDebug(cfg, 'Context injected', { bytes: contextXml.length });
+    respond({
       hookSpecificOutput: {
         hookEventName: 'SessionStart',
-        additionalContext: `<agentreplay-status>
-Failed to load memories: ${err.message}
-Session will continue without memory context.
-</agentreplay-status>`,
+        additionalContext: contextXml,
+      },
+    });
+  } catch (err) {
+    logDebug(cfg, 'Hook error', { err: err.message });
+    process.stderr.write(`[memory-hook] ${err.message}\n`);
+    respond({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: `<memory-status>
+Memory retrieval failed: ${err.message}
+</memory-status>`,
       },
     });
   }
-}
-
-main().catch((err) => {
-  console.error(`AgentReplay fatal: ${err.message}`);
-  process.exit(1);
-});
+})();

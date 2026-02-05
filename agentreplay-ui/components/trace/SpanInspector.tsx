@@ -100,8 +100,11 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
         );
     };
 
-    // Extract structured data from metadata
-    const metadata = trace.metadata as any;
+    // Extract structured data from metadata/attributes
+    const metadata = {
+        ...((trace as any).attributes || {}),
+        ...(trace.metadata || {}),
+    } as any;
 
     // Parse prompts from gen_ai.prompt.N.* format (OTEL semantic conventions)
     const parseOtelPrompts = (): Array<{ role: string; content: string; toolCalls?: any[]; toolCallId?: string }> => {

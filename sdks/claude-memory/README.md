@@ -1,232 +1,159 @@
-# Claude-AgentReplay
+# Agent Replay Memory Plugin for Claude Code
 
-<div align="center">
+A Claude Code plugin that provides persistent, local-first memory storage using Agent Replay as the backend.
 
-### 🧠 Local-First Persistent Memory for Claude Code
+## Overview
 
-**No cloud. No subscriptions. Your data stays on your machine.**
+This plugin automatically captures your coding sessions and makes relevant context available in future sessions. Unlike cloud-based alternatives, all data remains on your local machine.
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-18%2B-green.svg)](https://nodejs.org/)
+**Key capabilities:**
+- Automatic session capture on stop
+- Context injection on session start
+- Semantic memory search
+- Manual memory storage via CLI
 
-</div>
+## Requirements
 
----
+- Node.js 18+
+- Agent Replay desktop app running locally
+- Claude Code CLI
 
-A Claude Code plugin that gives your AI persistent memory across sessions using [Agent Replay](https://agentreplay.dev).
-Your agent remembers what you worked on - across sessions, across projects - all stored locally.
-
-## ✨ Features
-
-- **🏠 Local-First**: All data stored on your machine via Agent Replay
-- **🔒 Private**: No cloud accounts, no data leaving your machine
-- **💾 Unlimited**: Use your full disk, no monthly limits
-- **🔄 Context Injection**: On session start, relevant memories are automatically injected
-- **📝 Automatic Capture**: Conversation turns are captured and stored for future context
-- **🔍 Semantic Search**: Find relevant memories using vector similarity
-- **📚 Codebase Indexing**: Index your project's architecture and conventions
-
-## 📦 Installation
-
-### Prerequisites
-
-1. **Agent Replay Desktop** must be running:
-   ```bash
-   # macOS
-   open /Applications/Agent\ Replay.app
-   
-   # Or run from source
-   cd agentreplay && ./run-tauri.sh
-   ```
-
-2. **Claude Code** installed
-
-### Install the Plugin
+## Setup
 
 ```bash
-# From the agentreplay/sdks/claude-memory directory
+# Build the plugin
+cd sdks/claude-memory
 npm install
 npm run build
 
-# Install to Claude Code plugins directory
-cp -r plugin ~/.claude/plugins/claude-agentreplay
+# Copy to Claude plugins directory
+cp -r plugin ~/.claude/plugins/agentreplay-memory
 ```
 
-Or add via Claude Code:
-
+Alternative: Add via Claude Code CLI:
 ```bash
-# Add from local directory
-/plugin marketplace add /path/to/agentreplay/sdks/claude-memory/plugin
-
-# Install the plugin
-/plugin install claude-agentreplay
+/plugin marketplace add /path/to/sdks/claude-memory/plugin
+/plugin install agentreplay-memory
 ```
 
-## 🚀 How It Works
+## How It Works
 
-### On Session Start
+### Session Start
 
-The plugin fetches relevant memories from your local Agent Replay and injects them into Claude's context:
+When you begin a new Claude Code session, the plugin queries your local Agent Replay instance for relevant memories and injects them as context:
 
-```
-<agentreplay-context>
-The following is recalled context from your local Agent Replay memory.
-Data stored locally on this machine.
+```xml
+<memory-context>
+Recalled from local Agent Replay storage.
 
-## User Preferences (Persistent)
-- Prefers TypeScript over JavaScript
-- Uses pnpm as package manager
+## Preferences
+• Prefers TypeScript with strict mode
+• Uses pnpm for package management
 
-## Recent Context
-- Working on authentication flow
-- Fixed issue with database connection
-
-</agentreplay-context>
+## Context
+• Working on user authentication module
+• Recently fixed database connection pooling
+</memory-context>
 ```
 
-### During Session
+### Session End
 
-Conversation turns are automatically captured when you stop and stored for future context.
+When you stop a session, new conversation content is automatically persisted to Agent Replay for future reference.
 
-### Skills
+### Manual Commands
 
-**memory-search**: When you ask about past work, previous sessions, or want to recall information, the agent automatically searches your local memories.
-
-## 📋 Commands
-
-### /claude-agentreplay:index
-
-Index your codebase into Agent Replay. Explores project structure, architecture, conventions, and key files.
-
+**Index codebase:**
 ```
-/claude-agentreplay:index
+/agentreplay-memory:index
 ```
 
-### /claude-agentreplay:status
-
-Check Agent Replay connection and memory statistics.
-
+**Check status:**
 ```
-/claude-agentreplay:status
+/agentreplay-memory:status
 ```
 
-### /claude-agentreplay:clear
-
-Clear plugin settings (not memories).
-
+**Reset settings:**
 ```
-/claude-agentreplay:clear
+/agentreplay-memory:clear
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
 ```bash
-# Optional - defaults to localhost:47100
-AGENTREPLAY_URL=http://localhost:47100
-
-# Optional - for multi-tenant setups
-AGENTREPLAY_TENANT_ID=1
-AGENTREPLAY_PROJECT_ID=1
-
-# Optional
-AGENTREPLAY_SKIP_TOOLS=Read,Glob,Grep    # Tools to not capture
-AGENTREPLAY_DEBUG=true                    # Enable debug logging
+AGENTREPLAY_URL=http://localhost:47100    # Server endpoint
+AGENTREPLAY_TENANT_ID=1                   # Multi-tenant ID
+AGENTREPLAY_PROJECT_ID=1                  # Project scope
+AGENTREPLAY_DEBUG=true                    # Enable verbose logging
+AGENTREPLAY_SKIP_TOOLS=Read,Glob,Grep     # Tools to exclude from capture
 ```
 
-### Settings File
+### Config File
 
-Create `~/.agentreplay-claude/settings.json`:
+Location: `~/.agentreplay-claude/config.json`
 
 ```json
 {
-  "url": "http://localhost:47100",
+  "serverUrl": "http://localhost:47100",
   "tenantId": 1,
   "projectId": 1,
-  "skipTools": ["Read", "Glob", "Grep", "TodoWrite"],
-  "captureTools": ["Edit", "Write", "Bash", "Task"],
-  "maxProfileItems": 5,
-  "debug": false
+  "ignoredTools": ["Read", "Glob", "Grep", "TodoWrite"],
+  "trackedTools": ["Edit", "Write", "Bash", "Task"],
+  "contextLimit": 5,
+  "verbose": false,
+  "autoInject": true
 }
 ```
 
-## 🏗️ Architecture
+## Project Layout
 
 ```
 claude-memory/
-├── package.json           # Build tools package
-├── biome.json            # Linting config
+├── package.json
+├── biome.json
 ├── scripts/
-│   └── build.js          # esbuild bundler
+│   └── build.js
 ├── src/
-│   ├── context-hook.js   # SessionStart - injects memories
-│   ├── summary-hook.js   # Stop - saves conversation
-│   ├── prompt-hook.js    # UserPromptSubmit handler
-│   ├── observation-hook.js # PostToolUse handler
-│   ├── search-memory.js  # CLI search tool
-│   ├── add-memory.js     # CLI add tool
+│   ├── context-hook.js      # Session start handler
+│   ├── summary-hook.js      # Session end handler
+│   ├── prompt-hook.js       # Prompt handler
+│   ├── observation-hook.js  # Tool use handler
+│   ├── add-memory.js        # CLI: store content
+│   ├── search-memory.js     # CLI: query memories
 │   └── lib/
-│       ├── agentreplay-client.js  # API client
-│       ├── settings.js            # Config management
-│       ├── container-tag.js       # Workspace ID
-│       ├── format-context.js      # Context formatting
-│       ├── stdin.js               # Hook I/O
+│       ├── agentreplay-client.js   # HTTP client
+│       ├── settings.js             # Config management
+│       ├── container-tag.js        # Workspace identification
+│       ├── format-context.js       # Context XML builder
+│       ├── stdin.js                # Hook I/O
 │       ├── transcript-formatter.js # Session parsing
-│       └── validate.js            # Input validation
-└── plugin/               # Claude Code plugin (built)
+│       └── validate.js             # Input checks
+└── plugin/
     ├── .claude-plugin/
     │   └── plugin.json
     ├── hooks/
-    │   └── hooks.json
     ├── commands/
-    │   ├── index.md
-    │   ├── status.md
-    │   └── clear.md
     ├── skills/
-    │   └── memory-search/
-    │       └── SKILL.md
-    └── scripts/          # Built CJS bundles
+    └── scripts/
 ```
 
-## 🔒 Privacy
+## Privacy
 
-Unlike cloud-based memory solutions:
+- All data stored locally via Agent Replay
+- No external network requests
+- No cloud accounts or API keys required
+- Full control over your data
 
-- **All data stays local**: Memories are stored in Agent Replay on your machine
-- **No external API calls**: The plugin only talks to localhost:47100
-- **No accounts required**: No signup, no API keys to manage
-- **Full control**: Delete your data anytime by clearing Agent Replay storage
-
-## 🛠️ Development
+## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Build plugin
-npm run build
-
-# Watch mode (rebuild on changes)
-npm run build -- --watch
-
-# Lint
-npm run lint
-
-# Format
-npm run format
+npm install       # Install dependencies
+npm run build     # Build plugin bundles
+npm run lint      # Run linter
+npm run format    # Format code
 ```
 
-## 📄 License
+## License
 
-MIT - See [LICENSE](LICENSE)
-
----
-
-<div align="center">
-  <p>Built with ❤️ by the Agent Replay team</p>
-  <p>
-    <a href="https://agentreplay.dev">Website</a> •
-    <a href="https://github.com/sochdb/agentreplay">GitHub</a>
-  </p>
-</div>
+MIT

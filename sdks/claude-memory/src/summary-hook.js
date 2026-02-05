@@ -1,81 +1,76 @@
-/**
- * Stop hook - Saves conversation turn to Agent Replay memory
+/*
+ * Session end hook
+ * Persists new conversation content to memory storage
  */
 
-const { AgentReplayClient } = require('./lib/agentreplay-client');
-const { getContainerTag, getProjectName } = require('./lib/container-tag');
-const { loadSettings, getConfig, debugLog } = require('./lib/settings');
-const { readStdin, writeOutput } = require('./lib/stdin');
-const { formatNewEntries } = require('./lib/transcript-formatter');
+const { MemoryService } = require('./lib/agentreplay-client');
+const { computeWorkspaceId, extractProjectLabel } = require('./lib/container-tag');
+const { loadConfig, getServerConfig, logDebug } = require('./lib/settings');
+const { parseInput, respond } = require('./lib/stdin');
+const { extractNewContent } = require('./lib/transcript-formatter');
 
-async function main() {
-  const settings = loadSettings();
+(async function run() {
+  const cfg = loadConfig();
 
   try {
-    const input = await readStdin();
-    const cwd = input.cwd || process.cwd();
-    const sessionId = input.session_id;
-    const transcriptPath = input.transcript_path;
+    const hookInput = await parseInput();
+    const workDir = hookInput.cwd ?? process.cwd();
+    const sid = hookInput.session_id;
+    const transcriptFile = hookInput.transcript_path;
 
-    debugLog(settings, 'Stop', { sessionId, transcriptPath });
+    logDebug(cfg, 'Session end', { sid, transcriptFile });
 
-    if (!transcriptPath || !sessionId) {
-      debugLog(settings, 'Missing transcript path or session id');
-      writeOutput({ continue: true });
+    if (!transcriptFile || !sid) {
+      logDebug(cfg, 'Missing session data, skipping');
+      respond({ continue: true });
       return;
     }
 
-    const config = getConfig(settings);
-    const containerTag = getContainerTag(cwd);
-    const projectName = getProjectName(cwd);
+    const serverCfg = getServerConfig(cfg);
+    const wsId = computeWorkspaceId(workDir);
+    const projectLabel = extractProjectLabel(workDir);
 
-    const client = new AgentReplayClient({
-      url: config.url,
-      tenantId: config.tenantId,
-      projectId: config.projectId,
-      containerTag,
+    const memService = new MemoryService({
+      endpoint: serverCfg.endpoint,
+      tenant: serverCfg.tenant,
+      project: serverCfg.project,
+      collection: wsId,
     });
 
-    // Check if Agent Replay is running
-    const health = await client.healthCheck();
-    if (!health.healthy) {
-      debugLog(settings, 'Agent Replay not running, skipping save');
-      writeOutput({ continue: true });
+    // Skip if server unavailable
+    const pingResult = await memService.ping();
+    if (!pingResult.ok) {
+      logDebug(cfg, 'Server offline, session not saved');
+      respond({ continue: true });
       return;
     }
 
-    // Format new entries from transcript
-    const formatted = formatNewEntries(transcriptPath, sessionId);
-
-    if (!formatted) {
-      debugLog(settings, 'No new content to save');
-      writeOutput({ continue: true });
+    // Get new conversation content
+    const newContent = extractNewContent(transcriptFile, sid);
+    if (!newContent) {
+      logDebug(cfg, 'No new content');
+      respond({ continue: true });
       return;
     }
 
-    // Save to Agent Replay
-    await client.addMemory(
-      formatted,
-      containerTag,
+    // Persist to memory
+    await memService.store(
+      newContent,
+      wsId,
       {
-        type: 'session_turn',
-        project: projectName,
-        timestamp: new Date().toISOString(),
-        session_id: sessionId,
+        kind: 'conversation_turn',
+        project: projectLabel,
+        when: new Date().toISOString(),
+        sid: sid,
       },
-      sessionId,
+      sid
     );
 
-    debugLog(settings, 'Session turn saved', { length: formatted.length });
-    writeOutput({ continue: true });
+    logDebug(cfg, 'Content saved', { chars: newContent.length });
+    respond({ continue: true });
   } catch (err) {
-    debugLog(settings, 'Error', { error: err.message });
-    console.error(`AgentReplay: ${err.message}`);
-    writeOutput({ continue: true });
+    logDebug(cfg, 'Save error', { err: err.message });
+    process.stderr.write(`[memory-hook] ${err.message}\n`);
+    respond({ continue: true });
   }
-}
-
-main().catch((err) => {
-  console.error(`AgentReplay fatal: ${err.message}`);
-  process.exit(1);
-});
+})();

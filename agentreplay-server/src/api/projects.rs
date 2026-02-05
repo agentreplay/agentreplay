@@ -73,6 +73,16 @@ pub struct ProjectsResponse {
     pub total: usize,
 }
 
+/// Well-known project IDs with predefined names
+/// Used in single-database mode when project registry is not available
+fn get_known_project_name(project_id: u16) -> Option<(&'static str, &'static str)> {
+    match project_id {
+        // Claude Code plugin uses deterministic hash of "Claude Code" = 49455
+        49455 => Some(("Claude Code", "Claude Code coding sessions")),
+        _ => None,
+    }
+}
+
 /// GET /api/v1/projects
 /// List all projects (collections) for the authenticated tenant
 pub async fn list_projects(
@@ -151,13 +161,22 @@ pub async fn list_projects(
         // Create project objects
         let mut projects: Vec<Project> = project_stats
             .into_iter()
-            .map(|(project_id, trace_count)| Project {
-                project_id,
-                name: format!("Project {}", project_id),
-                description: Some(format!("Collection with {} traces", trace_count)),
-                created_at: 0, // TODO: Store actual creation time
-                trace_count,
-                favorite: project_id == 0, // Default project is favorite
+            .map(|(project_id, trace_count)| {
+                // Check for well-known project IDs
+                let (name, description) = if let Some((known_name, known_desc)) = get_known_project_name(project_id) {
+                    (known_name.to_string(), Some(known_desc.to_string()))
+                } else {
+                    (format!("Project {}", project_id), Some(format!("Collection with {} traces", trace_count)))
+                };
+                
+                Project {
+                    project_id,
+                    name,
+                    description,
+                    created_at: 0, // TODO: Store actual creation time
+                    trace_count,
+                    favorite: project_id == 0, // Default project is favorite
+                }
             })
             .collect();
 

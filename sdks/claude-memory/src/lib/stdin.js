@@ -1,43 +1,65 @@
-/**
- * Stdin/Stdout utilities for Claude Code plugin hooks
+/*
+ * Plugin I/O handlers for Claude Code hook communication
  */
 
-async function readStdin() {
+// Parse JSON from standard input stream
+function parseInput() {
   return new Promise((resolve, reject) => {
-    let data = '';
+    if (process.stdin.isTTY) {
+      resolve({});
+      return;
+    }
+
+    const chunks = [];
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (chunk) => {
-      data += chunk;
-    });
-    process.stdin.on('end', () => {
-      try {
-        resolve(data.trim() ? JSON.parse(data) : {});
-      } catch (err) {
-        reject(new Error(`Failed to parse stdin JSON: ${err.message}`));
+
+    process.stdin.on('readable', () => {
+      let chunk;
+      while ((chunk = process.stdin.read()) !== null) {
+        chunks.push(chunk);
       }
     });
+
+    process.stdin.on('end', () => {
+      const raw = chunks.join('');
+      if (!raw.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch (parseErr) {
+        reject(new Error(`Invalid JSON input: ${parseErr.message}`));
+      }
+    });
+
     process.stdin.on('error', reject);
-    if (process.stdin.isTTY) resolve({});
   });
 }
 
-function writeOutput(data) {
-  console.log(JSON.stringify(data));
+// Send structured response to stdout
+function respond(payload) {
+  process.stdout.write(JSON.stringify(payload) + '\n');
 }
 
-function outputSuccess(additionalContext = null) {
-  if (additionalContext) {
-    writeOutput({
-      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext },
+// Signal successful hook completion
+function complete(injectedContext = null) {
+  if (injectedContext !== null) {
+    respond({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: injectedContext,
+      },
     });
   } else {
-    writeOutput({ continue: true, suppressOutput: true });
+    respond({ continue: true, suppressOutput: true });
   }
 }
 
-function outputError(message) {
-  console.error(`AgentReplay: ${message}`);
-  writeOutput({ continue: true, suppressOutput: true });
+// Log error and continue
+function fail(msg) {
+  process.stderr.write(`[AgentReplay] ${msg}\n`);
+  respond({ continue: true, suppressOutput: true });
 }
 
-module.exports = { readStdin, writeOutput, outputSuccess, outputError };
+module.exports = { parseInput, respond, complete, fail };

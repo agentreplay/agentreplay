@@ -1,42 +1,39 @@
-/**
- * Container tag utilities for workspace identification
+/*
+ * Workspace identification utilities
+ * Generates stable identifiers for project directories
  */
 
-const path = require('node:path');
-const crypto = require('node:crypto');
+const nodePath = require('node:path');
+const nodeCrypto = require('node:crypto');
 
-/**
- * Generate a container tag from the workspace path
- * Uses a hash of the path to create a unique identifier
- */
-function getContainerTag(workspacePath) {
-  if (!workspacePath) {
-    return 'default';
-  }
-  
-  // Normalize the path
-  const normalized = path.resolve(workspacePath);
-  
-  // Create a short hash for uniqueness
-  const hash = crypto.createHash('md5').update(normalized).digest('hex').slice(0, 8);
-  
-  // Get the directory name for readability
-  const dirName = path.basename(normalized).toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
-    .slice(0, 32);
-  
-  return `${dirName}-${hash}`;
+// Create a fingerprint from workspace path
+function computeWorkspaceId(dirPath) {
+  if (!dirPath) return 'unnamed';
+
+  const absolutePath = nodePath.resolve(dirPath);
+  const fingerprint = nodeCrypto
+    .createHash('sha1')
+    .update(absolutePath)
+    .digest('hex')
+    .substring(0, 12);
+
+  const folderName = nodePath.basename(absolutePath);
+  const sanitized = folderName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    .substring(0, 24);
+
+  return sanitized ? `ws_${sanitized}_${fingerprint}` : `ws_${fingerprint}`;
 }
 
-/**
- * Get a human-readable project name from the path
- */
-function getProjectName(workspacePath) {
-  if (!workspacePath) {
-    return 'Unknown Project';
-  }
-  
-  return path.basename(workspacePath);
+// Extract display name from path
+function extractProjectLabel(dirPath) {
+  if (!dirPath) return 'Untitled';
+  return nodePath.basename(nodePath.resolve(dirPath));
 }
 
-module.exports = { getContainerTag, getProjectName };
+module.exports = {
+  computeWorkspaceId,
+  extractProjectLabel,
+};

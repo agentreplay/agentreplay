@@ -1,186 +1,170 @@
-/**
- * Agent Replay Client for Claude Code Plugin
- * 
- * Provides memory storage and retrieval via the local Agent Replay server.
- * Unlike cloud-based solutions, all data stays on your machine.
+/*
+ * MemoryService - HTTP client for Agent Replay local server
+ * Handles all communication with the memory backend
  */
 
-const {
-  validateUrl,
-  validateContainerTag,
-} = require('./validate.js');
+const http = require('node:http');
+const https = require('node:https');
 
-const DEFAULT_URL = 'http://localhost:47100';
-const DEFAULT_TENANT_ID = 1;
-const DEFAULT_PROJECT_ID = 1;
+// Server connection defaults
+const DEFAULTS = Object.freeze({
+  endpoint: 'http://localhost:47100',
+  tenant: 1,
+  project: 1,
+  requestTimeout: 30000,
+  collection: 'default',
+});
 
-class AgentReplayClient {
-  constructor(options = {}) {
-    this.url = (options.url || process.env.AGENTREPLAY_URL || DEFAULT_URL).replace(/\/$/, '');
-    this.tenantId = options.tenantId || parseInt(process.env.AGENTREPLAY_TENANT_ID || DEFAULT_TENANT_ID, 10);
-    this.projectId = options.projectId || parseInt(process.env.AGENTREPLAY_PROJECT_ID || DEFAULT_PROJECT_ID, 10);
-    this.containerTag = options.containerTag || 'default';
-    this.timeout = options.timeout || 30000;
-    
-    const urlCheck = validateUrl(this.url);
-    if (!urlCheck.valid) {
-      console.warn(`URL warning: ${urlCheck.reason}`);
-    }
+class MemoryService {
+  #baseUrl;
+  #tenantId;
+  #projectId;
+  #defaultCollection;
+  #timeoutMs;
+
+  constructor(config = {}) {
+    this.#baseUrl = this.#normalizeEndpoint(
+      config.endpoint ?? process.env.AGENTREPLAY_URL ?? DEFAULTS.endpoint
+    );
+    this.#tenantId = Number(config.tenant ?? process.env.AGENTREPLAY_TENANT_ID ?? DEFAULTS.tenant);
+    this.#projectId = Number(config.project ?? process.env.AGENTREPLAY_PROJECT_ID ?? DEFAULTS.project);
+    this.#defaultCollection = config.collection ?? DEFAULTS.collection;
+    this.#timeoutMs = config.timeout ?? DEFAULTS.requestTimeout;
   }
 
-  /**
-   * Check if Agent Replay server is running
-   */
-  async healthCheck() {
+  #normalizeEndpoint(url) {
+    return String(url).replace(/\/+$/, '');
+  }
+
+  get endpoint() {
+    return this.#baseUrl;
+  }
+
+  // Verify server is reachable
+  async ping() {
     try {
-      const response = await this._request('GET', '/api/v1/health');
-      return { healthy: true, ...response };
-    } catch (err) {
-      return { healthy: false, error: err.message };
+      await this.#httpCall('GET', '/api/v1/health');
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: e.message };
     }
   }
 
-  /**
-   * Add a memory/observation to Agent Replay
-   */
-  async addMemory(content, containerTag, metadata = {}, customId = null) {
-    const payload = {
-      content,
-      collection: containerTag || this.containerTag,
-      metadata: {
-        source: 'claude-code-plugin',
-        ...metadata,
-      },
+  // Store content in memory
+  async store(text, collection, meta = {}, docId = null) {
+    const requestBody = {
+      content: text,
+      collection: collection ?? this.#defaultCollection,
+      metadata: { origin: 'claude-plugin', ...meta },
     };
+    if (docId) requestBody.custom_id = docId;
 
-    if (customId) {
-      payload.custom_id = customId;
-    }
-
-    const result = await this._request('POST', '/api/v1/memory/ingest', payload);
+    const response = await this.#httpCall('POST', '/api/v1/memory/ingest', requestBody);
     return {
-      id: result.document_id,
-      success: result.success,
-      containerTag: containerTag || this.containerTag,
-      chunksCreated: result.chunks_created,
-      vectorsStored: result.vectors_stored,
+      documentId: response.document_id,
+      stored: response.success === true,
+      collection: collection ?? this.#defaultCollection,
+      chunks: response.chunks_created ?? 0,
+      vectors: response.vectors_stored ?? 0,
     };
   }
 
-  /**
-   * Search memories by semantic similarity
-   */
-  async search(query, containerTag, options = {}) {
-    const payload = {
-      query,
-      collection: containerTag || this.containerTag,
-      limit: options.limit || 10,
-      min_score: options.minScore || 0.0,
+  // Find similar memories
+  async find(queryText, collection, opts = {}) {
+    const requestBody = {
+      query: queryText,
+      collection: collection ?? this.#defaultCollection,
+      limit: opts.maxResults ?? 10,
+      min_score: opts.threshold ?? 0.0,
     };
 
-    const result = await this._request('POST', '/api/v1/memory/retrieve', payload);
+    const response = await this.#httpCall('POST', '/api/v1/memory/retrieve', requestBody);
+    const items = Array.isArray(response.results) ? response.results : [];
+
     return {
-      results: (result.results || []).map((r) => ({
-        id: r.document_id,
-        content: r.content || '',
-        score: r.score,
-        metadata: r.metadata,
-        chunkIndex: r.chunk_index,
+      matches: items.map((item) => ({
+        docId: item.document_id,
+        text: item.content ?? '',
+        relevance: item.score,
+        meta: item.metadata,
+        segment: item.chunk_index,
       })),
-      total: result.total_results,
-      query: result.query,
-      collection: result.collection,
+      count: response.total_results ?? items.length,
+      query: queryText,
     };
   }
 
-  /**
-   * Get profile/context for a workspace
-   * Returns both static preferences and recent dynamic context
-   */
-  async getProfile(containerTag, query) {
-    // For Agent Replay, we do a semantic search and categorize results
-    const searchResult = await this.search(query || '', containerTag, { limit: 20 });
-    
-    // Categorize results into static (persistent) and dynamic (recent)
-    const staticFacts = [];
-    const dynamicFacts = [];
-    
-    for (const r of searchResult.results) {
-      const metadata = r.metadata || {};
-      if (metadata.type === 'preference' || metadata.type === 'convention') {
-        staticFacts.push(r.content);
+  // Build context profile from memories
+  async buildProfile(collection, searchQuery) {
+    const searchResult = await this.find(searchQuery ?? '', collection, { maxResults: 20 });
+
+    const preferences = [];
+    const recentContext = [];
+
+    for (const match of searchResult.matches) {
+      const metaType = match.meta?.type;
+      const isPreference = metaType === 'preference' || metaType === 'convention';
+      if (isPreference) {
+        preferences.push(match.text);
       } else {
-        dynamicFacts.push(r.content);
+        recentContext.push(match.text);
       }
     }
-    
+
     return {
-      profile: {
-        static: staticFacts.slice(0, 10),
-        dynamic: dynamicFacts.slice(0, 10),
-      },
-      searchResults: searchResult,
+      preferences: preferences.slice(0, 10),
+      context: recentContext.slice(0, 10),
+      related: searchResult,
     };
   }
 
-  /**
-   * List memories in a collection
-   */
-  async listMemories(containerTag, limit = 20) {
-    const result = await this.search('', containerTag, { limit });
-    return { memories: result.results };
+  // Get all memories from collection
+  async browse(collection, count = 20) {
+    const result = await this.find('', collection, { maxResults: count });
+    return { items: result.matches };
   }
 
-  /**
-   * Get memory statistics
-   */
-  async getStats() {
-    return this._request('GET', '/api/v1/memory/stats');
+  // Server statistics
+  async statistics() {
+    return this.#httpCall('GET', '/api/v1/memory/stats');
   }
 
-  /**
-   * Get memory info and collections
-   */
-  async getInfo() {
-    return this._request('GET', '/api/v1/memory/info');
+  // Collection metadata
+  async metadata() {
+    return this.#httpCall('GET', '/api/v1/memory/info');
   }
 
-  /**
-   * Internal HTTP request helper
-   */
-  async _request(method, path, body = null) {
-    const url = `${this.url}${path}`;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-    
+  // Execute HTTP request
+  async #httpCall(verb, path, payload = null) {
+    const fullUrl = `${this.#baseUrl}${path}`;
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), this.#timeoutMs);
+
     try {
-      const options = {
-        method,
+      const reqOptions = {
+        method: verb,
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': String(this.tenantId),
-          'X-Project-ID': String(this.projectId),
+          'X-Tenant-ID': String(this.#tenantId),
+          'X-Project-ID': String(this.#projectId),
         },
-        signal: controller.signal,
+        signal: abort.signal,
       };
-      
-      if (body) {
-        options.body = JSON.stringify(body);
+
+      if (payload !== null) {
+        reqOptions.body = JSON.stringify(payload);
       }
-      
-      const response = await fetch(url, options);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Agent Replay API error (${response.status}): ${errorText}`);
+
+      const res = await fetch(fullUrl, reqOptions);
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errBody}`);
       }
-      
-      return await response.json();
+      return res.json();
     } finally {
-      clearTimeout(timeoutId);
+      clearTimeout(timer);
     }
   }
 }
 
-module.exports = { AgentReplayClient };
+module.exports = { MemoryService };

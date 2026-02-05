@@ -1,94 +1,94 @@
-/**
- * Transcript formatter for extracting new content from Claude Code sessions
+/*
+ * Session transcript processor
+ * Extracts and formats new conversation content for memory storage
  */
 
-const fs = require('node:fs');
-const path = require('node:path');
-const os = require('node:os');
+const nodeFs = require('node:fs');
+const nodePath = require('node:path');
+const nodeOs = require('node:os');
 
-const PROCESSED_DIR = path.join(os.homedir(), '.agentreplay-claude', 'processed');
+const STATE_DIR = nodePath.join(nodeOs.homedir(), '.agentreplay-claude', 'state');
 
-function ensureProcessedDir() {
-  if (!fs.existsSync(PROCESSED_DIR)) {
-    fs.mkdirSync(PROCESSED_DIR, { recursive: true });
+function initStateDir() {
+  if (!nodeFs.existsSync(STATE_DIR)) {
+    nodeFs.mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 });
   }
 }
 
-function getProcessedPath(sessionId) {
-  ensureProcessedDir();
-  return path.join(PROCESSED_DIR, `${sessionId}.json`);
+function stateFilePath(sid) {
+  initStateDir();
+  const safeSid = String(sid).replace(/[^a-zA-Z0-9_-]/g, '_');
+  return nodePath.join(STATE_DIR, `${safeSid}.state`);
 }
 
-function loadProcessedState(sessionId) {
-  const processedPath = getProcessedPath(sessionId);
+function readState(sid) {
   try {
-    if (fs.existsSync(processedPath)) {
-      return JSON.parse(fs.readFileSync(processedPath, 'utf-8'));
+    const fp = stateFilePath(sid);
+    if (nodeFs.existsSync(fp)) {
+      const raw = nodeFs.readFileSync(fp, 'utf8');
+      return JSON.parse(raw);
     }
   } catch {
-    // Ignore errors
+    // Fresh state on error
   }
-  return { lastProcessedIndex: 0, lastTimestamp: 0 };
+  return { cursor: 0, ts: 0 };
 }
 
-function saveProcessedState(sessionId, state) {
-  const processedPath = getProcessedPath(sessionId);
-  ensureProcessedDir();
-  fs.writeFileSync(processedPath, JSON.stringify(state, null, 2));
+function writeState(sid, state) {
+  const fp = stateFilePath(sid);
+  initStateDir();
+  nodeFs.writeFileSync(fp, JSON.stringify(state), 'utf8');
 }
 
-/**
- * Format new entries from transcript for storage
- */
-function formatNewEntries(transcriptPath, sessionId) {
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) {
+// Truncate long strings
+function clip(text, max) {
+  if (!text) return '';
+  return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
+// Process transcript and return only new entries
+function extractNewContent(transcriptFile, sessionId) {
+  if (!transcriptFile || !nodeFs.existsSync(transcriptFile)) {
     return null;
   }
 
+  let data;
   try {
-    const transcript = JSON.parse(fs.readFileSync(transcriptPath, 'utf-8'));
-    const entries = transcript.entries || transcript.messages || [];
-    
-    if (entries.length === 0) {
-      return null;
-    }
-
-    const state = loadProcessedState(sessionId);
-    const newEntries = entries.slice(state.lastProcessedIndex);
-    
-    if (newEntries.length === 0) {
-      return null;
-    }
-
-    // Format entries for storage
-    const formatted = newEntries.map((entry) => {
-      const role = entry.role || entry.type || 'unknown';
-      const content = entry.content || entry.message || '';
-      const toolName = entry.tool_name || entry.toolName;
-      
-      if (toolName) {
-        return `[${role}:${toolName}] ${truncate(content, 500)}`;
-      }
-      return `[${role}] ${truncate(content, 500)}`;
-    }).join('\n\n');
-
-    // Update processed state
-    saveProcessedState(sessionId, {
-      lastProcessedIndex: entries.length,
-      lastTimestamp: Date.now(),
-    });
-
-    return formatted;
-  } catch (err) {
-    console.error(`Error formatting transcript: ${err.message}`);
+    const raw = nodeFs.readFileSync(transcriptFile, 'utf8');
+    data = JSON.parse(raw);
+  } catch {
     return null;
   }
+
+  const allEntries = data.entries ?? data.messages ?? [];
+  if (allEntries.length === 0) return null;
+
+  const state = readState(sessionId);
+  const unprocessed = allEntries.slice(state.cursor);
+  if (unprocessed.length === 0) return null;
+
+  // Build formatted output
+  const lines = [];
+  for (const entry of unprocessed) {
+    const actor = entry.role ?? entry.type ?? 'system';
+    const body = entry.content ?? entry.message ?? '';
+    const tool = entry.tool_name ?? entry.toolName;
+
+    if (tool) {
+      lines.push(`[${actor}/${tool}] ${clip(body, 400)}`);
+    } else {
+      lines.push(`[${actor}] ${clip(body, 400)}`);
+    }
+  }
+
+  // Update state
+  writeState(sessionId, { cursor: allEntries.length, ts: Date.now() });
+
+  return lines.join('\n---\n');
 }
 
-function truncate(str, maxLen) {
-  if (!str) return '';
-  if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen) + '...';
-}
-
-module.exports = { formatNewEntries, loadProcessedState, saveProcessedState };
+module.exports = {
+  extractNewContent,
+  readState,
+  writeState,
+};

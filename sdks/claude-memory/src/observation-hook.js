@@ -1,28 +1,23 @@
-/**
- * PostToolUse hook - Placeholder for observation capture
+/*
+ * Tool observation hook
+ * Placeholder for capturing tool usage events
  */
 
-const { loadSettings, debugLog } = require('./lib/settings');
-const { readStdin, outputSuccess } = require('./lib/stdin');
+const { loadConfig, logDebug } = require('./lib/settings');
+const { parseInput, complete } = require('./lib/stdin');
 
-async function main() {
-  const settings = loadSettings();
+(async function run() {
+  const cfg = loadConfig();
 
   try {
-    const input = await readStdin();
-    const sessionId = input.session_id;
-    const toolName = input.tool_name;
-
-    debugLog(settings, 'PostToolUse', { sessionId, toolName });
-
-    outputSuccess();
+    const hookInput = await parseInput();
+    logDebug(cfg, 'Tool used', {
+      session: hookInput.session_id,
+      tool: hookInput.tool_name,
+    });
+    complete();
   } catch (err) {
-    debugLog(settings, 'Error', { error: err.message });
-    outputSuccess();
+    logDebug(cfg, 'Observation failed', { err: err.message });
+    complete();
   }
-}
-
-main().catch((err) => {
-  console.error(`AgentReplay fatal: ${err.message}`);
-  process.exit(1);
-});
+})();

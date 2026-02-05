@@ -1097,6 +1097,7 @@ export default function TraceDetailsPage() {
                           token_count: obs.tokens || (obs.inputTokens || 0) + (obs.outputTokens || 0),
                           sensitivity_flags: 0,
                           metadata: obs.metadata || obs.attributes,
+                          attributes: obs.attributes,
                           status: obs.status,
                           duration_ms: obs.duration || obs.duration_ms,
                           started_at: obs.startTime || obs.start_time,
@@ -1115,6 +1116,7 @@ export default function TraceDetailsPage() {
                           duration_ms: span.duration,
                           started_at: span.startTime,
                           metadata: span.metadata,
+                          attributes: (span as any).metadata,
                           parent_span_id: trace.span_id, // Assume child of root for synthetic
                           // Defaults
                           tenant_id: trace.tenant_id,
@@ -1141,7 +1143,7 @@ export default function TraceDetailsPage() {
                     onMessageSelect={(msg) => {
                       const obs = observations.find(o => o.span_id === msg.id || o.id === msg.id);
                       if (obs) {
-                        const meta = { ...trace, ...obs, span_id: obs.span_id || obs.id };
+                        const meta = { ...trace, ...obs, span_id: obs.span_id || obs.id, metadata: obs.metadata || obs.attributes, attributes: obs.attributes };
                         setSelectedSpan(meta as any);
                       } else if (trace) {
                         const synthetic: TraceMetadata = {
@@ -1167,7 +1169,7 @@ export default function TraceDetailsPage() {
                     onNodeClick={(node) => {
                       const obs = observations.find(o => o.edge_id === node.span_id || o.span_id === node.span_id);
                       if (obs) {
-                        setSelectedSpan({ ...trace, ...obs, span_id: node.span_id, metadata: obs.metadata || obs.attributes });
+                        setSelectedSpan({ ...trace, ...obs, span_id: node.span_id, metadata: obs.metadata || obs.attributes, attributes: obs.attributes });
                       }
                     }}
                   />
