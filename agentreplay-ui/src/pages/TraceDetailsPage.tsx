@@ -1097,7 +1097,6 @@ export default function TraceDetailsPage() {
                           token_count: obs.tokens || (obs.inputTokens || 0) + (obs.outputTokens || 0),
                           sensitivity_flags: 0,
                           metadata: obs.metadata || obs.attributes,
-                          attributes: obs.attributes,
                           status: obs.status,
                           duration_ms: obs.duration || obs.duration_ms,
                           started_at: obs.startTime || obs.start_time,
@@ -1116,7 +1115,6 @@ export default function TraceDetailsPage() {
                           duration_ms: span.duration,
                           started_at: span.startTime,
                           metadata: span.metadata,
-                          attributes: (span as any).metadata,
                           parent_span_id: trace.span_id, // Assume child of root for synthetic
                           // Defaults
                           tenant_id: trace.tenant_id,

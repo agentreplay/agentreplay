@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Terminal, Copy, Check, Info } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
 
 type UsageContext = 'observability' | 'memory' | 'claude';
 
@@ -15,8 +13,6 @@ interface EnvironmentConfigProps {
 export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentConfigProps) {
     const [usageContext, setUsageContext] = useState<UsageContext>('observability');
     const [copiedEnvVar, setCopiedEnvVar] = useState<string | null>(null);
-    const [bridgePath, setBridgePath] = useState<string>('');
-    const [autoDetectError, setAutoDetectError] = useState<string | null>(null);
 
     // Default env vars if not provided
     const effectiveEnvVars = envVars || {
@@ -24,32 +20,6 @@ export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentCon
         AGENTREPLAY_TENANT_ID: 'default',
         AGENTREPLAY_PROJECT_ID: projectId,
     };
-
-    // Auto-detect bridge path when Claude context is selected
-    useEffect(() => {
-        if (usageContext === 'claude') {
-            const detectPath = async () => {
-                try {
-                    // Use Tauri invoke to get the path
-                    // @ts-ignore - invoke might not be fully typed in all contexts
-                    if (typeof window !== 'undefined' && '__TAURI__' in window) {
-                        try {
-                            // @ts-ignore
-                            const path = await window.__TAURI__.core.invoke('get_bridge_path');
-                            setBridgePath(path);
-                            setAutoDetectError(null);
-                        } catch (e) {
-                            console.warn("Using default path, failed to auto-detect:", e);
-                            setAutoDetectError("Could not auto-detect path. Please verify installation.");
-                        }
-                    }
-                } catch (error) {
-                    console.error("Failed to detect bridge path:", error);
-                }
-            };
-            detectPath();
-        }
-    }, [usageContext]);
 
     const handleCopy = (text: string, label: string) => {
         if (onCopy) {
@@ -84,120 +54,88 @@ export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentCon
             </div>
 
             {usageContext === 'claude' ? (
-                /* Claude Code Configuration */
+                /* Claude Code Configuration - Marketplace Install */
                 <div className="space-y-4">
                     <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                         <div className="flex items-start gap-3">
                             <Terminal className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                            <div>
+                            <div className="flex-1">
                                 <h4 className="font-semibold text-blue-500 mb-1">
-                                    Configure Claude Code
+                                    Install Agent Replay Plugin
                                 </h4>
-                                <p className="text-sm text-textSecondary">
-                                    Add this configuration to your <code>settings.json</code> (VS Code) or <code>claude_desktop_config.json</code> (Claude Desktop).
+                                <p className="text-sm text-textSecondary mb-4">
+                                    Install the official Agent Replay plugin for Claude Code from the marketplace. This provides automatic tracing and persistent memory for your coding sessions.
                                 </p>
-                                <div className="mt-2 text-xs text-textTertiary space-y-1 bg-surface rounded p-2 border border-border-subtle">
-                                    <p className="font-medium text-textSecondary">Config Locations (macOS):</p>
-                                    <ul className="list-disc pl-4 space-y-0.5">
-                                        <li>
-                                            <span className="font-medium">VS Code:</span> <code>Cmd+Shift+P</code> &gt; "Open User Settings (JSON)"
-                                        </li>
-                                        <li>
-                                            <span className="font-medium">Claude Desktop:</span> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>
-                                        </li>
-                                    </ul>
-                                </div>
-                                {autoDetectError && (
-                                    <p className="text-xs text-yellow-500 mt-2">Warning: {autoDetectError}</p>
-                                )}
-                            </div>
-                        </div>
+                                
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-textSecondary uppercase tracking-wider mb-2">
+                                            Step 1: Run in Claude Code
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <pre className="flex-1 bg-surface-elevated rounded-lg p-3 overflow-x-auto border border-border-subtle">
+                                                <code className="text-green-400 font-mono text-sm">
+                                                    /plugin marketplace add agentreplay/agentreplay-claude-plugin
+                                                </code>
+                                            </pre>
+                                            <button
+                                                onClick={() => handleCopy('/plugin marketplace add agentreplay/agentreplay-claude-plugin', 'marketplace-cmd')}
+                                                className="px-3 py-2 bg-surface-hover hover:bg-surface-elevated border border-border rounded-lg text-sm font-medium text-textPrimary transition-colors flex items-center gap-2"
+                                            >
+                                                {copiedEnvVar === 'marketplace-cmd' ? (
+                                                    <>
+                                                        <Check className="w-4 h-4 text-green-500" />
+                                                        Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-4 h-4" />
+                                                        Copy
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-textSecondary uppercase tracking-wider">
-                                Bridge Script Path (index.js)
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={bridgePath}
-                                    onChange={(e) => setBridgePath(e.target.value)}
-                                    className="flex-1 px-3 py-2 bg-surface text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-textSecondary"
-                                    placeholder="/path/to/agentreplay-claude-bridge/dist/index.js"
-                                />
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            const selected = await open({
-                                                multiple: false,
-                                                filters: [{
-                                                    name: 'JavaScript',
-                                                    extensions: ['js']
-                                                }]
-                                            });
-                                            if (selected) {
-                                                setBridgePath(selected as string);
-                                                setAutoDetectError(null);
-                                            }
-                                        } catch (err) {
-                                            console.error("Failed to open dialog:", err);
-                                        }
-                                    }}
-                                    className="px-4 py-2 bg-surface-hover hover:bg-surface-elevated border border-border rounded-lg text-sm font-medium text-textPrimary transition-colors"
-                                >
-                                    Browse...
-                                </button>
+                                    <div>
+                                        <label className="block text-xs font-medium text-textSecondary uppercase tracking-wider mb-2">
+                                            Step 2: Restart Claude Code
+                                        </label>
+                                        <p className="text-sm text-textTertiary">
+                                            After installation, restart Claude Code to activate the plugin. Sessions will automatically appear in the <strong>Claude Code</strong> project.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-xs text-textTertiary">
-                                Select the <code>dist/index.js</code> file from the installed <code>agentreplay-claude-bridge</code> package. This assumes you have cloned the repo or have it installed locally.
-                            </p>
                         </div>
                     </div>
 
-                    <div className="relative">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-textPrimary">
-                                MCP Configuration
-                            </span>
-                            <button
-                                onClick={() => {
-                                    const config = {
-                                        "agentreplay-memory": {
-                                            "command": "node",
-                                            "args": [bridgePath],
-                                            "env": {
-                                                "AGENTREPLAY_URL": "http://127.0.0.1:47101/mcp"
-                                            }
-                                        }
-                                    };
-                                    handleCopy(JSON.stringify(config, null, 2), 'mcp-config');
-                                }}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary"
-                            >
-                                {copiedEnvVar === 'mcp-config' ? (
-                                    <>
-                                        <Check className="w-4 h-4 text-green-500" />
-                                        Copied!
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-4 h-4" />
-                                        Copy
-                                    </>
-                                )}
-                            </button>
+                    <div className="p-4 bg-surface rounded-lg border border-border">
+                        <h4 className="font-semibold text-textPrimary mb-3">What's Included</h4>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-start gap-2">
+                                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-textSecondary">Session tracing</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-textSecondary">Tool call tracking</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-textSecondary">Persistent memory</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-textSecondary">Context injection</span>
+                            </div>
                         </div>
-                        <pre className="bg-surface-elevated rounded-lg p-4 overflow-x-auto border border-border-subtle text-xs">
-                            <code className="text-textSecondary font-mono">
-                                {`"agentreplay-memory": {
-  "command": "node",
-  "args": ["${bridgePath}"],
-  "env": {
-    "AGENTREPLAY_URL": "http://127.0.0.1:9601/mcp"
-  }
-}`}
-                            </code>
-                        </pre>
+                    </div>
+
+                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p className="text-xs text-yellow-600">
+                            <strong>Note:</strong> Make sure Agent Replay server is running on <code>http://localhost:47100</code> before using Claude Code.
+                        </p>
                     </div>
                 </div>
             ) : (
