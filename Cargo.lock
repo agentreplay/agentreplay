@@ -6278,7 +6278,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb"
-version = "0.4.6"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddacf731740a5fb5c2daf8957d47d197eb1203691f2f931bfbdb77066c173748"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6299,7 +6301,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-core"
-version = "0.4.6"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb9516956a6753fee166a9eba25d9fb0bd3caf41cfbb32788f2d8806532fe7d2"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6320,7 +6324,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-index"
-version = "0.4.6"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "790a1bbfd2f570d737db48185de4ff638d2f71ecb2dcbf80e8895c2fe8fcc1b0"
 dependencies = [
  "array-init",
  "arrayvec",
@@ -6354,7 +6360,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-query"
-version = "0.4.6"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e83ee0e368639ac445811189316d34d09cd548c49bfb471aad847d4b9504a5ed"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6377,7 +6385,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-storage"
-version = "0.4.6"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a01d76cd4a4c08a70511e58ccb99b40bbf4f1ac12300b51aacda742b8cadbd7"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
