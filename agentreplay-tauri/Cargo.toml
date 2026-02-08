@@ -139,10 +139,3 @@ lto = true
 opt-level = "z"  # Optimize for size (more aggressive than "s")
 strip = true
 incremental = false
-
-[patch.crates-io]
-sochdb-core = { path = "../../sochdb/sochdb-core" }
-sochdb-storage = { path = "../../sochdb/sochdb-storage" }
-sochdb-index = { path = "../../sochdb/sochdb-index" }
-sochdb-query = { path = "../../sochdb/sochdb-query" }
-sochdb = { path = "../../sochdb/sochdb-client" }
