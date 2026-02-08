@@ -55,7 +55,7 @@
 
 | Platform | Download | Architecture |
 |----------|----------|--------------|
-| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
+| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_aarch64.dmg) | Apple Silicon (M1/M2/M3/M4) |
 | **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_x64.dmg) | Intel |
 
 
@@ -98,10 +98,10 @@ Install the official Agent Replay plugin for Claude Code:
 
 ```bash
 # Add the marketplace
-/plugin marketplace add sochdb/agentreplay-claude-plugin
+/plugin marketplace add agentreplay/agentreplay-claude-plugin
 
 # Install the plugin
-/plugin install agentreplay@sochdb-agentreplay-claude-plugin
+/plugin install agentreplay
 ```
 
 **Available Commands:**
@@ -110,7 +110,7 @@ Install the official Agent Replay plugin for Claude Code:
 - `/agentreplay:remember [query]` - Search memories
 - `/agentreplay:traces [count]` - List recent traces
 
-> See [agentreplay-claude-plugin](https://github.com/sochdb/agentreplay-claude-plugin) for full documentation.
+> See [agentreplay-claude-plugin](https://github.com/agentreplay/agentreplay-claude-plugin) for full documentation.
 
 ### Powered by SochDB - Everything Built-In
 
@@ -345,7 +345,7 @@ The primary way to run Agent Replay - a native desktop app:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sochdb/agentreplay.git
+git clone https://github.com/agentreplay/agentreplay.git
 cd agentreplay
 
 # Install frontend dependencies
@@ -988,7 +988,7 @@ We welcome contributions! Here's how to get started:
 ### Quick Start
 
 ```bash
-git clone https://github.com/sochdb/agentreplay.git
+git clone https://github.com/agentreplay/agentreplay.git
 cd agentreplay
 cargo build --workspace
 cargo test --workspace
@@ -1008,8 +1008,8 @@ cargo test --workspace
 
 | You are... | Start with... |
 |-----------|---------------|
-| New to the project | [Good First Issues](https://github.com/sochdb/agentreplay/labels/good%20first%20issue) |
-| Experienced in Rust | [Help Wanted](https://github.com/sochdb/agentreplay/labels/help%20wanted) |
+| New to the project | [Good First Issues](https://github.com/agentreplay/agentreplay/labels/good%20first%20issue) |
+| Experienced in Rust | [Help Wanted](https://github.com/agentreplay/agentreplay/labels/help%20wanted) |
 | Interested in storage | `agentreplay-storage` crate |
 | Interested in ML/vectors | `agentreplay-index` crate |
 | Interested in SDKs | `sdks/` directory |
@@ -1061,21 +1061,21 @@ Special thanks to the open-source community and all contributors.
 
 ## 🔗 Links
 
-- **GitHub**: [github.com/sochdb/agentreplay](https://github.com/sochdb/agentreplay)
-- **Documentation**: [sochdb.github.io/agentreplay](https://sochdb.github.io/agentreplay)
+- **GitHub**: [github.com/sochdb/agentreplay](https://github.com/agentreplay/agentreplay)
+- **Documentation**: [agentreplay.dev](agentreplay.dev)
 - **Python SDK**: [PyPI](https://pypi.org/project/agentreplay/)
 - **JavaScript SDK**: [npm](https://www.npmjs.com/package/agentreplay)
 - **Rust SDK**: [crates.io](https://crates.io/crates/agentreplay)
-- **Issues**: [Bug reports & feature requests](https://github.com/sochdb/agentreplay/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
+- **Issues**: [Bug reports & feature requests](https://github.com/agentreplay/agentreplay/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/agentreplay/agentreplay/discussions)
 
 ---
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/sochdb/agentreplay/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sochdb/agentreplay/discussions)
-- **Email**: support@agentreplay.dev (coming soon)
+- **Issues**: [GitHub Issues](https://github.com/agentreplay/agentreplay/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/agentreplay/agentreplay/discussions)
+- **Email**: support@agentreplay.dev
 
 ---
 
