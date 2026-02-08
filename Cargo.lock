@@ -6278,7 +6278,7 @@ dependencies = [
 
 [[package]]
 name = "sochdb"
-version = "0.4.4"
+version = "0.4.6"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6299,7 +6299,7 @@ dependencies = [
 
 [[package]]
 name = "sochdb-core"
-version = "0.4.4"
+version = "0.4.6"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6320,7 +6320,7 @@ dependencies = [
 
 [[package]]
 name = "sochdb-index"
-version = "0.4.4"
+version = "0.4.6"
 dependencies = [
  "array-init",
  "arrayvec",
@@ -6354,7 +6354,7 @@ dependencies = [
 
 [[package]]
 name = "sochdb-query"
-version = "0.4.4"
+version = "0.4.6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6377,7 +6377,7 @@ dependencies = [
 
 [[package]]
 name = "sochdb-storage"
-version = "0.4.4"
+version = "0.4.6"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",

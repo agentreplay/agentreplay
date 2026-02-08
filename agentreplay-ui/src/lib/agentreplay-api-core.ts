@@ -50,7 +50,7 @@ function getApiBaseUrl(): string {
     return ''; // Use Vite proxy
   }
 
-  // Fallback: direct connection to server
+  // Fallback: direct connection to standalone server
   return 'http://127.0.0.1:47100';
 }
 

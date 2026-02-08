@@ -239,11 +239,17 @@ export default function Search() {
                     // If there's remaining query text, do a simple text match
                     if (parsed.cleanQuery) {
                         const searchText = parsed.cleanQuery.toLowerCase();
+                        const meta = (t as any).metadata || {};
                         const traceText = [
                             t.model,
                             t.agent_name,
                             t.operation,
                             t.span_type,
+                            (t as any).input_preview,
+                            (t as any).output_preview,
+                            meta['tool.name'],
+                            meta['agent_id'],
+                            meta['event.type'],
                         ].filter(Boolean).join(' ').toLowerCase();
                         
                         if (!traceText.includes(searchText)) return false;

@@ -394,6 +394,10 @@ pub async fn list_traces(
                         return Some(s.chars().take(150).collect::<String>());
                     }
                 }
+                // Claude Code traces store tool input as "tool.input"
+                if let Some(tool_input) = a.get("tool.input").and_then(|v| v.as_str()) {
+                    return Some(tool_input.chars().take(150).collect::<String>());
+                }
                 if let Some(prompt) = a.get("prompt").and_then(|v| v.as_str()) {
                     return Some(prompt.chars().take(150).collect::<String>());
                 }
@@ -409,6 +413,10 @@ pub async fn list_traces(
                     if let Some(s) = output.as_str() {
                         return Some(s.chars().take(150).collect::<String>());
                     }
+                }
+                // Claude Code traces store tool output as "tool.output"
+                if let Some(tool_output) = a.get("tool.output").and_then(|v| v.as_str()) {
+                    return Some(tool_output.chars().take(150).collect::<String>());
                 }
                 if let Some(response) = a.get("response").and_then(|v| v.as_str()) {
                     return Some(response.chars().take(150).collect::<String>());
@@ -471,16 +479,17 @@ pub async fn list_traces(
         })
         .collect();
 
-    // NOTE: Since we're using an iterator, we don't have an exact total count
-    // without scanning all edges. For large datasets, we return an approximate
-    // count from database stats. For exact counts, clients can implement a
-    // separate count API or maintain count metadata.
-    let stats = state.db.stats();
-    let approximate_total = stats.causal_edges;
+    // Count actual matching traces in the time range + project filter
+    // This gives accurate totals instead of the misleading global stats count
+    let actual_total = state
+        .db
+        .query_temporal_range_iter(start_ts, end_ts)
+        .map(|iter| iter.filter(|e| params.project_id.map_or(true, |pid| e.project_id == pid)).count())
+        .unwrap_or(traces.len());
 
     Ok(ListTracesResponse {
         traces,
-        total: approximate_total,
+        total: actual_total,
         offset,
         limit,
     })
@@ -1610,13 +1619,30 @@ pub async fn list_projects(state: State<'_, AppState>) -> Result<ListProjectsRes
     let store = state.project_store.read();
     let projects = store.list();
 
+    // Count traces per project by scanning all edges
+    let now_us = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_micros() as u64;
+
     let project_infos: Vec<ProjectInfo> = projects
         .into_iter()
-        .map(|p| ProjectInfo {
-            project_id: p.id,
-            name: p.name,
-            created_at: p.created_at,
-            trace_count: 0, // TODO: Implement trace counting per project
+        .map(|p| {
+            let pid: u16 = p.id.parse().unwrap_or(0);
+            let count = if pid > 0 {
+                state.db
+                    .query_temporal_range_iter(0, now_us)
+                    .map(|iter| iter.filter(|e| e.project_id == pid).count())
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+            ProjectInfo {
+                project_id: p.id,
+                name: p.name,
+                created_at: p.created_at,
+                trace_count: count,
+            }
         })
         .collect();
 

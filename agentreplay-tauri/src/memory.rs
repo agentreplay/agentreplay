@@ -45,20 +45,33 @@ pub struct IngestMemoryRequest {
 #[derive(Debug, Serialize)]
 pub struct IngestMemoryResponse {
     pub id: String,
+    /// Alias for plugin compatibility (same as `id`)
+    pub document_id: String,
     pub collection: String,
     pub status: String,
+    /// Plugin compatibility: true when status == "stored"
+    pub success: bool,
+    /// Plugin compatibility: always 1 for single-chunk ingestion
+    pub chunks_created: usize,
 }
 
 /// Request to retrieve from memory
 #[derive(Debug, Deserialize)]
 pub struct RetrieveMemoryRequest {
-    /// Collection to search in
+    /// Collection to search in (empty or missing = search all collections)
+    #[serde(default)]
     pub collection: String,
     /// Query text
     pub query: String,
     /// Number of results to return
     #[serde(default = "default_k")]
     pub k: usize,
+    /// Alias for k (plugin compatibility) - if set, overrides k
+    #[serde(default)]
+    pub limit: Option<usize>,
+    /// Minimum similarity score (plugin compatibility, currently unused)
+    #[serde(default)]
+    pub min_score: Option<f32>,
 }
 
 fn default_k() -> usize {
@@ -82,7 +95,10 @@ pub struct RetrieveMemoryResponse {
     pub results: Vec<MemoryResult>,
     pub query: String,
     pub collection: String,
+    /// Total number of results returned (plugin compatibility)
+    pub total_results: usize,
 }
+
 
 /// Error response for memory operations
 #[derive(Debug, Serialize)]
@@ -97,6 +113,46 @@ struct MemoryPayload {
     collection: String,
     content: String,
     metadata: HashMap<String, String>,
+    /// Epoch seconds when this memory was created
+    #[serde(default)]
+    created_at: f64,
+}
+
+/// Request for listing memories (GET with query params)
+#[derive(Debug, Deserialize)]
+pub struct ListMemoryQuery {
+    /// Page number (1-indexed)
+    #[serde(default = "default_page")]
+    pub page: usize,
+    /// Items per page
+    #[serde(default = "default_per_page")]
+    pub per_page: usize,
+    /// Optional collection filter
+    #[serde(default)]
+    pub collection: Option<String>,
+}
+
+fn default_page() -> usize { 1 }
+fn default_per_page() -> usize { 10 }
+
+/// A memory item in the list response
+#[derive(Debug, Serialize)]
+pub struct MemoryListItem {
+    pub id: String,
+    pub collection: String,
+    pub content: String,
+    pub metadata: HashMap<String, String>,
+    pub created_at: f64,
+}
+
+/// Response for memory listing
+#[derive(Debug, Serialize)]
+pub struct ListMemoryResponse {
+    pub memories: Vec<MemoryListItem>,
+    pub total: usize,
+    pub page: usize,
+    pub per_page: usize,
+    pub total_pages: usize,
 }
 
 /// Maximum content length for ingestion
@@ -199,10 +255,16 @@ pub async fn ingest_memory(
     let id_str = format!("{:#x}", id);
 
     // Store payload in LSM tree
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs_f64())
+        .unwrap_or(0.0);
+
     let payload = MemoryPayload {
         collection: req.collection.clone(),
         content: req.content,
         metadata: req.metadata,
+        created_at: now,
     };
 
     let payload_bytes = match serde_json::to_vec(&payload) {
@@ -256,9 +318,12 @@ pub async fn ingest_memory(
     }
 
     Json(IngestMemoryResponse {
-        id: id_str,
+        id: id_str.clone(),
+        document_id: id_str,
         collection: req.collection,
         status: "stored".to_string(),
+        success: true,
+        chunks_created: 1,
     })
     .into_response()
 }
@@ -302,7 +367,8 @@ pub async fn retrieve_memory(
             .into_response();
     }
 
-    let k = req.k.min(MAX_K);
+    // Plugin sends `limit`, direct API sends `k` — use limit if provided
+    let k = req.limit.unwrap_or(req.k).min(MAX_K);
 
     tracing::info!(
         "Memory retrieval request: collection='{}', query='{}', k={}",
@@ -377,13 +443,21 @@ pub async fn retrieve_memory(
                     continue;
                 }
 
+                // Apply min_score filter: score is distance (lower = more similar)
+                // min_score is a threshold — skip results with distance > (1.0 - min_score)
+                if let Some(min_score) = req.min_score {
+                    if min_score > 0.0 && score > (1.5 - min_score) {
+                        continue;
+                    }
+                }
+
                 results.push(MemoryResult {
                     id: format!("{:#x}", id),
                     collection: payload.collection,
                     content: payload.content,
                     metadata: payload.metadata,
-                    score: score,
-                    timestamp: 0, // Timestamp not tracked in payload
+                    score,
+                    timestamp: payload.created_at as u64,
                 });
             } else {
                 tracing::warn!("Failed to deserialize payload for {:#x}", id);
@@ -393,10 +467,12 @@ pub async fn retrieve_memory(
         }
     }
 
+    let total_results = results.len();
     Json(RetrieveMemoryResponse {
         results,
         query: req.query,
         collection: req.collection,
+        total_results,
     })
     .into_response()
 }
@@ -593,4 +669,70 @@ pub async fn list_collections(
             "last_updated": now
         }]
     })).into_response()
+}
+
+/// GET /api/v1/memory/list - List all memories with pagination (newest first)
+///
+/// Unlike `/retrieve` which requires a search query, this endpoint lists
+/// all stored memories in reverse chronological order with pagination.
+/// Used by the Memory UI for browsing without needing a search query.
+pub async fn list_memories(
+    AxumState(state): AxumState<ServerState>,
+    axum::extract::Query(params): axum::extract::Query<ListMemoryQuery>,
+) -> impl IntoResponse {
+    let page = params.page.max(1);
+    let per_page = params.per_page.min(100).max(1);
+
+    tracing::info!(
+        "Memory list request: page={}, per_page={}, collection={:?}",
+        page, per_page, params.collection
+    );
+
+    // Get all vector IDs from the index
+    let all_ids = state.tauri_state.db.list_all_vector_ids();
+
+    // Fetch all payloads and optionally filter by collection
+    let mut all_memories: Vec<(u128, MemoryPayload)> = Vec::new();
+    for id in all_ids {
+        if let Ok(Some(payload_bytes)) = state.tauri_state.db.get_payload(id) {
+            if let Ok(payload) = serde_json::from_slice::<MemoryPayload>(&payload_bytes) {
+                // Filter by collection if specified
+                if let Some(ref col) = params.collection {
+                    if !col.is_empty() && payload.collection != *col {
+                        continue;
+                    }
+                }
+                all_memories.push((id, payload));
+            }
+        }
+    }
+
+    // Sort by created_at descending (newest first)
+    all_memories.sort_by(|a, b| b.1.created_at.partial_cmp(&a.1.created_at).unwrap_or(std::cmp::Ordering::Equal));
+
+    let total = all_memories.len();
+    let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };
+
+    // Paginate
+    let start = (page - 1) * per_page;
+    let memories: Vec<MemoryListItem> = all_memories
+        .into_iter()
+        .skip(start)
+        .take(per_page)
+        .map(|(id, payload)| MemoryListItem {
+            id: format!("{:#x}", id),
+            collection: payload.collection,
+            content: payload.content,
+            metadata: payload.metadata,
+            created_at: payload.created_at,
+        })
+        .collect();
+
+    Json(ListMemoryResponse {
+        memories,
+        total,
+        page,
+        per_page,
+        total_pages,
+    }).into_response()
 }

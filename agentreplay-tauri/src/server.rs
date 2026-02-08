@@ -50,6 +50,11 @@ use tracing::{debug, error, info, warn};
 const RATE_LIMIT_SPANS_PER_MINUTE: u32 = 10_000;
 const RATE_LIMIT_BURST_SIZE: u32 = 50_000;
 
+/// Deterministic project ID for "Claude Code" (hash-based)
+/// Legacy traces from older plugins have project_id=0 and should only
+/// appear under this project, not leak into other projects.
+const CLAUDE_CODE_PROJECT_ID: u16 = 49455;
+
 /// Shared state for the embedded HTTP server
 #[derive(Clone)]
 pub struct ServerState {
@@ -215,6 +220,7 @@ pub async fn start_embedded_server(host: String, port: u16, tauri_state: AppStat
         .route("/api/v1/memory/ingest", post(crate::memory::ingest_memory))
         .route("/api/v1/memory/retrieve", post(crate::memory::retrieve_memory))
         .route("/api/v1/memory/collections", get(crate::memory::list_collections))
+        .route("/api/v1/memory/list", get(crate::memory::list_memories))
         // MCP JSON-RPC endpoint (for ping health checks)
         .route("/api/v1/mcp", post(crate::memory::handle_mcp_jsonrpc))
         // SSE endpoint for real-time trace streaming
@@ -362,10 +368,11 @@ async fn query_traces(
     let max_latency_ms = params.get("max_latency_ms").and_then(|s| s.parse::<u64>().ok());
     let full_text_search = params.get("full_text_search").cloned();
 
-    // Query the database - STRICT: Only return traces for the specified project
+    // Query the database
+    // For the Claude Code project (49455), also include legacy traces with project_id=0
+    // since older plugin versions didn't set project_id correctly
     let edges = if let Some(pid) = project_id {
-        // Query only the specific project - no fallback to other projects
-        match state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(pid)) {
+        let mut project_edges = match state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(pid)) {
             Ok(edges) => edges,
             Err(e) => {
                 tracing::error!("Failed to query traces for project {}: {}", pid, e);
@@ -375,7 +382,17 @@ async fn query_traces(
                 )
                     .into_response();
             }
+        };
+        
+        // Include project_id=0 traces ONLY for Claude Code project (49455)
+        // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
+        if pid == CLAUDE_CODE_PROJECT_ID {
+            if let Ok(legacy_edges) = state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(0)) {
+                project_edges.extend(legacy_edges);
+            }
         }
+        
+        project_edges
     } else {
         // No project filter - return all traces (only when explicitly not filtering by project)
         match state.tauri_state.db.query_temporal_range(start_ts, end_ts) {
@@ -496,13 +513,21 @@ async fn query_traces(
                 .flatten()
                 .and_then(|payload| serde_json::from_slice::<serde_json::Value>(&payload).ok());
 
+            // Extract model (LLM model name, not tool name)
             let model = attributes
                 .as_ref()
                 .and_then(|a| {
                     a.get("model")
                         .or_else(|| a.get("gen_ai.request.model"))
                         .and_then(|v| v.as_str())
+                        .filter(|s| !s.is_empty())
                 })
+                .unwrap_or("");
+
+            // Extract agent_id from attributes for Claude Code identification
+            let agent_id_attr = attributes
+                .as_ref()
+                .and_then(|a| a.get("agent_id").and_then(|v| v.as_str()))
                 .unwrap_or("");
 
             let provider = attributes
@@ -512,12 +537,44 @@ async fn query_traces(
 
             let display_name = attributes
                 .as_ref()
-                .and_then(|a| a.get("operation_name").or_else(|| a.get("name")).and_then(|v| v.as_str()))
+                .and_then(|a| {
+                    a.get("operation_name")
+                        .or_else(|| a.get("name"))
+                        .and_then(|v| v.as_str())
+                })
                 .unwrap_or("");
             
             // Get readable span type name, use as fallback for display_name
             let span_type_name = span_type_to_string(edge.span_type);
-            let effective_display_name = if display_name.is_empty() { span_type_name } else { display_name };
+            
+            // For Claude Code traces, build a richer display name
+            // e.g. "Bash" for tool calls, "Session End" for events
+            let effective_display_name = if !display_name.is_empty() {
+                display_name.to_string()
+            } else {
+                let tool_name = attributes.as_ref()
+                    .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()));
+                let event_type = attributes.as_ref()
+                    .and_then(|a| a.get("event.type").and_then(|v| v.as_str()));
+                
+                if let Some(tool) = tool_name {
+                    format!("{} ({})", span_type_name, tool)
+                } else if let Some(evt) = event_type {
+                    // Convert event.type like "session_end" → "Session End"
+                    evt.replace('_', " ").split_whitespace()
+                        .map(|w| {
+                            let mut c = w.chars();
+                            match c.next() {
+                                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                                None => String::new(),
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                } else {
+                    span_type_name.to_string()
+                }
+            };
 
             let cost = attributes
                 .as_ref()
@@ -548,18 +605,39 @@ async fn query_traces(
             let input_preview = attributes.as_ref().and_then(|a| {
                 // Try GenAI semantic conventions first
                 if let Some(content) = a.get("gen_ai.prompt.0.content").and_then(|v| v.as_str()) {
-                    return Some(content.chars().take(150).collect::<String>());
+                    return Some(content.chars().take(200).collect::<String>());
                 }
                 // Try input field
                 if let Some(input) = a.get("input") {
                     if let Some(s) = input.as_str() {
-                        return Some(s.chars().take(150).collect::<String>());
+                        return Some(s.chars().take(200).collect::<String>());
                     }
-                    return Some(serde_json::to_string(input).unwrap_or_default().chars().take(150).collect());
+                    return Some(serde_json::to_string(input).unwrap_or_default().chars().take(200).collect());
+                }
+                // Try tool.input (Claude Code tool calls)
+                if let Some(tool_input) = a.get("tool.input").and_then(|v| v.as_str()) {
+                    // Parse JSON to extract just the command/description
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_input) {
+                        if let Some(cmd) = parsed.get("command").and_then(|v| v.as_str()) {
+                            return Some(cmd.chars().take(200).collect::<String>());
+                        }
+                        if let Some(desc) = parsed.get("description").and_then(|v| v.as_str()) {
+                            return Some(desc.chars().take(200).collect::<String>());
+                        }
+                    }
+                    return Some(tool_input.chars().take(200).collect::<String>());
                 }
                 // Try prompt field
                 if let Some(prompt) = a.get("prompt").and_then(|v| v.as_str()) {
-                    return Some(prompt.chars().take(150).collect::<String>());
+                    return Some(prompt.chars().take(200).collect::<String>());
+                }
+                // Try event.type for session events
+                if let Some(evt) = a.get("event.type").and_then(|v| v.as_str()) {
+                    let reason = a.get("session.end_reason").and_then(|v| v.as_str()).unwrap_or("");
+                    if !reason.is_empty() {
+                        return Some(format!("{} ({})", evt, reason));
+                    }
+                    return Some(evt.to_string());
                 }
                 None
             }).unwrap_or_default();
@@ -568,18 +646,35 @@ async fn query_traces(
             let output_preview = attributes.as_ref().and_then(|a| {
                 // Try GenAI semantic conventions first
                 if let Some(content) = a.get("gen_ai.completion.0.content").and_then(|v| v.as_str()) {
-                    return Some(content.chars().take(150).collect::<String>());
+                    return Some(content.chars().take(200).collect::<String>());
                 }
                 // Try output field
                 if let Some(output) = a.get("output") {
                     if let Some(s) = output.as_str() {
-                        return Some(s.chars().take(150).collect::<String>());
+                        return Some(s.chars().take(200).collect::<String>());
                     }
-                    return Some(serde_json::to_string(output).unwrap_or_default().chars().take(150).collect());
+                    return Some(serde_json::to_string(output).unwrap_or_default().chars().take(200).collect());
+                }
+                // Try tool.output (Claude Code tool calls)
+                if let Some(tool_output) = a.get("tool.output").and_then(|v| v.as_str()) {
+                    // Parse JSON to extract just stdout
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_output) {
+                        if let Some(stdout) = parsed.get("stdout").and_then(|v| v.as_str()) {
+                            if !stdout.is_empty() {
+                                return Some(stdout.chars().take(200).collect::<String>());
+                            }
+                        }
+                        if let Some(stderr) = parsed.get("stderr").and_then(|v| v.as_str()) {
+                            if !stderr.is_empty() {
+                                return Some(format!("stderr: {}", stderr.chars().take(180).collect::<String>()));
+                            }
+                        }
+                    }
+                    return Some(tool_output.chars().take(200).collect::<String>());
                 }
                 // Try response/completion fields
                 if let Some(resp) = a.get("response").or_else(|| a.get("completion")).and_then(|v| v.as_str()) {
-                    return Some(resp.chars().take(150).collect::<String>());
+                    return Some(resp.chars().take(200).collect::<String>());
                 }
                 None
             }).unwrap_or_default();
@@ -590,6 +685,21 @@ async fn query_traces(
                 .and_then(|a| a.get("status").and_then(|v| v.as_str()))
                 .unwrap_or("completed");
 
+            // Extract tool name for Claude Code traces
+            let tool_name = attributes
+                .as_ref()
+                .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()))
+                .unwrap_or("");
+
+            // Extract event type for session events
+            let event_type = attributes
+                .as_ref()
+                .and_then(|a| a.get("event.type").and_then(|v| v.as_str()))
+                .unwrap_or("");
+
+            // Determine if this is a Claude Code trace
+            let is_claude_code = agent_id_attr == "claude-code" || edge.project_id == CLAUDE_CODE_PROJECT_ID;
+
             serde_json::json!({
                 "trace_id": format!("{}", edge.edge_id),
                 "span_id": format!("{}", edge.edge_id),
@@ -598,12 +708,16 @@ async fn query_traces(
                 "duration_us": edge.duration_us,
                 "session_id": format!("{}", edge.session_id),
                 "agent_id": format!("{}", edge.agent_id),
-                "agent_name": format!("Agent {}", edge.agent_id),
+                "agent_id_attr": agent_id_attr,
+                "agent_name": if agent_id_attr == "claude-code" { "Claude Code".to_string() } else { format!("Agent {}", edge.agent_id) },
                 "model": model,
                 "provider": provider,
                 "display_name": effective_display_name,
                 "operation_name": effective_display_name,
                 "span_type": span_type_name,
+                "tool_name": tool_name,
+                "event_type": event_type,
+                "is_claude_code": is_claude_code,
                 "token_count": edge.token_count,
                 "tokens": edge.token_count,
                 "cost": cost,
@@ -611,15 +725,18 @@ async fn query_traces(
                 "confidence": edge.confidence,
                 "project_id": edge.project_id,
                 "tenant_id": format!("{}", edge.tenant_id),
+                "input": input_preview,
+                "output": output_preview,
                 "input_preview": input_preview,
                 "output_preview": output_preview,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "metadata": {
+                "metadata": serde_json::json!({
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "span_type": span_type_name,
-                }
+                }),
+                "attributes": &attributes
             })
         })
         .collect();
@@ -884,7 +1001,31 @@ async fn get_trace_by_id(
     
     // Get readable span type name, use as fallback for display_name
     let span_type_name = span_type_to_string(edge.span_type);
-    let effective_display_name = if display_name.is_empty() { span_type_name.to_string() } else { display_name };
+    let effective_display_name = if !display_name.is_empty() {
+        display_name
+    } else {
+        let tool_name = attributes.as_ref()
+            .and_then(|a| get_attr_str(a, &["tool.name"]));
+        let event_type = attributes.as_ref()
+            .and_then(|a| get_attr_str(a, &["event.type"]));
+        
+        if let Some(tool) = tool_name {
+            format!("{} ({})", span_type_name, tool)
+        } else if let Some(evt) = event_type {
+            evt.replace('_', " ").split_whitespace()
+                .map(|w| {
+                    let mut c = w.chars();
+                    match c.next() {
+                        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                        None => String::new(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        } else {
+            span_type_name.to_string()
+        }
+    };
 
     // Extract input/output - these can be in various formats
     let input = attributes.as_ref().and_then(|a| {
@@ -895,6 +1036,21 @@ async fn get_trace_by_id(
                     return Some(v.clone());
                 }
             }
+        }
+        // Try tool.input (Claude Code) - parse JSON to extract command
+        if let Some(v) = a.get("tool.input").and_then(|v| v.as_str()) {
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(v) {
+                return Some(parsed);
+            }
+            return Some(serde_json::Value::String(v.to_string()));
+        }
+        // Try event.type for session events
+        if let Some(evt) = a.get("event.type").and_then(|v| v.as_str()) {
+            let reason = a.get("session.end_reason").and_then(|v| v.as_str()).unwrap_or("");
+            if !reason.is_empty() {
+                return Some(serde_json::Value::String(format!("{} ({})", evt, reason)));
+            }
+            return Some(serde_json::Value::String(evt.to_string()));
         }
         None
     });
@@ -907,6 +1063,13 @@ async fn get_trace_by_id(
                     return Some(v.clone());
                 }
             }
+        }
+        // Try tool.output (Claude Code) - parse JSON to extract stdout
+        if let Some(v) = a.get("tool.output").and_then(|v| v.as_str()) {
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(v) {
+                return Some(parsed);
+            }
+            return Some(serde_json::Value::String(v.to_string()));
         }
         None
     });
@@ -1488,11 +1651,127 @@ async fn get_stats(AxumState(state): AxumState<ServerState>) -> impl IntoRespons
     }))
 }
 
-/// POST /api/v1/traces - Ingest a batch of spans
+/// Legacy trace format (v0.2.0 plugin compatibility)
+#[derive(Debug, Deserialize)]
+struct LegacyTraceRequest {
+    tenant_id: Option<serde_json::Value>,
+    project_id: Option<serde_json::Value>,
+    agent_id: Option<serde_json::Value>,
+    session_id: Option<serde_json::Value>,
+    span_type: Option<serde_json::Value>,
+    parent_edge_id: Option<String>,
+    token_count: Option<u32>,
+    duration_ms: Option<u64>,
+    metadata: Option<serde_json::Value>,
+    // Marker field that new format won't have - helps serde(untagged) differentiate
+    tool_name: Option<String>,
+}
+
+/// Flexible ingest request that accepts both new and legacy formats
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum FlexibleIngestRequest {
+    /// New format: { "spans": [...] }
+    NewFormat(IngestRequest),
+    /// Legacy format: { "tenant_id": ..., "project_id": ..., "span_type": ... }
+    LegacyFormat(LegacyTraceRequest),
+}
+
+/// Helper to extract a string value from a JSON value
+fn json_value_to_string(val: &Option<serde_json::Value>, default: &str) -> String {
+    match val {
+        Some(serde_json::Value::String(s)) => s.clone(),
+        Some(serde_json::Value::Number(n)) => n.to_string(),
+        Some(v) => v.to_string(),
+        None => default.to_string(),
+    }
+}
+
+/// Convert legacy trace request to a span for the standard pipeline
+fn convert_legacy_to_span(legacy: &LegacyTraceRequest) -> AgentreplaySpan {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    
+    let now_us = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_micros() as u64;
+    
+    // Generate pseudo-random IDs using timestamp + process info
+    let pid = std::process::id() as u64;
+    let span_id = format!("0x{:016x}", now_us.wrapping_mul(31).wrapping_add(pid));
+    let trace_id = format!("0x{:032x}", (now_us as u128).wrapping_mul(37).wrapping_add(pid as u128));
+    
+    let span_type_str = json_value_to_string(&legacy.span_type, "0");
+    let span_type_val: u32 = span_type_str.parse().unwrap_or(0);
+    let span_name = match span_type_val {
+        0 => "root".to_string(),
+        1 => "planning".to_string(),
+        2 => "reasoning".to_string(),
+        3 => "tool_call".to_string(),
+        4 => "tool_response".to_string(),
+        5 => "synthesis".to_string(),
+        _ => format!("span_{}", span_type_val),
+    };
+    
+    let duration_us = legacy.duration_ms.unwrap_or(1) * 1000;
+    
+    let mut attributes = HashMap::new();
+    attributes.insert("tenant_id".to_string(), json_value_to_string(&legacy.tenant_id, "1"));
+    // Default legacy traces to Claude Code project (49455) instead of 0
+    // This prevents future traces from being "orphaned" with project_id=0
+    let raw_project_id = json_value_to_string(&legacy.project_id, "0");
+    let project_id_str = if raw_project_id == "0" || raw_project_id == "1" {
+        CLAUDE_CODE_PROJECT_ID.to_string()
+    } else {
+        raw_project_id
+    };
+    attributes.insert("project_id".to_string(), project_id_str);
+    attributes.insert("agent_id".to_string(), json_value_to_string(&legacy.agent_id, "0"));
+    attributes.insert("session_id".to_string(), json_value_to_string(&legacy.session_id, "0"));
+    
+    if let Some(tool) = &legacy.tool_name {
+        attributes.insert("tool_name".to_string(), tool.clone());
+    }
+    
+    // Flatten metadata into attributes
+    if let Some(meta) = &legacy.metadata {
+        if let Some(obj) = meta.as_object() {
+            for (k, v) in obj {
+                let val = match v {
+                    serde_json::Value::String(s) => s.clone(),
+                    other => other.to_string(),
+                };
+                attributes.insert(k.clone(), val);
+            }
+        }
+    }
+    
+    AgentreplaySpan {
+        span_id,
+        trace_id,
+        parent_span_id: legacy.parent_edge_id.clone(),
+        name: span_name,
+        start_time: now_us,
+        end_time: Some(now_us + duration_us),
+        attributes,
+    }
+}
+
+/// POST /api/v1/traces - Ingest a batch of spans (supports both new and legacy formats)
 async fn ingest_traces(
     AxumState(state): AxumState<ServerState>,
-    Json(request): Json<IngestRequest>,
+    Json(request): Json<FlexibleIngestRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    // Handle both formats
+    let request = match request {
+        FlexibleIngestRequest::NewFormat(req) => req,
+        FlexibleIngestRequest::LegacyFormat(legacy) => {
+            debug!("Converting legacy trace format to spans");
+            let span = convert_legacy_to_span(&legacy);
+            IngestRequest { spans: vec![span] }
+        }
+    };
+    
     debug!("Ingesting {} spans", request.spans.len());
 
     if request.spans.is_empty() {
@@ -1814,6 +2093,7 @@ fn parse_span_name_to_type(name: &str) -> agentreplay_core::SpanType {
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
+    pub id: Option<u16>,
 }
 
 /// Response after creating a project
@@ -1838,12 +2118,38 @@ async fn create_project(
     AxumState(state): AxumState<ServerState>,
     Json(payload): Json<CreateProjectRequest>,
 ) -> impl IntoResponse {
-    // Generate a simple project ID based on time
-    let project_id = (SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        % 65535) as u16;
+    // Check if ID is provided in payload
+    // SPECIAL CASE: If name is "Claude Code", always use reserved ID 49455
+    let is_claude_code = payload.name.eq_ignore_ascii_case("claude code");
+    
+    let project_id_u16 = if is_claude_code {
+        49455
+    } else {
+        payload.id.unwrap_or_else(|| {
+            (SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+                % 65535) as u16
+        })
+    };
+    
+    let project_id_str = project_id_u16.to_string();
+
+    // CLEANUP: If this is "Claude Code", remove any existing projects with the same name but different ID
+    if is_claude_code {
+        // Use a block to scope the lock
+        {
+            let mut store = state.tauri_state.project_store.write();
+            let existing_projects = store.list();
+            for p in existing_projects {
+                if p.name.eq_ignore_ascii_case("claude code") && p.id != "49455" {
+                    tracing::warn!("Removing duplicate Claude Code project with incorrect ID: {}", p.id);
+                    let _ = store.remove(&p.id);
+                }
+            }
+        }
+    }
 
     // Get server config for URL
     let (host, port) = {
@@ -1857,12 +2163,12 @@ async fn create_project(
     let env_vars = EnvVariables {
         agentreplay_url: format!("http://{}:{}", host, port),
         tenant_id: "default".to_string(),
-        project_id: project_id.to_string(),
+        project_id: project_id_str.clone(),
     };
 
     // Create project object
     let project = crate::project_store::Project {
-        id: project_id.to_string(),
+        id: project_id_str.clone(),
         name: payload.name.clone(),
         description: payload.description.clone(),
         created_at: SystemTime::now()
@@ -1880,7 +2186,7 @@ async fn create_project(
     }
 
     Json(CreateProjectResponse {
-        project_id,
+        project_id: project_id_u16,
         name: payload.name,
         description: payload.description,
         env_vars,
@@ -3301,12 +3607,13 @@ async fn analytics_timeseries_handler(
             all_edges.extend(project_edges);
         }
         
-        // Also query project_id=0 (default/unassigned traces) if requested project isn't 0
-        if requested_project_id != 0 {
+        // Include project_id=0 traces ONLY for Claude Code project (49455)
+        // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
+        if requested_project_id == CLAUDE_CODE_PROJECT_ID {
             if let Ok(default_edges) = state.tauri_state.db.query_filtered(
                 params.start_time, params.end_time, None, Some(0)
             ) {
-                tracing::debug!("Analytics: Found {} edges for project_id=0 in time range", default_edges.len());
+                tracing::debug!("Analytics: Found {} edges for project_id=0 (legacy Claude Code)", default_edges.len());
                 all_edges.extend(default_edges);
             }
         }
@@ -4578,12 +4885,13 @@ async fn analytics_costs_handler(
             all_edges.extend(project_edges);
         }
         
-        // Also query project_id=0 (default/unassigned traces) if requested project isn't 0
-        if project_id != 0 {
+        // Include project_id=0 traces ONLY for Claude Code project (49455)
+        // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
+        if project_id == CLAUDE_CODE_PROJECT_ID as i64 {
             if let Ok(default_edges) = state.tauri_state.db.query_filtered(
                 start_time, end_time, None, Some(0)
             ) {
-                tracing::debug!("Cost analytics: Found {} edges for project_id=0", default_edges.len());
+                tracing::debug!("Cost analytics: Found {} edges for project_id=0 (legacy Claude Code)", default_edges.len());
                 all_edges.extend(default_edges);
             }
         }

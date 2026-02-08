@@ -33,6 +33,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import { API_BASE_URL } from '../lib/agentreplay-api-core';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 
 // ============================================================================
@@ -81,6 +82,7 @@ interface MCPInfoResponse {
 
 interface MemoryTrace {
   id: string;
+  collection: string;
   content: string;
   embedding_preview: number[];
   timestamp: number;
@@ -101,7 +103,7 @@ export default function MemoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/v1/memory/info');
+      const response = await fetch(`${API_BASE_URL}/api/v1/memory/info`);
       if (!response.ok) {
         throw new Error(`Failed to fetch MCP info: ${response.statusText}`);
       }
@@ -468,47 +470,51 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMemories, setTotalMemories] = useState(0);
+  const perPage = 10;
 
   const vectorCount = mcpInfo?.project.vector_count || 0;
 
   // Auto-load memories when tab mounts and we have vectors
   useEffect(() => {
     if (vectorCount > 0 && traces.length === 0 && !hasSearched) {
-      loadRecentMemories();
+      loadMemoryPage(1);
     }
   }, [vectorCount]);
 
-  const loadRecentMemories = async () => {
+  // Load memories via the list endpoint (paginated, newest first)
+  const loadMemoryPage = async (page: number) => {
     setSearching(true);
     setSearchError(null);
+    setIsSearchMode(false);
 
     try {
-      // Use a broad query to retrieve recent memories
-      const response = await fetch('/api/v1/memory/retrieve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          collection: '', // Empty = all collections
-          query: 'information knowledge data memory content',
-          k: 20
-        })
-      });
+      const response = await fetch(`${API_BASE_URL}/api/v1/memory/list?page=${page}&per_page=${perPage}`);
 
       if (!response.ok) {
         throw new Error(`Failed to load memories: ${response.statusText}`);
       }
 
       const data = await response.json();
-      const results: MemoryTrace[] = (data.results || []).map((r: any) => ({
+      const results: MemoryTrace[] = (data.memories || []).map((r: any) => ({
         id: r.id,
+        collection: r.collection || 'default',
         content: r.content || 'No content',
         embedding_preview: [],
-        timestamp: r.timestamp || Date.now() / 1000,
+        timestamp: r.created_at || 0,
         metadata: r.metadata || {},
-        similarity_score: r.score || 0,
+        similarity_score: undefined, // No score for listing
       }));
 
       setTraces(results);
+      setCurrentPage(data.page || 1);
+      setTotalPages(data.total_pages || 1);
+      setTotalMemories(data.total || 0);
       setHasSearched(true);
     } catch (err) {
       console.error("Load memories error:", err);
@@ -521,23 +527,23 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      loadRecentMemories();
+      loadMemoryPage(1);
       return;
     }
 
     setSearching(true);
     setSearchError(null);
     setHasSearched(true);
+    setIsSearchMode(true);
 
     try {
-      // Use the Memory API for semantic search
-      const response = await fetch('/api/v1/memory/retrieve', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/memory/retrieve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          collection: '', // Empty = all collections
+          collection: '',
           query: searchQuery,
-          k: 10
+          k: 20
         })
       });
 
@@ -546,18 +552,20 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
       }
 
       const data = await response.json();
-
-      // Map response to MemoryTrace format
       const results: MemoryTrace[] = (data.results || []).map((r: any) => ({
         id: r.id,
+        collection: r.collection || 'default',
         content: r.content || 'No content',
         embedding_preview: [],
-        timestamp: r.timestamp || Date.now() / 1000,
+        timestamp: r.timestamp || 0,
         metadata: r.metadata || {},
         similarity_score: r.score || 0,
       }));
 
       setTraces(results);
+      setTotalMemories(results.length);
+      setCurrentPage(1);
+      setTotalPages(1);
     } catch (err) {
       console.error("Search error:", err);
       setSearchError(err instanceof Error ? err.message : 'Search failed');
@@ -565,6 +573,28 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setIsSearchMode(false);
+    loadMemoryPage(1);
+  };
+
+  const formatTimestamp = (ts: number) => {
+    if (!ts || ts === 0) return '';
+    const d = new Date(ts * 1000);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -592,7 +622,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
             Search
           </button>
           <button
-            onClick={loadRecentMemories}
+            onClick={handleClearSearch}
             disabled={searching}
             className="px-4 py-2 bg-surface border border-border text-textPrimary rounded-lg hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             title="Load all stored memories"
@@ -633,48 +663,155 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-textPrimary">
-              {hasSearched && searchQuery ? 'Search Results' : 'Stored Memories'} ({traces.length})
+              {isSearchMode ? `Search Results for "${searchQuery}"` : 'Stored Memories'} ({totalMemories})
+              {isSearchMode && (
+                <button onClick={handleClearSearch} className="ml-2 text-xs text-primary hover:underline">✕ Clear</button>
+              )}
             </h3>
+            {!isSearchMode && totalPages > 1 && (
+              <span className="text-xs text-textTertiary">Page {currentPage} of {totalPages}</span>
+            )}
           </div>
-          {traces.map((trace) => (
-            <div key={trace.id} className="bg-surface border border-border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Database className="w-4 h-4 text-primary" />
+          {traces.map((trace) => {
+            const metaEntries = Object.entries(trace.metadata || {}).filter(
+              ([k]) => k !== 'type'
+            );
+            const kind = (trace.metadata?.kind || trace.metadata?.type || '') as string;
+            const project = (trace.metadata?.project || '') as string;
+            const source = (trace.metadata?.source || trace.metadata?.origin || '') as string;
+            const when = (trace.metadata?.when || '') as string;
+            const tags = (trace.metadata?.tags || '') as string;
+            const extraMeta = metaEntries.filter(
+              ([k]) => !['kind', 'type', 'project', 'source', 'origin', 'when', 'tags'].includes(k)
+            );
+
+            return (
+              <div key={trace.id} className="bg-surface border border-border rounded-lg p-4 hover:border-primary/30 transition-colors">
+                {/* Header Row */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Database className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-xs font-medium">
+                          {trace.collection}
+                        </span>
+                        {kind && (
+                          <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 text-xs font-medium">
+                            {kind}
+                          </span>
+                        )}
+                        {project && (
+                          <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 text-xs font-medium">
+                            {project}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-textTertiary mt-1 font-mono">
+                        {trace.id}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-textPrimary">
-                      {trace.metadata?.collection as string || trace.metadata?.type as string || 'memory'}
-                    </div>
-                    <div className="text-xs text-textTertiary">
-                      ID: {trace.id?.slice(0, 12)}...
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {trace.similarity_score !== undefined && trace.similarity_score > 0 && (
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${
+                        trace.similarity_score < 0.7
+                          ? 'bg-green-500/10 text-green-400'
+                          : trace.similarity_score < 0.85
+                            ? 'bg-yellow-500/10 text-yellow-400'
+                            : 'bg-red-500/10 text-red-400'
+                      }`}>
+                        dist: {trace.similarity_score.toFixed(3)}
+                      </div>
+                    )}
+                    {trace.timestamp > 0 && (
+                      <span className="text-xs text-textTertiary">
+                        {formatTimestamp(trace.timestamp)}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {trace.similarity_score !== undefined && trace.similarity_score > 0 && (
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${trace.similarity_score < 0.5
-                    ? 'bg-green-500/10 text-green-500'
-                    : trace.similarity_score < 0.7
-                      ? 'bg-yellow-500/10 text-yellow-500'
-                      : 'bg-red-500/10 text-red-400'
-                    }`}>
-                    {((1 - trace.similarity_score) * 100).toFixed(0)}% match
-                  </div>
-                )}
+
+                {/* Content */}
+                <div className="bg-background rounded-lg p-3 mb-3">
+                  <p className="text-textSecondary text-sm whitespace-pre-wrap leading-relaxed">{trace.content}</p>
+                </div>
+
+                {/* Metadata Row */}
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  {source && (
+                    <span className="flex items-center gap-1 text-textTertiary">
+                      <Zap className="w-3 h-3" />
+                      {source}
+                    </span>
+                  )}
+                  {when && (
+                    <span className="flex items-center gap-1 text-textTertiary">
+                      <Activity className="w-3 h-3" />
+                      {when}
+                    </span>
+                  )}
+                  {tags && (
+                    <div className="flex items-center gap-1">
+                      {tags.split(',').map((tag, i) => (
+                        <span key={i} className="px-1.5 py-0.5 rounded bg-surface border border-border text-textTertiary text-[10px]">
+                          {tag.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {extraMeta.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {extraMeta.map(([key, value]) => (
+                        <span key={key} className="text-textTertiary">
+                          <span className="text-textTertiary/60">{key}:</span> {String(value)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-textSecondary text-sm mb-3 whitespace-pre-wrap">{trace.content}</p>
-              <div className="flex items-center gap-4 text-xs text-textTertiary">
-                {typeof trace.metadata?.source === 'string' && <span>Source: {trace.metadata.source}</span>}
-                {typeof trace.metadata?.topic === 'string' && <span>Topic: {trace.metadata.topic}</span>}
-                {Object.keys(trace.metadata || {}).length > 0 && (
-                  <span className="text-textTertiary">
-                    {Object.keys(trace.metadata || {}).filter(k => !['source', 'topic', 'collection', 'type'].includes(k)).length} more fields
-                  </span>
-                )}
-              </div>
+            );
+          })}
+
+          {/* Pagination Controls */}
+          {!isSearchMode && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => loadMemoryPage(1)}
+                disabled={currentPage === 1 || searching}
+                className="px-3 py-1.5 text-xs bg-surface border border-border rounded-lg disabled:opacity-30 hover:bg-background"
+              >
+                First
+              </button>
+              <button
+                onClick={() => loadMemoryPage(currentPage - 1)}
+                disabled={currentPage === 1 || searching}
+                className="px-3 py-1.5 text-xs bg-surface border border-border rounded-lg disabled:opacity-30 hover:bg-background"
+              >
+                ← Prev
+              </button>
+              <span className="px-4 py-1.5 text-xs text-textSecondary">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => loadMemoryPage(currentPage + 1)}
+                disabled={currentPage === totalPages || searching}
+                className="px-3 py-1.5 text-xs bg-surface border border-border rounded-lg disabled:opacity-30 hover:bg-background"
+              >
+                Next →
+              </button>
+              <button
+                onClick={() => loadMemoryPage(totalPages)}
+                disabled={currentPage === totalPages || searching}
+                className="px-3 py-1.5 text-xs bg-surface border border-border rounded-lg disabled:opacity-30 hover:bg-background"
+              >
+                Last
+              </button>
             </div>
-          ))}
+          )}
         </div>
       ) : vectorCount === 0 ? (
         <div className="bg-surface border border-border rounded-xl p-12 text-center">
@@ -700,7 +837,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
           <AlertCircle className="w-12 h-12 text-error mx-auto mb-3" />
           <p className="text-error mb-2">{searchError}</p>
           <button
-            onClick={loadRecentMemories}
+            onClick={() => loadMemoryPage(1)}
             className="text-sm text-primary hover:underline"
           >
             Try loading memories again
@@ -711,7 +848,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
           <Search className="w-12 h-12 text-textTertiary mx-auto mb-3" />
           <p className="text-textSecondary">No memories match "{searchQuery}"</p>
           <button
-            onClick={loadRecentMemories}
+            onClick={() => loadMemoryPage(1)}
             className="mt-2 text-sm text-primary hover:underline"
           >
             Browse all memories instead
@@ -725,7 +862,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
           <p className="text-textPrimary font-medium mb-1">{vectorCount} memories stored</p>
           <p className="text-textSecondary text-sm mb-4">Search semantically or browse all</p>
           <button
-            onClick={loadRecentMemories}
+            onClick={() => loadMemoryPage(1)}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
           >
             Browse All Memories

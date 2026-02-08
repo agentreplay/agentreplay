@@ -31,7 +31,7 @@ tauri = { version = "2.9.2", features = ["tray-icon"] }
 
 # Official Tauri v2 plugins
 tauri-plugin-shell = "2.3.3"
-tauri-plugin-dialog = "2.4.0"
+tauri-plugin-dialog = "2.6.0"
 tauri-plugin-fs = "2.4.4"
 tauri-plugin-notification = "2.3.3"
 tauri-plugin-os = "2.3.2"
@@ -138,3 +138,10 @@ lto = true
 opt-level = "z"  # Optimize for size (more aggressive than "s")
 strip = true
 incremental = false
+
+[patch.crates-io]
+sochdb-core = { path = "../../sochdb/sochdb-core" }
+sochdb-storage = { path = "../../sochdb/sochdb-storage" }
+sochdb-index = { path = "../../sochdb/sochdb-index" }
+sochdb-query = { path = "../../sochdb/sochdb-query" }
+sochdb = { path = "../../sochdb/sochdb-client" }

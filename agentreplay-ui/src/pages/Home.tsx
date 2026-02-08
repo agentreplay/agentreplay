@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SetupWizard from '../../components/SetupWizard';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { agentreplayClient } from '../lib/agentreplay-api';
+import { agentreplayClient, API_BASE_URL } from '../lib/agentreplay-api';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -36,22 +36,57 @@ export default function Home() {
       return;
     }
 
-    // If not complete, check service health then show setup
-    const checkServiceHealth = async () => {
-      try {
-        await agentreplayClient.healthCheck();
-        setServiceStatus('online');
-      } catch (error) {
+    // If not complete, check if server has projects (e.g. Claude Code auto-created)
+    const checkAndRedirect = async () => {
+      // Wait for server to be ready (it may still be starting)
+      let serverReady = false;
+      for (let i = 0; i < 40; i++) {
+        try {
+          const health = await fetch(`${API_BASE_URL}/api/v1/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
+          if (health.ok) {
+            serverReady = true;
+            setServiceStatus('online');
+            break;
+          }
+        } catch {
+          // Server not ready yet
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (!serverReady) {
         setServiceStatus('offline');
-        setServiceError(error instanceof Error ? error.message : 'Connection failed');
-        console.error('Health check failed:', error);
-      } finally {
+        setServiceError('Server did not start in time');
         setShowSetup(true);
         setIsChecking(false);
+        return;
       }
+
+      try {
+        // Check if projects already exist (Claude Code is auto-created)
+        const response = await fetch(`${API_BASE_URL}/api/v1/projects`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.projects && data.projects.length > 0) {
+            // Projects exist - mark setup complete and skip wizard
+            localStorage.setItem('agentreplay_setup_complete', 'true');
+            localStorage.setItem('agentreplay_default_project', data.projects[0].project_id.toString());
+            navigate('/traces');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Project check failed:', error);
+      }
+
+      // No projects found, show setup wizard
+      setShowSetup(true);
+      setIsChecking(false);
     };
 
-    checkServiceHealth();
+    checkAndRedirect();
   }, [navigate]);
 
   const handleSetupComplete = (projectId: number) => {

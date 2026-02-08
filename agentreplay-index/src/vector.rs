@@ -556,6 +556,15 @@ impl VectorIndex {
         self.nodes.read().is_empty()
     }
 
+    /// Return all edge IDs stored in the index
+    ///
+    /// Used for listing all memory entries without requiring a search query.
+    /// Returns IDs in insertion order (oldest first).
+    pub fn all_edge_ids(&self) -> Vec<u128> {
+        let nodes = self.nodes.read();
+        nodes.iter().map(|n| n.edge_id).collect()
+    }
+
     /// Clear all vectors
     pub fn clear(&self) {
         self.nodes.write().clear();

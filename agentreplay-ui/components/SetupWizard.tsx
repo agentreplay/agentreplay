@@ -177,7 +177,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   ];
 
   // Helper function to wait for server to be ready
-  const waitForServer = async (maxRetries = 10, delayMs = 500): Promise<boolean> => {
+  const waitForServer = async (maxRetries = 30, delayMs = 500): Promise<boolean> => {
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/v1/health`, {
@@ -212,6 +212,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       let lastError: Error | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+          // Create the Main Project
           const response = await fetch(`${API_BASE_URL}/api/v1/projects`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -227,6 +228,18 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           }
 
           const data = await response.json();
+
+          // Create "Claude Code" Project (ID: 49455)
+          // We do this in parallel but don't fail the main flow if it fails (it might already exist)
+          fetch(`${API_BASE_URL}/api/v1/projects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: "Claude Code",
+              description: "Claude Code coding sessions",
+              id: 49455
+            }),
+          }).catch(err => console.error("Failed to create Claude Code project (it might already exist):", err));
 
           // Format the project data for the wizard
           const createdProjectData = {

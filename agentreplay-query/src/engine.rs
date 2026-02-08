@@ -1077,6 +1077,14 @@ impl Agentreplay {
         self.vector_index.clone()
     }
 
+    /// List all vector IDs in the index (for memory listing)
+    ///
+    /// Returns edge IDs in insertion order. Used by the memory list endpoint
+    /// to enumerate all stored memories without requiring a search query.
+    pub fn list_all_vector_ids(&self) -> Vec<u128> {
+        self.vector_index.all_edge_ids()
+    }
+
     // =================================================================
     // Evaluation Metrics API (Task 3)
     // =================================================================

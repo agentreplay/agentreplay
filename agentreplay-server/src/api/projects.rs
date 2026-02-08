@@ -39,6 +39,7 @@ pub struct Project {
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
+    pub id: Option<u16>,
 }
 
 /// Response after creating a project
@@ -264,27 +265,57 @@ pub async fn get_project(
 /// POST /api/v1/projects
 /// Create a new project with environment variables for SDK setup
 pub async fn create_project(
-    State(_state): State<AppState>,
     State(state): State<AppState>,
     auth: axum::Extension<AuthContext>,
-    Json(payload): Json<CreateProjectRequest>,
+    body: String,
 ) -> Result<Json<CreateProjectResponse>, ApiError> {
-    // Generate new project_id (timestamp-based for now)
-    let project_id = (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        % 65535) as u16;
+    let payload: CreateProjectRequest = serde_json::from_str(&body)
+        .map_err(|e| ApiError::BadRequest(format!("Invalid JSON: {}", e)))?;
+
+    // Check if ID is provided in payload, otherwise generate
+    // Check if ID is provided in payload
+    // SPECIAL CASE: If name is "Claude Code", always use reserved ID 49455
+    let is_claude_code = payload.name.eq_ignore_ascii_case("claude code");
+    let project_id = if is_claude_code {
+        49455
+    } else {
+        payload.id.unwrap_or_else(|| {
+            (std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+                % 65535) as u16
+        })
+    };
 
     // Register project in registry if available
     if let Some(ref registry) = state.project_registry {
-        registry
-            .register_project(
-                project_id,
-                payload.name.clone(),
-                payload.description.clone(),
-            )
-            .map_err(|e| ApiError::Internal(format!("Failed to register project: {}", e)))?;
+        // CLEANUP: If this is "Claude Code", remove any existing projects with the same name but different ID
+        // This fixes the issue where a previous run created "Claude Code" with a random ID
+        if is_claude_code {
+            let existing_projects = registry.list_projects();
+            for p in existing_projects {
+                if p.name.eq_ignore_ascii_case("claude code") && p.project_id != 49455 {
+                    tracing::warn!("Removing duplicate Claude Code project with incorrect ID: {}", p.project_id);
+                    registry.remove_project(p.project_id);
+                }
+            }
+        }
+
+        // Attempt to register. If it fails (e.g. exists), log it but don't fail the request if it's the specific Claude Code ID
+        // This allows idempotency for the background creation call
+        if let Err(e) = registry.register_project(
+            project_id,
+            payload.name.clone(),
+            payload.description.clone(),
+        ) {
+             // Only ignore error if it's "Claude Code" project which might already exist
+            if project_id == 49455 {
+                tracing::warn!("Claude Code project registration skipped (likely exists): {}", e);
+            } else {
+                return Err(ApiError::Internal(format!("Failed to register project: {}", e)));
+            }
+        }
     }
 
     let env_vars = EnvVariables {

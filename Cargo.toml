@@ -102,11 +102,11 @@ clap = { version = "4.4", features = ["derive"] }
 
 # SochDB integration (storage backend migration)
 # Using path dependencies to local SochDB workspace
-sochdb-core = { version = "0.4.4" }
-sochdb-storage = { version = "0.4.4" }
-sochdb-index = { version = "0.4.4" }
-sochdb-query = { version = "0.4.4" }
-sochdb = { version = "0.4.4", features = ["embedded"] }
+sochdb-core = { version = "0.4.6" }
+sochdb-storage = { version = "0.4.6" }
+sochdb-index = { version = "0.4.6" }
+sochdb-query = { version = "0.4.6" }
+sochdb = { version = "0.4.6", features = ["embedded"] }
 
 [patch.crates-io]
 sochdb-core = { path = "../sochdb/sochdb-core" }

@@ -33,14 +33,13 @@ import {
   GitBranch,
   Keyboard,
   DollarSign,
-  Code,
+  Bug,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
 
 const navItems = [
   { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1' },
-  { id: 'coding-sessions', label: 'Coding Sessions', icon: Code, segment: 'coding-sessions', shortcut: '0' },
   { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2' },
   { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3' },
   { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4' },
@@ -273,6 +272,23 @@ export default function Sidebar() {
           <kbd className="ml-auto px-1.5 py-0.5 rounded border border-border/60 bg-surface font-mono text-[10px]">⌘/</kbd>
         </button>
       )}
+
+      {/* Report Issue button */}
+      <a
+        href="https://github.com/agentreplay/agentreplay/issues"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          'flex items-center gap-2 mx-2 mb-2 rounded-md text-xs transition-colors',
+          collapsed
+            ? 'justify-center px-0 py-2 text-textTertiary hover:text-orange-400 hover:bg-orange-500/10'
+            : 'px-3 py-2 text-textTertiary hover:text-orange-400 hover:bg-orange-500/10'
+        )}
+        title="Report an issue on GitHub"
+      >
+        <Bug className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-3.5 h-3.5')} />
+        {!collapsed && <span>Report Issue</span>}
+      </a>
 
       {/* Keyboard shortcuts overlay */}
       {showShortcuts && (

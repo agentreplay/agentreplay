@@ -284,7 +284,7 @@ impl Default for AppConfig {
             },
             ingestion_server: IngestionServerConfig {
                 enabled: true, // Enabled by default for local ingestion
-                port: 9600,
+                port: 47100, // Must match UI's hardcoded API_BASE_URL port
                 host: "127.0.0.1".to_string(),
                 auth_token: None, // No auth by default for local-only access
                 max_connections: 1000,
@@ -309,14 +309,29 @@ impl AppConfig {
         // Fall back to JSON config in app data directory
         let config_path = Self::config_path(app_handle)?;
 
-        if config_path.exists() {
+        let mut config = if config_path.exists() {
             let contents = std::fs::read_to_string(&config_path)?;
-            Ok(serde_json::from_str(&contents)?)
+            serde_json::from_str(&contents)?
         } else {
-            let default_config = Self::default();
-            default_config.save(app_handle)?;
-            Ok(default_config)
+            Self::default()
+        };
+
+        // IMPORTANT: Always force ingestion port to 47100.
+        // The UI hardcodes http://127.0.0.1:47100 as API_BASE_URL.
+        // Old saved configs may have port 9600 which causes "Server not responding".
+        if config.ingestion_server.port != 47100 {
+            tracing::warn!(
+                "Migrating ingestion port from {} to 47100 (must match UI)",
+                config.ingestion_server.port
+            );
+            config.ingestion_server.port = 47100;
         }
+        config.ingestion_server.host = "127.0.0.1".to_string();
+        config.ingestion_server.enabled = true;
+
+        // Save (creates or migrates)
+        config.save(app_handle)?;
+        Ok(config)
     }
 
     fn load_from_toml(path: &str) -> Result<Self> {

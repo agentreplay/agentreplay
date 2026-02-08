@@ -1,0 +1,105 @@
+{
+  "_comment": "AgentReplay Video Configuration — Edit this file on GitHub to update videos in the app without rebuilding.",
+  "videos": {
+    "dashboard": {
+      "title": "Getting Started with Agentreplay",
+      "description": "Learn how to navigate the dashboard and understand your AI agent traces.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "traces": {
+      "title": "Understanding Traces",
+      "description": "How to view, filter, and analyze your LLM traces.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "sessions": {
+      "title": "Session Management",
+      "description": "View and analyze conversation sessions.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "agents": {
+      "title": "System Map & Agents",
+      "description": "Visualize your AI system topology.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "timeline": {
+      "title": "Timeline View",
+      "description": "Visualize trace execution over time.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "search": {
+      "title": "Semantic Search",
+      "description": "Use AI-powered natural language search.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "insights": {
+      "title": "AI Insights",
+      "description": "Automatic anomaly detection and pattern recognition.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "prompts": {
+      "title": "Prompt Registry",
+      "description": "Version control and manage your prompts.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "compare": {
+      "title": "Model Comparison",
+      "description": "Compare responses from multiple models.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "memory": {
+      "title": "Memory & Vector Storage",
+      "description": "Learn how to use semantic memory for your AI agents.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "evals": {
+      "title": "Running Evaluations",
+      "description": "How to evaluate your AI outputs with custom criteria.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "datasets": {
+      "title": "Managing Datasets",
+      "description": "Create and manage datasets for testing and evaluation.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "analytics": {
+      "title": "Analytics & Metrics",
+      "description": "Understanding your AI performance metrics and costs.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "cost-management": {
+      "title": "Cost Management",
+      "description": "Track and optimize your AI spending.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "plugins": {
+      "title": "Plugins & Extensions",
+      "description": "Extend Agentreplay with custom plugins.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "storage": {
+      "title": "Storage Inspector",
+      "description": "Low-level view of stored data.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "settings": {
+      "title": "Configuring Agentreplay",
+      "description": "How to configure embeddings, models, and other settings.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "playground": {
+      "title": "Using the Playground",
+      "description": "Test prompts and compare model outputs.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "tools": {
+      "title": "Tools Page",
+      "description": "View and manage tool usage across your agents.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    },
+    "docs": {
+      "title": "Documentation",
+      "description": "Browse the Agentreplay documentation.",
+      "youtube_url": "https://youtu.be/3dhz36V0-L4"
+    }
+  }
+}

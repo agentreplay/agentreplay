@@ -13,17 +13,17 @@
 // limitations under the License.
 
 // ============================================================================
-// Video Configuration - Centralized YouTube links for help videos
+// Video Configuration - Fetched from GitHub JSON at runtime
 // ============================================================================
-// Update this file to manage all video content across the app.
-// Videos will show as help icons on each page that open in a modal player.
+// Videos are loaded from video-config.json hosted on GitHub at runtime.
+// To update videos, edit video-config.json in the repo and push — no app rebuild.
+// A hardcoded fallback is used when offline or before the fetch completes.
 
 export interface VideoConfig {
   pageId: string;
   title: string;
   description: string;
   youtubeUrl: string;
-  // Extract video ID from URL for embedding
   videoId?: string;
 }
 
@@ -42,152 +42,97 @@ export function getYouTubeVideoId(url: string): string | null {
 }
 
 // ============================================================================
-// VIDEO CONTENT - Edit this section to update videos
+// GITHUB JSON CONFIG URL
 // ============================================================================
-export const pageVideos: Record<string, VideoConfig> = {
-  // Dashboard / Home
-  dashboard: {
-    pageId: 'dashboard',
-    title: 'Getting Started with Agentreplay',
-    description: 'Learn how to navigate the dashboard and understand your AI agent traces.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+const VIDEO_CONFIG_URL =
+  'https://raw.githubusercontent.com/agentreplay/agentreplay/main/video-config.json';
 
-  // Traces Page
-  traces: {
-    pageId: 'traces',
-    title: 'Understanding Traces',
-    description: 'How to view, filter, and analyze your LLM traces.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// Cache: loaded once per app session
+let _remoteVideos: Record<string, VideoConfig> | null = null;
+let _fetchPromise: Promise<Record<string, VideoConfig> | null> | null = null;
 
-  // Sessions Page
-  sessions: {
-    pageId: 'sessions',
-    title: 'Session Management',
-    description: 'View and analyze conversation sessions.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// Parse the JSON config into our internal format
+function parseVideoConfig(data: Record<string, unknown>): Record<string, VideoConfig> {
+  const result: Record<string, VideoConfig> = {};
+  const videos = (data.videos || data) as Record<string, Record<string, string>>;
 
-  // Agents / System Map
-  agents: {
-    pageId: 'agents',
-    title: 'System Map & Agents',
-    description: 'Visualize your AI system topology.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+  for (const [pageId, entry] of Object.entries(videos)) {
+    if (pageId.startsWith('_') || typeof entry !== 'object') continue;
+    result[pageId] = {
+      pageId,
+      title: entry.title || '',
+      description: entry.description || '',
+      youtubeUrl: entry.youtube_url || entry.youtubeUrl || '',
+    };
+  }
+  return result;
+}
 
-  // Timeline
-  timeline: {
-    pageId: 'timeline',
-    title: 'Timeline View',
-    description: 'Visualize trace execution over time.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// Fetch remote config (called once, cached)
+async function fetchRemoteVideos(): Promise<Record<string, VideoConfig> | null> {
+  try {
+    const response = await fetch(VIDEO_CONFIG_URL, {
+      signal: AbortSignal.timeout(5000),
+      cache: 'no-cache',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const parsed = parseVideoConfig(data);
+    if (Object.keys(parsed).length > 0) {
+      console.log(`[videos] Loaded ${Object.keys(parsed).length} video configs from GitHub`);
+      return parsed;
+    }
+    return null;
+  } catch (err) {
+    console.warn('[videos] Failed to fetch remote video config, using fallback', err);
+    return null;
+  }
+}
 
-  // Search
-  search: {
-    pageId: 'search',
-    title: 'Semantic Search',
-    description: 'Use AI-powered natural language search.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// Trigger fetch on module load (non-blocking)
+function ensureFetched(): void {
+  if (!_fetchPromise) {
+    _fetchPromise = fetchRemoteVideos().then((videos) => {
+      _remoteVideos = videos;
+      return videos;
+    });
+  }
+}
 
-  // Insights
-  insights: {
-    pageId: 'insights',
-    title: 'AI Insights',
-    description: 'Automatic anomaly detection and pattern recognition.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// Start fetching immediately on import
+ensureFetched();
 
-  // Prompts
-  prompts: {
-    pageId: 'prompts',
-    title: 'Prompt Registry',
-    description: 'Version control and manage your prompts.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Model Comparison
-  compare: {
-    pageId: 'compare',
-    title: 'Model Comparison',
-    description: 'Compare responses from multiple models.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Memory Page
-  memory: {
-    pageId: 'memory',
-    title: 'Memory & Vector Storage',
-    description: 'Learn how to use semantic memory for your AI agents.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Evals Page
-  evals: {
-    pageId: 'evals',
-    title: 'Running Evaluations',
-    description: 'How to evaluate your AI outputs with custom criteria.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Datasets Page
-  datasets: {
-    pageId: 'datasets',
-    title: 'Managing Datasets',
-    description: 'Create and manage datasets for testing and evaluation.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Analytics Page
-  analytics: {
-    pageId: 'analytics',
-    title: 'Analytics & Metrics',
-    description: 'Understanding your AI performance metrics and costs.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Plugins
-  plugins: {
-    pageId: 'plugins',
-    title: 'Plugins & Extensions',
-    description: 'Extend Agentreplay with custom plugins.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Storage
-  storage: {
-    pageId: 'storage',
-    title: 'Storage Inspector',
-    description: 'Low-level view of stored data.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Settings Page
-  settings: {
-    pageId: 'settings',
-    title: 'Configuring Agentreplay',
-    description: 'How to configure embeddings, models, and other settings.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
-
-  // Playground Page
-  playground: {
-    pageId: 'playground',
-    title: 'Using the Playground',
-    description: 'Test prompts and compare model outputs.',
-    youtubeUrl: 'https://youtu.be/3dhz36V0-L4',
-  },
+// ============================================================================
+// HARDCODED FALLBACK - Used when offline or before remote fetch completes
+// ============================================================================
+const fallbackVideos: Record<string, VideoConfig> = {
+  dashboard: { pageId: 'dashboard', title: 'Getting Started with Agentreplay', description: 'Learn how to navigate the dashboard.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  traces: { pageId: 'traces', title: 'Understanding Traces', description: 'How to view and analyze LLM traces.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  sessions: { pageId: 'sessions', title: 'Session Management', description: 'View and analyze conversation sessions.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  search: { pageId: 'search', title: 'Semantic Search', description: 'Use AI-powered natural language search.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  prompts: { pageId: 'prompts', title: 'Prompt Registry', description: 'Version control and manage your prompts.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  compare: { pageId: 'compare', title: 'Model Comparison', description: 'Compare responses from multiple models.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  memory: { pageId: 'memory', title: 'Memory & Vector Storage', description: 'Semantic memory for your AI agents.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  evals: { pageId: 'evals', title: 'Running Evaluations', description: 'Evaluate AI outputs with custom criteria.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  analytics: { pageId: 'analytics', title: 'Analytics & Metrics', description: 'AI performance metrics and costs.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
+  settings: { pageId: 'settings', title: 'Configuring Agentreplay', description: 'Configure embeddings, models, and settings.', youtubeUrl: 'https://youtu.be/3dhz36V0-L4' },
 };
 
-// Get video config for a page
+// Exported as pageVideos for backward compatibility
+export const pageVideos = fallbackVideos;
+
+// Get video config for a page (prefers remote, falls back to hardcoded)
 export function getVideoForPage(pageId: string): VideoConfig | null {
-  return pageVideos[pageId] || null;
+  if (_remoteVideos && _remoteVideos[pageId]) {
+    return _remoteVideos[pageId];
+  }
+  return fallbackVideos[pageId] || null;
 }
 
 // Check if a page has a video
 export function hasVideo(pageId: string): boolean {
-  return pageId in pageVideos && !!pageVideos[pageId].youtubeUrl;
+  if (_remoteVideos) {
+    return pageId in _remoteVideos && !!_remoteVideos[pageId].youtubeUrl;
+  }
+  return pageId in fallbackVideos && !!fallbackVideos[pageId].youtubeUrl;
 }

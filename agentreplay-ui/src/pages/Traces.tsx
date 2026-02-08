@@ -69,6 +69,11 @@ interface TraceRow {
   // Direct preview fields from server
   input_preview?: string;
   output_preview?: string;
+  // Claude Code specific fields
+  tool_name?: string;
+  event_type?: string;
+  is_claude_code?: boolean;
+  agent_id_attr?: string;
 }
 
 const PAGE_SIZE = 40;
@@ -83,6 +88,7 @@ const timeRangeOptions = [
   { value: '1h', label: 'Last hour' },
   { value: '24h', label: 'Last 24h' },
   { value: '7d', label: 'Last 7 days' },
+  { value: 'all', label: 'All time' },
 ];
 
 type FilterState = {
@@ -102,19 +108,20 @@ const defaultFilters: FilterState = {
   agent: '',
   provider: '',
   status: '',
-  timeRange: '1h',
+  timeRange: '24h',
 };
 
 function timeRangeToStart(timeRange: string) {
-  const now = Date.now();
+  if (timeRange === 'all') return 0;
+  const now = Date.now() * 1000; // Convert to microseconds to match server timestamps
   switch (timeRange) {
     case '1h':
-      return now - 60 * 60 * 1000;
+      return now - 60 * 60 * 1000 * 1000;
     case '7d':
-      return now - 7 * 24 * 60 * 60 * 1000;
+      return now - 7 * 24 * 60 * 60 * 1000 * 1000;
     case '24h':
     default:
-      return now - 24 * 60 * 60 * 1000;
+      return now - 24 * 60 * 60 * 1000 * 1000;
   }
 }
 
@@ -241,8 +248,21 @@ export default function Traces() {
   // No session grouping in flat trace view
   const visibleTraces = useMemo(() => {
     return rawTraces.filter((trace) => {
-      if (filters.query && !trace.id.toLowerCase().includes(filters.query.toLowerCase())) {
-        return false;
+      if (filters.query) {
+        const q = filters.query.toLowerCase();
+        const searchable = [
+          trace.id,
+          trace.display_name,
+          trace.input_preview,
+          trace.output_preview,
+          trace.tool_name,
+          trace.model,
+          trace.agent_name,
+          trace.event_type,
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!searchable.includes(q)) {
+          return false;
+        }
       }
       if (filters.user && !trace.user?.toLowerCase().includes(filters.user.toLowerCase())) {
         return false;
@@ -295,41 +315,70 @@ export default function Traces() {
         }
 
         const mapped: TraceRow[] = (response.traces || []).map((trace: any) => {
-          // Extract model from multiple possible sources
-          const modelFromMetadata = trace.metadata?.['gen_ai.request.model'] ||
-            trace.metadata?.['gen_ai.response.model'] ||
-            trace.metadata?.model ||
-            trace.metadata?.['llm.model'];
-          const model = trace.model || modelFromMetadata;
+          const meta = trace.metadata || {};
 
+          // Extract Claude Code fields from metadata (Tauri list_traces stores raw attributes in metadata)
+          const agentIdAttr = trace.agent_id_attr || meta['agent_id'] || '';
+          const isClaudeCode = trace.is_claude_code || agentIdAttr === 'claude-code';
+          const toolName = trace.tool_name || meta['tool.name'] || '';
+          const eventType = trace.event_type || meta['event.type'] || '';
+
+          // Extract model from multiple possible sources
+          const modelFromMetadata = meta['gen_ai.request.model'] ||
+            meta['gen_ai.response.model'] ||
+            meta['model'] ||
+            meta['llm.model'];
+          // For Claude Code traces, show tool_name in model column; for agents show LLM model
+          const model = isClaudeCode
+            ? (toolName || eventType || '')
+            : (trace.model || modelFromMetadata || '');
+
+          // Build display name from available fields
           let displayName = trace.display_name;
           if (!displayName || /^\d+$/.test(displayName) || displayName === 'chain.unknown') {
-            displayName = trace.operation_name || model || trace.agent_name || displayName;
-            if (displayName === 'chain.unknown') {
-              displayName = trace.agent_name ? `Agent: ${trace.agent_name}` : 'LangGraph Workflow';
+            if (isClaudeCode && toolName) {
+              displayName = `Tool Call (${toolName})`;
+            } else if (isClaudeCode && eventType) {
+              displayName = eventType === 'session_start' ? 'Session Start'
+                : eventType === 'session_end' ? 'Session End'
+                : eventType;
+            } else {
+              displayName = trace.operation_name || model || trace.agent_name || displayName;
+              if (displayName === 'chain.unknown') {
+                displayName = trace.agent_name ? `Agent: ${trace.agent_name}` : 'LangGraph Workflow';
+              }
             }
           }
 
+          // Extract input/output preview - also check tool.input/tool.output in metadata
+          const inputPreview = trace.input_preview || meta['tool.input'] || '';
+          const outputPreview = trace.output_preview || meta['tool.output'] || '';
+
           return {
             id: trace.trace_id || trace.span_id || 'unknown',
-            timestamp: trace.timestamp_us / 1000,
-            timestampLabel: new Date(trace.timestamp_us / 1000).toLocaleString(),
+            timestamp: (trace.started_at || trace.timestamp_us || 0) / 1000,
+            timestampLabel: new Date((trace.started_at || trace.timestamp_us || 0) / 1000).toLocaleString(),
             model: model || '',
-            durationMs: trace.duration_ms || (trace.duration_us / 1000) || 0,
+            durationMs: trace.duration_ms || (trace.duration_us ? trace.duration_us / 1000 : 0) || 0,
             cost: trace.cost || 0,
             tokens: trace.tokens || trace.token_count || 0,
             user: trace.session_id?.toString() || 'anonymous',
             status: trace.status || 'completed',
-            score: trace.metadata?.score,
-            metadata: trace.metadata || {},
+            score: meta.score,
+            metadata: meta,
             display_name: displayName,
             provider: trace.provider,
-            input_tokens: trace.metadata?.input_tokens || parseInt(trace.metadata?.['gen_ai.usage.input_tokens']) || 0,
-            output_tokens: trace.metadata?.output_tokens || parseInt(trace.metadata?.['gen_ai.usage.output_tokens']) || 0,
+            input_tokens: meta.input_tokens || parseInt(meta['gen_ai.usage.input_tokens']) || 0,
+            output_tokens: meta.output_tokens || parseInt(meta['gen_ai.usage.output_tokens']) || 0,
             agent_name: trace.agent_name,
             session_id: trace.session_id?.toString(),
-            input_preview: trace.input_preview,
-            output_preview: trace.output_preview,
+            input_preview: inputPreview,
+            output_preview: outputPreview,
+            // Claude Code specific
+            tool_name: toolName,
+            event_type: eventType,
+            is_claude_code: isClaudeCode,
+            agent_id_attr: agentIdAttr,
           };
         })
           .filter((trace: TraceRow) => {
@@ -342,17 +391,8 @@ export default function Traces() {
             return hasId && (hasModel || hasTokens || hasContent || hasDuration || hasDisplayName);
           });
 
-        // Additional safety check: filter out any traces that might have wrong project_id
-        const filteredMapped = mapped.filter((trace: TraceRow) => {
-          // If we have metadata with project_id, verify it matches
-          if (trace.metadata?.project_id) {
-            return trace.metadata.project_id === parseInt(effectiveProjectId);
-          }
-          // Otherwise trust the API response since we filtered by project_id
-          return true;
-        });
-
-        setRawTraces(filteredMapped);
+        // Trust the server-side project_id filtering
+        setRawTraces(mapped);
         setCurrentPage(page);
       } catch (err) {
         console.error('Failed to load data', err);
@@ -527,6 +567,13 @@ export default function Traces() {
     }, [trace.metadata, trace]);
 
     const modelName = useMemo(() => {
+      // For Claude Code traces, show tool name or event type with a badge-like prefix
+      if (trace.is_claude_code) {
+        if (trace.tool_name) return trace.tool_name;
+        if (trace.event_type) return trace.event_type.replace(/_/g, ' ');
+        return trace.display_name || 'Claude Code';
+      }
+      
       const metadata = trace.metadata as Record<string, any> || {};
       // Priority 1: OpenTelemetry gen_ai.request.model or gen_ai.response.model
       if (metadata['gen_ai.request.model']) {
@@ -541,7 +588,7 @@ export default function Traces() {
       }
       // Priority 3: Top-level model or display_name
       return trace.model || (trace as any).display_name || 'Unknown';
-    }, [trace.metadata, trace.model, trace]);
+    }, [trace.metadata, trace.model, trace.is_claude_code, trace.tool_name, trace.event_type, trace.display_name]);
 
     return (
       <div
@@ -578,10 +625,21 @@ export default function Traces() {
           </div>
         </div>
 
-        {/* Model Name */}
-        <Tooltip content={`Model: ${modelName}\nProvider: ${trace.provider || 'Unknown'}`}>
-          <div className="truncate text-primary font-medium">
-            {modelName}
+        {/* Model Name / Tool Name */}
+        <Tooltip content={trace.is_claude_code
+          ? `Tool: ${trace.tool_name || 'N/A'}\nType: ${trace.display_name || trace.event_type || 'Unknown'}\nAgent: Claude Code`
+          : `Model: ${modelName}\nProvider: ${trace.provider || 'Unknown'}`
+        }>
+          <div className="truncate font-medium">
+            {trace.is_claude_code ? (
+              <span className="flex items-center gap-1">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/15 text-purple-400 uppercase tracking-wide">
+                  {trace.tool_name || trace.event_type?.replace(/_/g, ' ') || '⚡'}
+                </span>
+              </span>
+            ) : (
+              <span className="text-primary">{modelName}</span>
+            )}
           </div>
         </Tooltip>
 
@@ -749,7 +807,7 @@ export default function Traces() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface/70 border border-border/40">
               <Activity className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-textPrimary">{totalTraceCount.toLocaleString()}</span>
+              <span className="font-semibold text-textPrimary">{visibleTraces.length.toLocaleString()}</span>
               <span className="text-textTertiary">traces</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface/70 border border-border/40">

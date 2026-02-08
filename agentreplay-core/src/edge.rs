@@ -632,8 +632,9 @@ pub fn validate_timestamp(timestamp_us: u64, config: &TimestampConfig) -> crate:
     }
 
     // Task 7: NTP drift compensation
-    // Allow timestamps slightly in the future (up to 5 seconds) to account for clock skew
-    const MAX_FUTURE_DRIFT_US: u64 = 5_000_000; // 5 seconds
+    // Allow timestamps slightly in the future to account for clock skew.
+    // Desktop/local apps can have more drift than production servers.
+    const MAX_FUTURE_DRIFT_US: u64 = 60_000_000; // 60 seconds
     if timestamp_us > now && config.enforce_validation {
         let drift = timestamp_us - now;
         if drift > MAX_FUTURE_DRIFT_US {
