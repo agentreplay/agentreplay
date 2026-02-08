@@ -5,7 +5,7 @@
   "identifier": "io.agentreplay.desktop",
   "build": {
     "beforeDevCommand": "",
-    "beforeBuildCommand": "cd ../agentreplay-ui && npm run build",
+    "beforeBuildCommand": "",
     "frontendDist": "../agentreplay-ui/dist",
     "devUrl": "http://localhost:47173"
   },
