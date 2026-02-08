@@ -73,6 +73,35 @@ jobs:
             cargo install tauri-cli --version "^2.0"
           fi
 
+      # Import Apple Developer ID certificate into CI keychain
+      - name: Import Apple certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          # Decode certificate
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify
+          echo "✅ Certificate imported"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
       - name: Build Tauri App
         working-directory: agentreplay-tauri
         run: cargo tauri build --target ${{ matrix.target }}
@@ -80,13 +109,61 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
+      # Sign the .app with Developer ID certificate
+      - name: Code sign app bundle
+        run: |
+          APP_PATH=$(find agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos -name "*.app" -maxdepth 1 | head -1)
+          echo "Signing: $APP_PATH"
+          codesign --force --options runtime --deep \
+            --sign "Developer ID Application" \
+            --timestamp \
+            "$APP_PATH"
+          echo "✅ Signed with Developer ID"
+          codesign --verify --verbose "$APP_PATH"
+
+      # Re-create DMG with signed app
+      - name: Create signed DMG
+        run: |
+          DMG_PATH=$(find agentreplay-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" | head -1)
+          APP_PATH=$(find agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos -name "*.app" -maxdepth 1 | head -1)
+          rm -f "$DMG_PATH"
+          hdiutil create -volname "Agent Replay" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+          codesign --force --sign "Developer ID Application" --timestamp "$DMG_PATH"
+          echo "✅ DMG signed: $DMG_PATH"
+
+      # Notarize with Apple so Gatekeeper trusts it
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG_PATH=$(find agentreplay-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" | head -1)
+          echo "Submitting for notarization: $DMG_PATH"
+          
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait --timeout 600
+          
+          # Staple the notarization ticket to the DMG
+          xcrun stapler staple "$DMG_PATH"
+          echo "✅ Notarized and stapled"
+
+      # Cleanup keychain
+      - name: Cleanup
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+          rm -f $RUNNER_TEMP/certificate.p12
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-${{ matrix.target }}
           path: |
             agentreplay-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
           if-no-files-found: error
 
       - name: Create Release & Upload
