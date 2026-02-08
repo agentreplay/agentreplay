@@ -55,18 +55,15 @@
 
 | Platform | Download | Architecture |
 |----------|----------|--------------|
-| **macOS** | [Agent Replay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
-| **macOS** | [Agent Replay.dmg](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64.dmg) | Intel |
-| **Windows** | [Agent Replay.exe](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64-setup.exe) | x64 (NSIS Installer) |
-| **Windows** | [Agent Replay.msi](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_x64.msi) | x64 (MSI Installer) |
-| **Linux** | [Agent Replay.AppImage](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_amd64.AppImage) | x64 |
-| **Linux** | [Agent Replay.deb](https://github.com/sochdb/agentreplay/releases/latest/download/Agent Replay_amd64.deb) | Debian/Ubuntu |
+| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_aarch64.dmg) | Apple Silicon (M1/M2/M3) |
+| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_x64.dmg) | Intel |
+
 
 ### Or Build from Source
 
 ```bash
 # Clone and run (that's it!)
-git clone https://github.com/sochdb/agentreplay.git
+git clone https://github.com/agentreplay/agentreplay.git
 cd agentreplay
 ./run-tauri.sh
 ```
@@ -88,7 +85,7 @@ Agent Replay is a **local-first desktop application** that gives your AI agents 
 
 | Tool | Integration | Status |
 |------|-------------|--------|
-| **Claude Code** | [Native Plugin](https://github.com/sochdb/agentreplay-claude-plugin) | ✅ Ready |
+| **Claude Code** | [Native Plugin](https://github.com/agentreplay/agentreplay-claude-plugin) | ✅ Ready |
 | **Cursor** | MCP + Extension | ✅ Ready |
 | **Windsurf** | MCP server | ✅ Ready |
 | **Cline** | MCP server | ✅ Ready |
