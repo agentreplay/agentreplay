@@ -6,7 +6,7 @@
 
 **No Docker. No servers. No cloud. Just run.**
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 
@@ -1041,7 +1041,9 @@ Agent Replay is part of the SochDB ecosystem:
 
 ## �📄 License
 
-Agent Replay is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+Agent Replay core (Rust) is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. See [LICENSE](LICENSE) for details.
+
+The SDKs (Python, Node.js, Rust SDK) are licensed under the **Apache License 2.0** to allow unrestricted integration in your applications.
 
 ### Third-Party Licenses
 

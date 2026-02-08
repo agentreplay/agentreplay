@@ -20,7 +20,7 @@ import { Moon, Sun, Monitor } from 'lucide-react';
 type Theme = 'light' | 'dark' | 'system';
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('system');
+  const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
   
   // Ensure mounted to avoid hydration mismatch
@@ -31,7 +31,7 @@ export function ThemeToggle() {
       setTheme(stored);
       applyTheme(stored);
     } else {
-      applyTheme('system');
+      applyTheme('light');
     }
   }, []);
   

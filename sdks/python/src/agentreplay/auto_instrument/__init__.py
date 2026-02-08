@@ -135,16 +135,44 @@ def _auto_instrument_all():
     # Try LangChain - use custom Agentreplay callback handler for hierarchy
     try:
         from agentreplay.langchain_tracer import get_agentreplay_callback
+        from langchain_core.callbacks.manager import CallbackManager, AsyncCallbackManager
         
         callback = get_agentreplay_callback()
         if callback:
-            # Register globally for all LangChain operations
-            import langchain_core.callbacks.manager as manager
-            if hasattr(manager, '_default_callback_handlers'):
-                if not hasattr(manager._default_callback_handlers, '__iter__'):
-                    manager._default_callback_handlers = []
-                manager._default_callback_handlers.append(callback)
+            # Monkey-patch both sync and async CallbackManager.configure
+            # to inject our callback handler into every LangChain/LangGraph
+            # runnable invocation automatically.
+            #
+            # Why this approach:
+            #  - Modern LangChain (0.3.x+) removed _default_callback_handlers
+            #  - CallbackManager.configure() is called by every Runnable.invoke/stream
+            #  - AsyncCallbackManager.configure() is called by every astream/ainvoke
+            #  - We use **kwargs for forward-compatibility with new params
+            #  - Duplicate check prevents handler stacking on repeated calls
+            #  - Original function is preserved, we only append our handler
+            
+            def _make_patched_configure(original_fn):
+                """Create a patched configure that injects our callback handler."""
+                @classmethod
+                def _patched_configure(cls, *args, **kwargs):
+                    # Delegate to the original configure (classmethod.__func__ unwraps it)
+                    manager = original_fn.__func__(cls, *args, **kwargs)
+                    # Inject our callback if not already present
+                    handler_types = {type(h) for h in manager.inheritable_handlers}
+                    if type(callback) not in handler_types:
+                        manager.add_handler(callback, inherit=True)
+                    return manager
+                return _patched_configure
+            
+            # Patch sync CallbackManager (used by invoke/stream/batch)
+            CallbackManager.configure = _make_patched_configure(CallbackManager.configure)
+            
+            # Patch async CallbackManager (used by ainvoke/astream/abatch, LangGraph)
+            if hasattr(AsyncCallbackManager, 'configure'):
+                AsyncCallbackManager.configure = _make_patched_configure(AsyncCallbackManager.configure)
+            
             instrumented.append("LangChain")
+            logger.debug("LangChain callback handler registered via CallbackManager.configure patch (sync + async)")
     except ImportError:
         pass  # LangChain not installed
     except Exception as e:

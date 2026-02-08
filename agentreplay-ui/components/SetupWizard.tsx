@@ -27,14 +27,24 @@ import {
   ChevronRight,
   Terminal,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Star,
+  Sparkles,
+  ExternalLink,
+  Brain,
+  Activity,
+  Shield,
+  Laptop,
+  Lock,
+  Zap,
+  Eye,
 } from 'lucide-react';
 
 interface SetupWizardProps {
   onComplete: (projectId: number) => void;
 }
 
-type SdkType = 'python' | 'typescript' | 'go' | 'rust';
+type SdkType = 'python' | 'typescript';
 type UsageContext = 'observability' | 'memory' | 'claude'; // New Context Type
 
 const SDKS: Record<SdkType, {
@@ -67,10 +77,10 @@ print(f"✅ Setup successful! Trace ID: {trace['edge_id']}")
 print(f"🚀 Visit http://localhost:5173/traces to see your data")`
   },
   typescript: {
-    label: 'TypeScript',
-    installCmd: 'npm install agentreplay-client',
+    label: 'Node.js',
+    installCmd: 'npm install @agentreplay/agentreplay',
     installLabel: 'Install via npm',
-    verifyCode: (projectId) => `import { AgentreplayClient } from 'agentreplay-client';
+    verifyCode: (projectId) => `import { AgentreplayClient } from '@agentreplay/agentreplay';
 
 // Initialize client
 const client = new AgentreplayClient({
@@ -87,74 +97,6 @@ const trace = await client.createTrace({
 
 console.log(\`✅ Setup successful! Trace ID: \${trace.edge_id}\`);
 console.log(\`🚀 Visit http://localhost:5173/traces to see your data\`);`
-  },
-  go: {
-    label: 'Go',
-    installCmd: 'go get github.com/sushanthpy/agentreplay-go',
-    installLabel: 'Install via go get',
-    verifyCode: (projectId) => `package main
-
-import (
-	"fmt"
-	"os"
-	"strconv"
-
-	"github.com/sushanthpy/agentreplay-go"
-)
-
-func main() {
-	// Initialize client
-	client := agentreplay.NewClient(
-		os.Getenv("AGENTREPLAY_URL"),
-		getEnvInt("AGENTREPLAY_TENANT_ID", 1),
-		getEnvInt("AGENTREPLAY_PROJECT_ID", ${projectId}),
-	)
-
-	// Create a test trace
-	trace, _ := client.CreateTrace(1, map[string]interface{}{
-		"test": "Hello Agentreplay!",
-	})
-
-	fmt.Printf("✅ Setup successful! Trace ID: %s\\n", trace.EdgeID)
-	fmt.Println("🚀 Visit http://localhost:5173/traces to see your data")
-}
-
-func getEnvInt(key string, defaultVal int) int {
-	if val, ok := os.LookupEnv(key); ok {
-		if i, err := strconv.Atoi(val); err == nil {
-			return i
-		}
-	}
-	return defaultVal
-}`
-  },
-  rust: {
-    label: 'Rust',
-    installCmd: 'cargo add agentreplay',
-    installLabel: 'Install via cargo',
-    verifyCode: (projectId) => `use agentreplay::AgentreplayClient;
-use std::env;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize client
-    let client = AgentreplayClient::new(
-        env::var("AGENTREPLAY_URL").unwrap_or("http://127.0.0.1:47100".to_string()),
-        env::var("AGENTREPLAY_TENANT_ID").unwrap_or("1".to_string()).parse()?,
-        env::var("AGENTREPLAY_PROJECT_ID").unwrap_or("${projectId}".to_string()).parse()?,
-    );
-
-    // Create a test trace
-    let trace = client.create_trace(
-        1,
-        serde_json::json!({"test": "Hello Agentreplay!"})
-    ).await?;
-
-    println!("✅ Setup successful! Trace ID: {}", trace.edge_id);
-    println!("🚀 Visit http://localhost:5173/traces to see your data");
-    Ok(())
-}
-`
   }
 };
 
@@ -170,9 +112,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [isCreating, setIsCreating] = useState(false);
 
   const steps = [
-    { id: 'install', title: 'Install SDK', icon: Download },
+    { id: 'welcome', title: 'Welcome', icon: Sparkles },
     { id: 'create', title: 'Create Project', icon: FolderPlus },
-    { id: 'configure', title: 'Configure Environment', icon: Settings },
+    { id: 'install', title: 'Install SDK', icon: Download },
     { id: 'verify', title: 'Verify Setup', icon: CheckCircle2 },
   ];
 
@@ -255,7 +197,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           };
 
           setCreatedProject(createdProjectData);
-          setCurrentStep(2);
+          setCurrentStep(2); // Go to Install SDK step
           return; // Success, exit the function
         } catch (error) {
           lastError = error instanceof Error ? error : new Error('Unknown error');
@@ -346,89 +288,136 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             exit={{ opacity: 0, x: -20 }}
             className="bg-surface rounded-xl border border-border p-8"
           >
-            {/* Step 0: Install SDK */}
+            {/* Step 0: Welcome */}
             {currentStep === 0 && (
-              <div>
-                <h2 className="text-2xl font-bold text-textPrimary mb-4">
-                  Install Agentreplay SDK
+              <div className="text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <img
+                      src="/logo.svg"
+                      alt="AgentReplay"
+                      className="w-24 h-24 rounded-2xl shadow-xl"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-textPrimary mb-2">
+                  Welcome to AgentReplay
                 </h2>
-                <p className="text-textSecondary mb-6">
-                  Select your preferred language and install the Agentreplay SDK to start tracking your LLM applications.
+                <p className="text-base font-medium text-primary mb-1">
+                  Local-First Desktop Observability & AI Memory for Your Agents and Coding Tools
+                </p>
+                <p className="text-sm text-textSecondary mb-8 max-w-2xl mx-auto">
+                  The open-source desktop app purpose-built for AI agents & Claude Code. Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
                 </p>
 
-                {/* SDK Selection Tabs */}
-                <div className="flex gap-2 mb-6 border-b border-border">
-                  {(Object.keys(SDKS) as SdkType[]).map((sdk) => (
-                    <button
-                      key={sdk}
-                      onClick={() => setSelectedSdk(sdk)}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${selectedSdk === sdk
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-textTertiary hover:text-textPrimary'
-                        }`}
+                {/* Privacy banner */}
+                <div className="bg-gradient-to-r from-green-500/5 via-emerald-500/10 to-green-500/5 border border-green-500/20 rounded-xl p-4 mb-6">
+                  <div className="flex items-center justify-center gap-3">
+                    <Lock className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                      Your data never leaves your laptop. Zero cloud dependencies. Fully optimized for desktops & laptops.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Feature highlights */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-blue-500/30 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+                      <Activity className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <h3 className="font-semibold text-textPrimary mb-1">Full-Stack Tracing</h3>
+                    <p className="text-sm text-textSecondary">
+                      Capture every LLM call, tool use, and agent step with zero-config auto-instrumentation. See what your AI is really doing.
+                    </p>
+                  </div>
+                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-purple-500/30 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
+                      <Brain className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <h3 className="font-semibold text-textPrimary mb-1">Persistent Memory</h3>
+                    <p className="text-sm text-textSecondary">
+                      Built-in vector search so your agents remember context across sessions. No external database required.
+                    </p>
+                  </div>
+                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-green-500/30 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+                      <Shield className="w-5 h-5 text-green-500" />
+                    </div>
+                    <h3 className="font-semibold text-textPrimary mb-1">100% Local & Private</h3>
+                    <p className="text-sm text-textSecondary">
+                      Everything runs on your machine — your traces, memories, and data stay on your device. No sign-ups, no telemetry.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Secondary feature row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Laptop className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Desktop Native</h3>
+                      <p className="text-xs text-textSecondary">
+                        Optimized for macOS, Windows & Linux. Runs as a native app, not a browser tab.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Zap className="w-4 h-4 text-cyan-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Blazing Fast</h3>
+                      <p className="text-xs text-textSecondary">
+                        Built with Rust. Sub-millisecond trace ingestion with embedded storage.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Eye className="w-4 h-4 text-indigo-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Open Source</h3>
+                      <p className="text-xs text-textSecondary">
+                        Fully transparent. Inspect, extend, and contribute to the codebase.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* GitHub Star CTA */}
+                <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-500/20 rounded-xl p-5 mb-8">
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    <Star className="w-5 h-5 text-amber-500" />
+                    <p className="text-sm text-textSecondary">
+                      Love AgentReplay? Help us grow — give us a star on GitHub!
+                    </p>
+                    <a
+                      href="https://github.com/agentreplay/agentreplay"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors flex-shrink-0"
                     >
-                      {SDKS[sdk].label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-textPrimary">
-                        {SDKS[selectedSdk].installLabel}
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(SDKS[selectedSdk].installCmd, 'install')}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary"
-                      >
-                        {copiedEnvVar === 'install' ? (
-                          <>
-                            <Check className="w-4 h-4 text-green-500" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <pre className="bg-surface-elevated rounded-lg p-4 overflow-x-auto border border-border-subtle">
-                      <code className="text-sm text-textSecondary font-mono">
-                        {SDKS[selectedSdk].installCmd}
-                      </code>
-                    </pre>
-                  </div>
-
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <Terminal className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-semibold text-blue-500 mb-1">
-                          Recommended Setup
-                        </h4>
-                        <p className="text-sm text-textSecondary">
-                          {selectedSdk === 'python'
-                            ? 'We recommend installing in a virtual environment to avoid conflicts with other packages.'
-                            : selectedSdk === 'typescript'
-                              ? 'Ensure you have Node.js 18+ installed.'
-                              : selectedSdk === 'go'
-                                ? 'Requires Go 1.21 or later.'
-                                : 'Requires Rust 1.75 or later.'}
-                        </p>
-                      </div>
-                    </div>
+                      <Star className="w-4 h-4" />
+                      Star on GitHub
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
                 </div>
 
-                <div className="mt-8 flex justify-end">
+                <div className="flex justify-center">
                   <button
                     onClick={() => setCurrentStep(1)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors text-lg"
                   >
-                    Next: Create Project
+                    Get Started
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -501,25 +490,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* Step 2: Configure Environment */}
+            {/* Step 2: Install SDK & Configure */}
             {currentStep === 2 && createdProject && (
               <div>
-                <h2 className="text-2xl font-bold text-textPrimary mb-4">
-                  Configure Environment Variables
-                </h2>
-                <p className="text-textSecondary mb-6">
-                  Add these environment variables to your project to connect to AgentReplay.
-                </p>
-
-                <div className="space-y-6 mb-8">
-                  <EnvironmentConfig
-                    projectId={createdProject.project_id}
-                    projectName={createdProject.name}
-                    envVars={createdProject.env_vars}
-                    onCopy={copyToClipboard}
-                  />
-                </div>
-
                 <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -529,9 +502,92 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       </h4>
                       <p className="text-sm text-textSecondary">
                         Your project <strong>{createdProject.name}</strong> (ID: {createdProject.project_id}) is ready.
-                        Add the environment variables above to start tracking.
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold text-textPrimary mb-4">
+                  Install SDK & Configure
+                </h2>
+                <p className="text-textSecondary mb-6">
+                  Select your preferred language, install the SDK, and configure your environment.
+                </p>
+
+                {/* SDK Selection Tabs */}
+                <div className="flex gap-2 mb-6 border-b border-border">
+                  {(Object.keys(SDKS) as SdkType[]).map((sdk) => (
+                    <button
+                      key={sdk}
+                      onClick={() => setSelectedSdk(sdk)}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${selectedSdk === sdk
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-textTertiary hover:text-textPrimary'
+                        }`}
+                    >
+                      {SDKS[sdk].label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-textPrimary">
+                        {SDKS[selectedSdk].installLabel}
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(SDKS[selectedSdk].installCmd, 'install')}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary"
+                      >
+                        {copiedEnvVar === 'install' ? (
+                          <>
+                            <Check className="w-4 h-4 text-green-500" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <pre className="bg-surface-elevated rounded-lg p-4 overflow-x-auto border border-border-subtle">
+                      <code className="text-sm text-textSecondary font-mono">
+                        {SDKS[selectedSdk].installCmd}
+                      </code>
+                    </pre>
+                  </div>
+
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Terminal className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-blue-500 mb-1">
+                          Recommended Setup
+                        </h4>
+                        <p className="text-sm text-textSecondary">
+                          {selectedSdk === 'python'
+                            ? 'We recommend installing in a virtual environment to avoid conflicts with other packages.'
+                            : 'Ensure you have Node.js 18+ installed.'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Environment Variables */}
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-textPrimary mb-3">Environment Variables</h3>
+                  <div className="space-y-6">
+                    <EnvironmentConfig
+                      projectId={createdProject.project_id}
+                      projectName={createdProject.name}
+                      envVars={createdProject.env_vars}
+                      onCopy={copyToClipboard}
+                    />
                   </div>
                 </div>
 

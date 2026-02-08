@@ -17,6 +17,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Database, FileJson, HardDrive, RefreshCw, AlertCircle, FolderOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import axios from 'axios';
+import { API_BASE_URL } from '../lib/agentreplay-api';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 
 interface StorageRecord {
@@ -59,7 +60,7 @@ export default function Storage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get('/api/v1/projects');
+      const response = await axios.get(`${API_BASE_URL}/api/v1/projects`);
       // API returns { projects: [...] } not an array directly
       const projectsArray = response.data?.projects || response.data || [];
       setProjects(Array.isArray(projectsArray) ? projectsArray : []);

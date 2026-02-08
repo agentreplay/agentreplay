@@ -113,8 +113,8 @@ export async function initTheme() {
   }
 
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  // Default to Dark Mode as requested
-  applyTheme('dark');
+  // Default to Light Mode
+  applyTheme('light');
 
   const handleChange = (event: MediaQueryListEvent) => {
     const currentSaved = getSavedTheme();

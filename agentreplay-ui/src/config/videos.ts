@@ -45,7 +45,7 @@ export function getYouTubeVideoId(url: string): string | null {
 // GITHUB JSON CONFIG URL
 // ============================================================================
 const VIDEO_CONFIG_URL =
-  'https://raw.githubusercontent.com/agentreplay/agentreplay/main/video-config.json';
+  'https://raw.githubusercontent.com/agentreplay/agentreplay/refs/heads/main/video-config.json';
 
 // Cache: loaded once per app session
 let _remoteVideos: Record<string, VideoConfig> | null = null;

@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { agentreplayClient } from '../lib/agentreplay-api';
+import { agentreplayClient, API_BASE_URL } from '../lib/agentreplay-api';
 import { applyTheme as applyThemeFromLib, resolveTheme } from '../lib/theme';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -570,25 +570,19 @@ export function SettingsPage() {
   const [resetConfirmation, setResetConfirmation] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [services, setServices] = useState<ServiceStatus[]>([
-    { name: 'Agentreplay API', status: 'checking', port: 9600 },
+    { name: 'Agentreplay API', status: 'checking', port: 47100 },
     { name: 'Ollama (Local LLM)', status: 'checking', port: 11434 },
   ]);
 
   // Check service status
   const checkServiceStatus = useCallback(async () => {
     const updatedServices: ServiceStatus[] = [];
-    const apiPort = settings?.server?.port || 9600;
+    const apiPort = settings?.server?.port || 47100;
 
-    // Check AgentReplay API - try multiple endpoints
+    // Check AgentReplay API
     try {
-      // First try through proxy, then try direct
-      let response;
-      try {
-        response = await axios.get<HealthResponse>('/api/v1/health', { timeout: 3000 });
-      } catch {
-        // Fallback to direct URL
-        response = await axios.get<HealthResponse>(`http://localhost:${apiPort}/api/v1/health`, { timeout: 3000 });
-      }
+      const baseUrl = API_BASE_URL || `http://127.0.0.1:${apiPort}`;
+      const response = await axios.get<HealthResponse>(`${baseUrl}/api/v1/health`, { timeout: 3000 });
 
       const data = response.data;
       const uptimeHours = Math.floor(data.uptime_seconds / 3600);
@@ -681,12 +675,12 @@ export function SettingsPage() {
           auto_compact: true,
         },
         server: {
-          port: 9600,
+          port: 47100,
           enable_cors: true,
           max_payload_size_mb: 10,
         },
         ui: {
-          theme: 'dark',
+          theme: 'light',
           animations_enabled: true,
           auto_refresh_interval_secs: 30,
           experimental_features: true,
@@ -837,12 +831,12 @@ export function SettingsPage() {
           auto_compact: true,
         },
         server: {
-          port: 9600,
+          port: 47100,
           enable_cors: true,
           max_payload_size_mb: 10,
         },
         ui: {
-          theme: 'dark',
+          theme: 'light',
           animations_enabled: true,
           auto_refresh_interval_secs: 30,
           experimental_features: true,
@@ -1145,7 +1139,7 @@ export function SettingsPage() {
       let serverOnline = false;
 
       try {
-        const storageRes = await axios.get('/api/v1/storage/stats', { timeout: 10000 });
+        const storageRes = await axios.get(`${API_BASE_URL}/api/v1/storage/stats`, { timeout: 10000 });
         if (storageRes.data) {
           serverOnline = true;
           currentTraceCount = storageRes.data.total_traces || 0;
@@ -1159,7 +1153,7 @@ export function SettingsPage() {
       // If no server stats, try health endpoint
       if (!serverOnline) {
         try {
-          const healthRes = await axios.get('/api/v1/health', { timeout: 5000 });
+          const healthRes = await axios.get(`${API_BASE_URL}/api/v1/health`, { timeout: 5000 });
           if (healthRes.data) {
             serverOnline = true;
             currentTraceCount = healthRes.data.storage?.total_edges || 0;

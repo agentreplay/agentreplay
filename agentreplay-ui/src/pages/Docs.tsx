@@ -66,7 +66,7 @@ export default function Docs() {
     history.pushState(null, '', `#${sectionId}`);
   };
 
-  const [activeLang, setActiveLang] = useState<'python' | 'ts' | 'go' | 'rust'>('python');
+  const [activeLang, setActiveLang] = useState<'python' | 'ts'>('python');
 
   const quickStartCode = {
     python: `# your_app.py - NO AGENTREPLAY IMPORTS NEEDED!
@@ -86,22 +86,12 @@ const response = await client.chat.completions.create({
   model: "gpt-4",
   messages: [{ role: "user", content: "Hello!" }],
 });
-console.log(response.choices[0].message.content);`,
-    go: `// main.go
-package main
-import "github.com/sashabaranov/go-openai"
-
-// Use standard OpenAI client
-// Agentreplay automatically instruments correctly configured clients`,
-    rust: `// main.rs
-// Rust support coming soon via OpenTelemetry auto-instrumentation`
+console.log(response.choices[0].message.content);`
   };
 
   const installCmd = {
     python: 'pip install agentreplay && agentreplay-install',
-    ts: 'npm install agentreplay',
-    go: 'go get github.com/sushanthpy/agentreplay-go',
-    rust: 'cargo add agentreplay'
+    ts: 'npm install @agentreplay/agentreplay'
   };
 
   const sections: Array<{
@@ -122,7 +112,7 @@ import "github.com/sashabaranov/go-openai"
 
             {/* Language Selector */}
             <div className="flex gap-2 mb-6 border-b border-border">
-              {(['python', 'ts', 'go', 'rust'] as const).map((lang) => (
+              {(['python', 'ts'] as const).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setActiveLang(lang)}
@@ -132,7 +122,7 @@ import "github.com/sashabaranov/go-openai"
                       : 'border-transparent text-textTertiary hover:text-textPrimary'
                   }`}
                 >
-                  {lang === 'ts' ? 'TypeScript' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  {lang === 'ts' ? 'Node.js' : lang.charAt(0).toUpperCase() + lang.slice(1)}
                 </button>
               ))}
             </div>
@@ -196,7 +186,7 @@ export AGENTREPLAY_PROJECT_ID="${currentProject?.project_id || 'your-project-id'
                   </button>
                 </div>
                 <p className="text-xs text-textTertiary mt-2">
-                  Run with: <code className="px-1 py-0.5 bg-surface-elevated rounded">{activeLang === 'python' ? 'python your_app.py' : activeLang === 'ts' ? 'ts-node app.ts' : 'go run main.go'}</code> — traces appear automatically!
+                  Run with: <code className="px-1 py-0.5 bg-surface-elevated rounded">{activeLang === 'python' ? 'python your_app.py' : 'npx ts-node app.ts'}</code> — traces appear automatically!
                 </p>
               </div>
             </div>

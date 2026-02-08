@@ -53,7 +53,7 @@ function getApiBaseUrl(): string {
   if (typeof window !== 'undefined' && window.location.port === '5173') {
     return ''; // Use Vite proxy
   }
-  return 'http://127.0.0.1:9600';
+  return 'http://127.0.0.1:47100';
 }
 
 const API_BASE_URL = getApiBaseUrl();
