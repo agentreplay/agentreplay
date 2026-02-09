@@ -54,16 +54,16 @@ export function Layout() {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden flex-col">
-
-
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
         {/* Main content with safe area padding */}
-        <main className={`flex-1 flex flex-col min-w-0 overflow-hidden bg-background relative`}>
-          {/* Header with better spacing */}
-          <header className={`flex h-14 items-center justify-between border-b border-border/60 bg-background/95 px-6 backdrop-blur flex-shrink-0 relative z-10 ${isTauri ? 'pt-0' : ''}`}>
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background relative">
+          {/* Header – styling aligned with SetupWizard (border, shadow, text tokens) */}
+          <header
+            className={`flex h-14 items-center justify-between border-b border-border bg-surface/95 px-6 backdrop-blur-sm flex-shrink-0 relative z-10 shadow-sm shadow-black/5 dark:shadow-black/10 ${isTauri ? 'pt-0' : ''}`}
+          >
             {/* Drag region for main content area */}
             {isTauri && (
               <div
@@ -72,7 +72,7 @@ export function Layout() {
                 style={{ WebkitAppRegion: 'drag' } as any}
               />
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 min-w-0">
               <ProjectSwitcher />
               {!isDetailPage && (
                 <>
@@ -81,9 +81,9 @@ export function Layout() {
                     projectName={currentProject?.name}
                   />
                   {currentProject && (
-                    <div className="hidden lg:flex flex-col text-xs text-textSecondary">
+                    <div className="hidden lg:flex flex-col text-xs min-w-0">
                       <span className="uppercase tracking-widest text-[11px] text-textTertiary">Current scope</span>
-                      <span className="font-semibold text-textPrimary">
+                      <span className="font-semibold text-textPrimary truncate">
                         {currentProject.name}
                         <span className="text-textTertiary font-normal ml-1.5">#{currentProject.project_id}</span>
                       </span>
@@ -95,13 +95,13 @@ export function Layout() {
                 <Breadcrumbs className="hidden sm:flex" />
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <CommandPalette />
             </div>
           </header>
 
-          {/* Main Content with safe area padding */}
-          <div className="flex-1 overflow-auto px-4 pb-4">
+          {/* Main content panel – same surface, shadow and radius as SetupWizard card */}
+          <div className="flex-1 overflow-auto px-6 py-4 bg-surface rounded-tl-2xl border-l border-border shadow-sm shadow-black/5 dark:shadow-black/10 min-h-0">
             <Outlet />
           </div>
         </main>

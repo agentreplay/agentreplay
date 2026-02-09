@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { invoke } from '@tauri-apps/api/core';
-import { motion, AnimatePresence } from 'framer-motion';
-import { EnvironmentConfig } from './EnvironmentConfig';
-import { API_BASE_URL } from '../src/lib/agentreplay-api';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { invoke } from "@tauri-apps/api/core";
+import { motion, AnimatePresence } from "framer-motion";
+import { EnvironmentConfig } from "./EnvironmentConfig";
+import { API_BASE_URL } from "../src/lib/agentreplay-api";
 import {
   Check,
   Copy,
@@ -38,31 +38,34 @@ import {
   Lock,
   Zap,
   Eye,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface SetupWizardProps {
   onComplete: (projectId: number) => void;
 }
 
-type SdkType = 'python' | 'typescript';
-type UsageContext = 'observability' | 'memory' | 'claude'; // New Context Type
+type SdkType = "python" | "typescript";
+type UsageContext = "observability" | "memory" | "claude"; // New Context Type
 
-const SDKS: Record<SdkType, {
-  label: string;
-  installCmd: string;
-  installLabel: string;
-  verifyCode: (projectId: number) => string;
-}> = {
+const SDKS: Record<
+  SdkType,
+  {
+    label: string;
+    installCmd: string;
+    installLabel: string;
+    verifyCode: (projectId: number) => string;
+  }
+> = {
   python: {
-    label: 'Python',
-    installCmd: 'pip install agentreplay && agentreplay-install',
-    installLabel: 'Install via pip',
+    label: "Python",
+    installCmd: "pip install agentreplay && agentreplay-install",
+    installLabel: "Install via pip",
     verifyCode: (projectId) => `import os
 from agentreplay_client import AgentreplayClient
 
 # Initialize client
 client = AgentreplayClient(
-    url=os.getenv("AGENTREPLAY_URL", "http://127.0.0.1:47100"),
+    url=os.getenv("AGENTREPLAY_URL", "http://localhost:47100"),
     tenant_id=int(os.getenv("AGENTREPLAY_TENANT_ID", "1")),
     project_id=int(os.getenv("AGENTREPLAY_PROJECT_ID", "${projectId}")),
 )
@@ -74,17 +77,19 @@ trace = client.create_trace(
 )
 
 print(f"✅ Setup successful! Trace ID: {trace['edge_id']}")
-print(f"🚀 Visit http://localhost:5173/traces to see your data")`
+print(f"🚀 Visit http://localhost:5173/traces to see your data")`,
   },
   typescript: {
-    label: 'Node.js',
-    installCmd: 'npm install @agentreplay/agentreplay',
-    installLabel: 'Install via npm',
-    verifyCode: (projectId) => `import { AgentreplayClient } from '@agentreplay/agentreplay';
+    label: "Node.js",
+    installCmd: "npm install @agentreplay/agentreplay",
+    installLabel: "Install via npm",
+    verifyCode: (
+      projectId,
+    ) => `import { AgentreplayClient } from '@agentreplay/agentreplay';
 
 // Initialize client
 const client = new AgentreplayClient({
-  url: process.env.AGENTREPLAY_URL || 'http://127.0.0.1:47100',
+  url: process.env.AGENTREPLAY_URL || 'http://localhost:47100',
   tenantId: parseInt(process.env.AGENTREPLAY_TENANT_ID || '1'),
   projectId: parseInt(process.env.AGENTREPLAY_PROJECT_ID || '${projectId}'),
 });
@@ -96,34 +101,37 @@ const trace = await client.createTrace({
 });
 
 console.log(\`✅ Setup successful! Trace ID: \${trace.edge_id}\`);
-console.log(\`🚀 Visit http://localhost:5173/traces to see your data\`);`
-  }
+console.log(\`🚀 Visit http://localhost:5173/traces to see your data\`);`,
+  },
 };
 
 export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedSdk, setSelectedSdk] = useState<SdkType>('python');
+  const [selectedSdk, setSelectedSdk] = useState<SdkType>("python");
   // const [usageContext, setUsageContext] = useState<UsageContext>('observability'); // Moved to EnvironmentConfig
-  const [projectName, setProjectName] = useState('');
-  const [projectDescription, setProjectDescription] = useState('');
+  const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
   const [createdProject, setCreatedProject] = useState<any>(null);
   const [copiedEnvVar, setCopiedEnvVar] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const steps = [
-    { id: 'welcome', title: 'Welcome', icon: Sparkles },
-    { id: 'create', title: 'Create Project', icon: FolderPlus },
-    { id: 'install', title: 'Install SDK', icon: Download },
-    { id: 'verify', title: 'Verify Setup', icon: CheckCircle2 },
+    { id: "welcome", title: "Welcome", icon: Sparkles },
+    { id: "create", title: "Create Project", icon: FolderPlus },
+    { id: "install", title: "Install SDK", icon: Download },
+    { id: "verify", title: "Verify Setup", icon: CheckCircle2 },
   ];
 
   // Helper function to wait for server to be ready
-  const waitForServer = async (maxRetries = 30, delayMs = 500): Promise<boolean> => {
+  const waitForServer = async (
+    maxRetries = 30,
+    delayMs = 500,
+  ): Promise<boolean> => {
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/v1/health`, {
-          method: 'GET',
+          method: "GET",
           signal: AbortSignal.timeout(2000),
         });
         if (response.ok) {
@@ -133,7 +141,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         // Server not ready yet
       }
       if (i < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
     return false;
@@ -147,7 +155,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       // First, wait for server to be ready
       const serverReady = await waitForServer();
       if (!serverReady) {
-        throw new Error('Server is not responding. Please wait a moment and try again.');
+        throw new Error(
+          "Server is not responding. Please wait a moment and try again.",
+        );
       }
 
       // Call the backend API to create the project with retry
@@ -156,8 +166,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         try {
           // Create the Main Project
           const response = await fetch(`${API_BASE_URL}/api/v1/projects`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: projectName,
               description: projectDescription || undefined,
@@ -165,7 +175,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           });
 
           if (!response.ok) {
-            const errorText = await response.text().catch(() => 'Unknown error');
+            const errorText = await response
+              .text()
+              .catch(() => "Unknown error");
             throw new Error(`Failed to create project: ${errorText}`);
           }
 
@@ -174,14 +186,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           // Create "Claude Code" Project (ID: 49455)
           // We do this in parallel but don't fail the main flow if it fails (it might already exist)
           fetch(`${API_BASE_URL}/api/v1/projects`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: "Claude Code",
               description: "Claude Code coding sessions",
-              id: 49455
+              id: 49455,
             }),
-          }).catch(err => console.error("Failed to create Claude Code project (it might already exist):", err));
+          }).catch((err) =>
+            console.error(
+              "Failed to create Claude Code project (it might already exist):",
+              err,
+            ),
+          );
 
           // Format the project data for the wizard
           const createdProjectData = {
@@ -193,25 +210,29 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               AGENTREPLAY_URL: data.env_vars.agentreplay_url,
               AGENTREPLAY_TENANT_ID: data.env_vars.tenant_id,
               AGENTREPLAY_PROJECT_ID: data.env_vars.project_id,
-            }
+            },
           };
 
           setCreatedProject(createdProjectData);
           setCurrentStep(2); // Go to Install SDK step
           return; // Success, exit the function
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Unknown error');
+          lastError =
+            error instanceof Error ? error : new Error("Unknown error");
           if (attempt < 2) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
       }
 
       // All retries failed
-      throw lastError || new Error('Failed to create project after retries');
+      throw lastError || new Error("Failed to create project after retries");
     } catch (error) {
-      console.error('Failed to create project:', error);
-      alert('Failed to create project: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error("Failed to create project:", error);
+      alert(
+        "Failed to create project: " +
+          (error instanceof Error ? error.message : "Unknown error"),
+      );
     } finally {
       setIsCreating(false);
     }
@@ -225,52 +246,59 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const completeSetup = () => {
     // Mark setup as complete in localStorage
-    localStorage.setItem('agentreplay_setup_complete', 'true');
-    localStorage.setItem('agentreplay_default_project', createdProject.project_id.toString());
+    localStorage.setItem("agentreplay_setup_complete", "true");
+    localStorage.setItem(
+      "agentreplay_default_project",
+      createdProject.project_id.toString(),
+    );
 
     // Call parent callback
     onComplete(createdProject.project_id);
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="max-w-4xl w-full">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 pt-16 pb-14 sm:pt-20 sm:pb-16">
+      <div className="max-w-4xl w-full mx-auto">
         {/* Progress Steps */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between">
+        <div className="mb-14 sm:mb-16">
+          <div className="flex items-start justify-between gap-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = index === currentStep;
               const isCompleted = index < currentStep;
 
               return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
+                <div key={step.id} className="flex items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 gap-2">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${isCompleted
-                        ? 'bg-green-500 text-white'
-                        : isActive
-                          ? 'bg-primary text-white'
-                          : 'bg-surface border-2 border-border text-textTertiary'
-                        }`}
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                        isCompleted
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : isActive
+                            ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
+                            : "bg-surface border border-border text-textTertiary"
+                      }`}
                     >
                       {isCompleted ? (
-                        <Check className="w-6 h-6" />
+                        <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                       ) : (
-                        <Icon className="w-6 h-6" />
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                       )}
                     </div>
                     <span
-                      className={`text-sm font-medium ${isActive ? 'text-textPrimary' : 'text-textTertiary'
-                        }`}
+                      className={`text-xs sm:text-sm font-medium text-center truncate w-full px-0.5 ${
+                        isActive ? "text-textPrimary" : "text-textTertiary"
+                      }`}
                     >
                       {step.title}
                     </span>
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`h-0.5 flex-1 mx-4 ${isCompleted ? 'bg-green-500' : 'bg-border'
-                        }`}
+                      className={`h-0.5 flex-1 mx-1 sm:mx-2 mt-5 sm:mt-6 self-start shrink-0 ${
+                        isCompleted ? "bg-emerald-500/80" : "bg-border"
+                      }`}
+                      aria-hidden
                     />
                   )}
                 </div>
@@ -286,124 +314,65 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="bg-surface rounded-xl border border-border p-8"
+            transition={{ duration: 0.2 }}
+            className="bg-surface rounded-2xl border border-border shadow-lg shadow-black/5 dark:shadow-black/25 p-8 sm:p-10"
           >
             {/* Step 0: Welcome */}
             {currentStep === 0 && (
               <div className="text-center">
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-8">
                   <div className="relative">
                     <img
                       src="/logo.svg"
                       alt="AgentReplay"
-                      className="w-24 h-24 rounded-2xl shadow-xl"
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/5"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
+                    <div className="absolute -bottom-0.5 -right-0.5 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
                       <Check className="w-4 h-4 text-white" />
                     </div>
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-textPrimary mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-textPrimary mb-3 tracking-tight">
                   Welcome to AgentReplay
                 </h2>
-                <p className="text-base font-medium text-primary mb-1">
-                  Local-First Desktop Observability & AI Memory for Your Agents and Coding Tools
+                <p className="text-base font-semibold text-primary mb-2 max-w-xl mx-auto">
+                  Local-First Desktop Observability & AI Memory for Your Agents
+                  and Coding Tools
                 </p>
-                <p className="text-sm text-textSecondary mb-8 max-w-2xl mx-auto">
-                  The open-source desktop app purpose-built for AI agents & Claude Code. Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
+                <p className="text-sm text-textSecondary mb-10 max-w-2xl mx-auto leading-relaxed">
+                  The open-source desktop app purpose-built for AI agents &
+                  Claude Code. Trace every interaction, build persistent memory,
+                  and debug with confidence — all without sending a single byte
+                  off your machine.
                 </p>
 
                 {/* Privacy banner */}
-                <div className="bg-gradient-to-r from-green-500/5 via-emerald-500/10 to-green-500/5 border border-green-500/20 rounded-xl p-4 mb-6">
-                  <div className="flex items-center justify-center gap-3">
-                    <Lock className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                      Your data never leaves your laptop. Zero cloud dependencies. Fully optimized for desktops & laptops.
+                <div className="bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 rounded-xl p-4 mb-6 text-left">
+                  <div className="flex items-center gap-3">
+                    <Lock className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                      Your data never leaves your laptop. Zero cloud
+                      dependencies. Fully optimized for desktops & laptops.
                     </p>
-                  </div>
-                </div>
-
-                {/* Feature highlights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-blue-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
-                      <Activity className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">Full-Stack Tracing</h3>
-                    <p className="text-sm text-textSecondary">
-                      Capture every LLM call, tool use, and agent step with zero-config auto-instrumentation. See what your AI is really doing.
-                    </p>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-purple-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
-                      <Brain className="w-5 h-5 text-purple-500" />
-                    </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">Persistent Memory</h3>
-                    <p className="text-sm text-textSecondary">
-                      Built-in vector search so your agents remember context across sessions. No external database required.
-                    </p>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-green-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
-                      <Shield className="w-5 h-5 text-green-500" />
-                    </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">100% Local & Private</h3>
-                    <p className="text-sm text-textSecondary">
-                      Everything runs on your machine — your traces, memories, and data stay on your device. No sign-ups, no telemetry.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secondary feature row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Laptop className="w-4 h-4 text-orange-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Desktop Native</h3>
-                      <p className="text-xs text-textSecondary">
-                        Optimized for macOS, Windows & Linux. Runs as a native app, not a browser tab.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Zap className="w-4 h-4 text-cyan-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Blazing Fast</h3>
-                      <p className="text-xs text-textSecondary">
-                        Built with Rust. Sub-millisecond trace ingestion with embedded storage.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Eye className="w-4 h-4 text-indigo-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Open Source</h3>
-                      <p className="text-xs text-textSecondary">
-                        Fully transparent. Inspect, extend, and contribute to the codebase.
-                      </p>
-                    </div>
                   </div>
                 </div>
 
                 {/* GitHub Star CTA */}
-                <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-500/20 rounded-xl p-5 mb-8">
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <Star className="w-5 h-5 text-amber-500" />
-                    <p className="text-sm text-textSecondary">
-                      Love AgentReplay? Help us grow — give us a star on GitHub!
-                    </p>
+                <div className="bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 rounded-xl p-5 mb-10 text-left">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Star className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                      <p className="text-sm text-textSecondary">
+                        Love AgentReplay? Help us grow — give us a star on
+                        GitHub!
+                      </p>
+                    </div>
                     <a
                       href="https://github.com/agentreplay/agentreplay"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors flex-shrink-0"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors shadow-sm shrink-0"
                     >
                       <Star className="w-4 h-4" />
                       Star on GitHub
@@ -415,7 +384,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 <div className="flex justify-center">
                   <button
                     onClick={() => setCurrentStep(1)}
-                    className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors text-lg"
+                    className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-semibold transition-colors text-base shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
                   >
                     Get Started
                     <ChevronRight className="w-5 h-5" />
@@ -427,24 +396,25 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             {/* Step 1: Create Project */}
             {currentStep === 1 && (
               <div>
-                <h2 className="text-2xl font-bold text-textPrimary mb-4">
+                <h2 className="text-2xl font-bold text-textPrimary mb-2 tracking-tight">
                   Create Your First Project
                 </h2>
-                <p className="text-textSecondary mb-6">
-                  Projects help you organize traces by application or environment. Create your first project to get started.
+                <p className="text-textSecondary mb-8 text-sm leading-relaxed">
+                  Projects help you organize traces by application or
+                  environment. Create your first project to get started.
                 </p>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-textPrimary mb-2">
-                      Project Name <span className="text-red-500">*</span>
+                      Project Name <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                       placeholder="e.g., My AI Agent"
-                      className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-lg text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-xl text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
                     />
                   </div>
 
@@ -457,22 +427,22 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       onChange={(e) => setProjectDescription(e.target.value)}
                       placeholder="What does this project track?"
                       rows={3}
-                      className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-lg text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-xl text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background resize-none"
                     />
                   </div>
                 </div>
 
-                <div className="mt-8 flex justify-between">
+                <div className="mt-10 flex justify-between gap-4">
                   <button
                     onClick={() => setCurrentStep(0)}
-                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-xl font-medium transition-colors border border-border"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleCreateProject}
                     disabled={!projectName.trim() || isCreating}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
                   >
                     {isCreating ? (
                       <>
@@ -493,25 +463,30 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             {/* Step 2: Install SDK & Configure */}
             {currentStep === 2 && createdProject && (
               <div>
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
+                <div className="p-4 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 rounded-xl mb-8">
                   <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-green-500 mb-1">
+                      <h4 className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1">
                         Project Created Successfully!
                       </h4>
                       <p className="text-sm text-textSecondary">
-                        Your project <strong>{createdProject.name}</strong> (ID: {createdProject.project_id}) is ready.
+                        Your project{" "}
+                        <strong className="text-textPrimary">
+                          {createdProject.name}
+                        </strong>{" "}
+                        (ID: {createdProject.project_id}) is ready.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <h2 className="text-2xl font-bold text-textPrimary mb-4">
+                <h2 className="text-2xl font-bold text-textPrimary mb-2 tracking-tight">
                   Install SDK & Configure
                 </h2>
-                <p className="text-textSecondary mb-6">
-                  Select your preferred language, install the SDK, and configure your environment.
+                <p className="text-textSecondary mb-8 text-sm leading-relaxed">
+                  Select your preferred language, install the SDK, and configure
+                  your environment.
                 </p>
 
                 {/* SDK Selection Tabs */}
@@ -520,29 +495,35 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     <button
                       key={sdk}
                       onClick={() => setSelectedSdk(sdk)}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${selectedSdk === sdk
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-textTertiary hover:text-textPrimary'
-                        }`}
+                      className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors rounded-t-lg ${
+                        selectedSdk === sdk
+                          ? "border-primary text-primary bg-surface-hover/50"
+                          : "border-transparent text-textTertiary hover:text-textPrimary hover:bg-surface-hover/30"
+                      }`}
                     >
                       {SDKS[sdk].label}
                     </button>
                   ))}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-textPrimary">
                         {SDKS[selectedSdk].installLabel}
                       </span>
                       <button
-                        onClick={() => copyToClipboard(SDKS[selectedSdk].installCmd, 'install')}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary"
+                        onClick={() =>
+                          copyToClipboard(
+                            SDKS[selectedSdk].installCmd,
+                            "install",
+                          )
+                        }
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary border border-border"
                       >
-                        {copiedEnvVar === 'install' ? (
+                        {copiedEnvVar === "install" ? (
                           <>
-                            <Check className="w-4 h-4 text-green-500" />
+                            <Check className="w-4 h-4 text-emerald-500" />
                             Copied!
                           </>
                         ) : (
@@ -553,25 +534,24 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         )}
                       </button>
                     </div>
-                    <pre className="bg-surface-elevated rounded-lg p-4 overflow-x-auto border border-border-subtle">
+                    <pre className="bg-surface-elevated rounded-xl p-4 overflow-x-auto border border-border">
                       <code className="text-sm text-textSecondary font-mono">
                         {SDKS[selectedSdk].installCmd}
                       </code>
                     </pre>
                   </div>
 
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="p-4 bg-primary/10 dark:bg-primary/15 border border-primary/25 rounded-xl">
                     <div className="flex items-start gap-3">
-                      <Terminal className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <Terminal className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-semibold text-blue-500 mb-1">
+                        <h4 className="font-semibold text-primary mb-1">
                           Recommended Setup
                         </h4>
-                        <p className="text-sm text-textSecondary">
-                          {selectedSdk === 'python'
-                            ? 'We recommend installing in a virtual environment to avoid conflicts with other packages.'
-                            : 'Ensure you have Node.js 18+ installed.'
-                          }
+                        <p className="text-sm text-textSecondary leading-relaxed">
+                          {selectedSdk === "python"
+                            ? "We recommend installing in a virtual environment to avoid conflicts with other packages."
+                            : "Ensure you have Node.js 18+ installed."}
                         </p>
                       </div>
                     </div>
@@ -580,7 +560,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 {/* Environment Variables */}
                 <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-textPrimary mb-3">Environment Variables</h3>
+                  <h3 className="text-lg font-semibold text-textPrimary mb-3">
+                    Environment Variables
+                  </h3>
                   <div className="space-y-6">
                     <EnvironmentConfig
                       projectId={createdProject.project_id}
@@ -591,16 +573,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
                 </div>
 
-                <div className="mt-8 flex justify-between">
+                <div className="mt-10 flex justify-between gap-4">
                   <button
                     onClick={() => setCurrentStep(1)}
-                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-xl font-medium transition-colors border border-border"
                   >
                     Back
                   </button>
                   <button
                     onClick={() => setCurrentStep(3)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
                   >
                     Next: Verify Setup
                     <ChevronRight className="w-5 h-5" />
@@ -612,11 +594,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             {/* Step 3: Verify Setup */}
             {currentStep === 3 && createdProject && (
               <div>
-                <h2 className="text-2xl font-bold text-textPrimary mb-4">
+                <h2 className="text-2xl font-bold text-textPrimary mb-2 tracking-tight">
                   Verify Your Setup
                 </h2>
-                <p className="text-textSecondary mb-6">
-                  Run this example code to verify your AgentReplay setup is working correctly.
+                <p className="text-textSecondary mb-8 text-sm leading-relaxed">
+                  Run this example code to verify your AgentReplay setup is
+                  working correctly.
                 </p>
 
                 <div className="space-y-4">
@@ -626,12 +609,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         {SDKS[selectedSdk].label} Test Script
                       </span>
                       <button
-                        onClick={() => copyToClipboard(SDKS[selectedSdk].verifyCode(createdProject.project_id), 'test')}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary"
+                        onClick={() =>
+                          copyToClipboard(
+                            SDKS[selectedSdk].verifyCode(
+                              createdProject.project_id,
+                            ),
+                            "test",
+                          )
+                        }
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-hover hover:bg-surface-elevated transition-colors text-sm text-textSecondary border border-border"
                       >
-                        {copiedEnvVar === 'test' ? (
+                        {copiedEnvVar === "test" ? (
                           <>
-                            <Check className="w-4 h-4 text-green-500" />
+                            <Check className="w-4 h-4 text-emerald-500" />
                             Copied!
                           </>
                         ) : (
@@ -642,24 +632,26 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         )}
                       </button>
                     </div>
-                    <pre className="bg-surface-elevated rounded-lg p-4 overflow-x-auto border border-border-subtle max-h-96">
+                    <pre className="bg-surface-elevated rounded-xl p-4 overflow-x-auto border border-border max-h-96">
                       <code className="text-sm text-textSecondary font-mono whitespace-pre">
-                        {SDKS[selectedSdk].verifyCode(createdProject.project_id)}
+                        {SDKS[selectedSdk].verifyCode(
+                          createdProject.project_id,
+                        )}
                       </code>
                     </pre>
                   </div>
                 </div>
 
-                <div className="mt-8 flex justify-between">
+                <div className="mt-10 flex justify-between gap-4">
                   <button
                     onClick={() => setCurrentStep(2)}
-                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-xl font-medium transition-colors border border-border"
                   >
                     Back
                   </button>
                   <button
                     onClick={completeSetup}
-                    className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-background"
                   >
                     <CheckCircle2 className="w-5 h-5" />
                     Complete Setup

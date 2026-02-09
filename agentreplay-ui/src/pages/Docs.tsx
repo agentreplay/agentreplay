@@ -299,7 +299,7 @@ result = graph.invoke({"messages": [("user", "Hello!")]})
                       <code className="text-sm text-textPrimary">/projects</code>
                     </div>
                     <p className="text-sm text-textSecondary mb-2">Create a new project</p>
-                    <pre className="bg-background border border-border-subtle rounded p-2 text-xs">
+                    <pre className="bg-surface-elevated border border-border rounded p-2 text-xs">
                       <code>{`{
   "name": "My Project",
   "description": "Project description"
@@ -442,9 +442,9 @@ python your_app.py`}</code>
   ];
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-surface-elevated flex-shrink-0">
+    <div className="h-full flex flex-col bg-surface">
+      {/* Header – same surface as page so no gray strip */}
+      <div className="border-b border-border bg-surface flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
