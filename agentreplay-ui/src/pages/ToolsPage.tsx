@@ -335,7 +335,7 @@ function ToolCard({ tool, onClick, isSelected }: {
         )}
         {tool.status === 'inactive' && (
           <span className="flex items-center gap-1 text-xs text-textTertiary">
-            <span className="w-2 h-2 bg-gray-400 rounded-full" />
+            <span className="w-2 h-2 bg-textTertiary rounded-full" />
             Inactive
           </span>
         )}
