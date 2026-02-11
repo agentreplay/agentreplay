@@ -192,7 +192,7 @@ docs-site/
 docs/
 scripts
 c-code.py
-*log
+*.log
 SECURITY.md
 profile_backend.py
 agent_replay_rust.txt
