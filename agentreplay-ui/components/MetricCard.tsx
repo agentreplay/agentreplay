@@ -116,9 +116,9 @@ export function MetricCard({
                 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold
                 ${
                   isBetter
-                    ? 'text-green-400'
+                    ? 'text-green-600 dark:text-green-400'
                     : !isBetter && change !== 0
-                    ? 'text-red-400'
+                    ? 'text-red-600 dark:text-red-400'
                     : 'text-gray-400'
                 }
               `}

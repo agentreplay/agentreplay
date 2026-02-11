@@ -87,10 +87,10 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
 
     const SyntaxHighlightedJSON: React.FC<{ json: string }> = ({ json }) => {
         const highlighted = json
-            .replace(/"([^"]+)":/g, '<span class="text-blue-400">"$1"</span>:')
-            .replace(/: "([^"]+)"/g, ': <span class="text-green-400">"$1"</span>')
-            .replace(/: (\d+)/g, ': <span class="text-yellow-400">$1</span>')
-            .replace(/: (true|false|null)/g, ': <span class="text-purple-400">$1</span>');
+            .replace(/"([^"]+)":/g, '<span class="text-blue-600 dark:text-blue-400">"$1"</span>:')
+            .replace(/: "([^"]+)"/g, ': <span class="text-green-600 dark:text-green-400">"$1"</span>')
+            .replace(/: (\d+)/g, ': <span class="text-yellow-600 dark:text-yellow-400">$1</span>')
+            .replace(/: (true|false|null)/g, ': <span class="text-purple-600 dark:text-purple-400">$1</span>');
 
         return (
             <pre
@@ -579,7 +579,7 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
 
                             // Determine icon and colors based on role (dark mode compatible)
                             const iconBg = isSystem ? 'bg-purple-500/20' : isUser ? 'bg-blue-500/20' : isAssistant ? 'bg-green-500/20' : isTool ? 'bg-amber-500/20' : 'bg-muted';
-                            const iconColor = isSystem ? 'text-purple-400' : isUser ? 'text-blue-400' : isAssistant ? 'text-green-400' : isTool ? 'text-amber-400' : 'text-muted-foreground';
+                            const iconColor = isSystem ? 'text-purple-600 dark:text-purple-400' : isUser ? 'text-blue-600 dark:text-blue-400' : isAssistant ? 'text-green-600 dark:text-green-400' : isTool ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground';
                             const borderColor = isSystem ? 'border-purple-500/30' : isUser ? 'border-blue-500/30' : isAssistant ? 'border-green-500/30' : isTool ? 'border-amber-500/30' : 'border-border';
                             const bgColor = isSystem ? 'bg-purple-500/10' : isUser ? 'bg-blue-500/10' : isAssistant ? 'bg-green-500/10' : isTool ? 'bg-amber-500/10' : 'bg-muted/50';
 
@@ -631,8 +631,8 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
                                                     {prompt.toolCalls.map((tool: any, toolIdx: number) => (
                                                         <div key={toolIdx} className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/30">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <Wrench className="w-4 h-4 text-amber-400" />
-                                                                <span className="font-mono text-sm font-semibold text-amber-300">{tool.name}</span>
+                                                                <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                                                <span className="font-mono text-sm font-semibold text-amber-700 dark:text-amber-300">{tool.name}</span>
                                                             </div>
                                                             {tool.arguments && (
                                                                 <pre className="text-xs text-textSecondary font-mono bg-background/50 p-2 rounded overflow-x-auto">
@@ -665,7 +665,7 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
                                 <div key={`completion-${idx}`} className="space-y-3">
                                     <div className="flex gap-3">
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                            <Zap className="w-4 h-4 text-green-400" />
+                                            <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <div className="flex items-center justify-between">
@@ -674,7 +674,7 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
                                                         {completion.role || 'ASSISTANT'} RESPONSE
                                                     </div>
                                                     {completion.finishReason && (
-                                                        <span className="text-xs text-amber-400 px-2 py-0.5 bg-amber-500/10 rounded border border-amber-500/30">
+                                                        <span className="text-xs text-amber-600 dark:text-amber-400 px-2 py-0.5 bg-amber-500/10 rounded border border-amber-500/30">
                                                             {completion.finishReason}
                                                         </span>
                                                     )}
@@ -700,12 +700,12 @@ export function SpanInspector({ trace, onClose, activeTab: controlledTab, onTabC
                                             {/* Show tool calls requested by the model */}
                                             {hasToolCalls && (
                                                 <div className="space-y-2 mt-2">
-                                                    <div className="text-xs font-medium text-amber-400 uppercase">Tool Calls Requested:</div>
+                                                    <div className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">Tool Calls Requested:</div>
                                                     {completion.toolCalls.map((tool: any, toolIdx: number) => (
                                                         <div key={toolIdx} className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/30">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <Wrench className="w-4 h-4 text-amber-400" />
-                                                                <span className="font-mono text-sm font-semibold text-amber-300">{tool.name}</span>
+                                                                <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                                                <span className="font-mono text-sm font-semibold text-amber-700 dark:text-amber-300">{tool.name}</span>
                                                                 {tool.id && (
                                                                     <span className="text-xs text-amber-400/70 font-mono">({tool.id})</span>
                                                                 )}

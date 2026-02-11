@@ -36,7 +36,7 @@ export default function WindowControls() {
             className="fixed top-0 left-0 right-0 h-10 bg-black/90 border-b border-white/10 flex justify-between items-center z-50 select-none"
         >
             {/* Left Side: Title / Icon (Clicking here also drags the window) */}
-            <div className="flex items-center gap-3 pl-4 text-gray-400 pointer-events-none">
+            <div className="flex items-center gap-3 pl-4 text-muted-foreground pointer-events-none">
                 <AppWindow size={16} className="text-blue-500" />
                 <span className="text-sm font-medium font-mono">AgentReplay</span>
             </div>
@@ -45,19 +45,19 @@ export default function WindowControls() {
             <div className="flex h-full">
                 <button
                     onClick={() => appWindow.minimize()}
-                    className="h-full px-4 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                    className="h-full px-4 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <Minus size={16} />
                 </button>
                 <button
                     onClick={() => appWindow.toggleMaximize()}
-                    className="h-full px-4 hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                    className="h-full px-4 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <Square size={14} />
                 </button>
                 <button
                     onClick={() => appWindow.close()}
-                    className="h-full px-4 hover:bg-red-500 text-gray-400 hover:text-white transition-colors"
+                    className="h-full px-4 hover:bg-red-500 text-muted-foreground hover:text-white transition-colors"
                 >
                     <X size={16} />
                 </button>

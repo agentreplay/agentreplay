@@ -200,10 +200,10 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
   }));
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50">
+    <div className="space-y-6 p-6 bg-secondary">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Trace Analytics</h2>
-        <div className="text-sm text-gray-600">
+        <h2 className="text-2xl font-bold text-foreground">Trace Analytics</h2>
+        <div className="text-sm text-muted-foreground">
           Analyzing {stats.totalTraces} traces with {spans.length} spans
         </div>
       </div>
@@ -240,8 +240,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
       </div>
 
       {/* Duration Percentiles */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-card rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-600" />
           Duration Percentiles
         </h3>
@@ -264,8 +264,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Duration Histogram */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Duration Distribution</h3>
+        <div className="bg-card rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Duration Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats.durationHistogram}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -278,8 +278,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
         </div>
 
         {/* Span Count Histogram */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Span Count Distribution</h3>
+        <div className="bg-card rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Span Count Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats.spanCountHistogram}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -292,8 +292,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
         </div>
 
         {/* Span Type Distribution */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Span Types</h3>
+        <div className="bg-card rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Span Types</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -317,8 +317,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
 
         {/* Errors by Type */}
         {errorsByTypeData.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Errors by Span Type</h3>
+          <div className="bg-card rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Errors by Span Type</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={errorsByTypeData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -335,8 +335,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
       {/* Top Operations Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Slowest Operations */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Clock className="w-5 h-5 text-orange-600" />
             Slowest Operations
           </h3>
@@ -344,17 +344,17 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
             {stats.slowestOps.slice(0, 5).map((op, idx) => (
               <div
                 key={idx}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100"
+                className="flex justify-between items-center p-3 bg-secondary rounded hover:bg-gray-100"
               >
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 truncate">{op.name}</div>
-                  <div className="text-xs text-gray-600">{op.count} calls</div>
+                  <div className="text-sm font-medium text-foreground truncate">{op.name}</div>
+                  <div className="text-xs text-muted-foreground">{op.count} calls</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-bold text-orange-600">
                     {op.avgDuration.toFixed(0)}ms
                   </div>
-                  <div className="text-xs text-gray-600">avg</div>
+                  <div className="text-xs text-muted-foreground">avg</div>
                 </div>
               </div>
             ))}
@@ -363,8 +363,8 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
 
         {/* Most Expensive Operations */}
         {stats.expensiveOps.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-card rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-green-600" />
               Most Expensive Operations
             </h3>
@@ -372,17 +372,17 @@ export function TraceStatisticsDashboard({ traces, spans = [] }: TraceStatistics
               {stats.expensiveOps.slice(0, 5).map((op, idx) => (
                 <div
                   key={idx}
-                  className="flex justify-between items-center p-3 bg-gray-50 rounded hover:bg-gray-100"
+                  className="flex justify-between items-center p-3 bg-secondary rounded hover:bg-gray-100"
                 >
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900 truncate">{op.name}</div>
-                    <div className="text-xs text-gray-600">{op.count} calls</div>
+                    <div className="text-sm font-medium text-foreground truncate">{op.name}</div>
+                    <div className="text-xs text-muted-foreground">{op.count} calls</div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-bold text-green-600">
                       ${op.totalCost.toFixed(4)}
                     </div>
-                    <div className="text-xs text-gray-600">total</div>
+                    <div className="text-xs text-muted-foreground">total</div>
                   </div>
                 </div>
               ))}
@@ -413,11 +413,11 @@ function MetricCard({ title, value, subtitle, icon, color }: MetricCardProps) {
   return (
     <div className={`${colorClasses[color]} border rounded-lg p-4`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-medium text-gray-600">{title}</div>
+        <div className="text-sm font-medium text-muted-foreground">{title}</div>
         {icon}
       </div>
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
-      {subtitle && <div className="text-xs text-gray-600 mt-1">{subtitle}</div>}
+      <div className="text-2xl font-bold text-foreground">{value}</div>
+      {subtitle && <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>}
     </div>
   );
 }

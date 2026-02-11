@@ -74,7 +74,7 @@ export function EnvironmentConfig({ projectId, envVars, onCopy }: EnvironmentCon
                                         </label>
                                         <div className="flex gap-2">
                                             <pre className="flex-1 bg-surface-elevated rounded-lg p-3 overflow-x-auto border border-border-subtle">
-                                                <code className="text-green-400 font-mono text-sm">
+                                                <code className="text-green-600 dark:text-green-400 font-mono text-sm">
                                                     /plugin marketplace add agentreplay/agentreplay-claude-plugin
                                                 </code>
                                             </pre>

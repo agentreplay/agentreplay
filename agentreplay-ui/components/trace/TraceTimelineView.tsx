@@ -567,14 +567,14 @@ function TimelineBar({
                 </div>
                 <div>Service: {span.service}</div>
                 {isCritical && (
-                  <div className="flex items-center gap-1 text-orange-400">
+                  <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                     <TrendingUp className="w-3 h-3" />
                     <span>Critical Path</span>
                   </div>
                 )}
-                {span.isParallel && <div className="text-purple-400">Parallel Execution</div>}
-                {span.isExternal && <div className="text-orange-400">External Call</div>}
-                {hasError && <div className="text-red-400">Error</div>}
+                {span.isParallel && <div className="text-purple-600 dark:text-purple-400">Parallel Execution</div>}
+                {span.isExternal && <div className="text-orange-600 dark:text-orange-400">External Call</div>}
+                {hasError && <div className="text-red-600 dark:text-red-400">Error</div>}
               </div>
             </div>
           </div>

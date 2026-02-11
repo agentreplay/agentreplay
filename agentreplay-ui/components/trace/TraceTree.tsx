@@ -298,7 +298,7 @@ export function TraceTree({ spans, onSelectSpan, selectedSpanId }: TraceTreeProp
   if (spans.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <AlertCircle className="w-12 h-12 mb-4 text-gray-400" />
+        <AlertCircle className="w-12 h-12 mb-4 text-muted-foreground" />
         <p className="text-lg font-medium">No spans to display</p>
         <p className="text-sm">This trace doesn't have any span data yet.</p>
       </div>

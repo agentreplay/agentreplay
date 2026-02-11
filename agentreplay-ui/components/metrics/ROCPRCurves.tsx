@@ -210,13 +210,13 @@ const CurveSVG: React.FC<CurveSVGProps> = ({
             x1={scaleX(0)} y1={scaleY(v)}
             x2={scaleX(1)} y2={scaleY(v)}
             stroke="currentColor" strokeOpacity={0.1}
-            className="text-gray-400"
+            className="text-muted-foreground"
           />
           <line
             x1={scaleX(v)} y1={scaleY(0)}
             x2={scaleX(v)} y2={scaleY(1)}
             stroke="currentColor" strokeOpacity={0.1}
-            className="text-gray-400"
+            className="text-muted-foreground"
           />
           <text x={scaleX(0) - 8} y={scaleY(v)} textAnchor="end" dominantBaseline="middle"
             className="text-xs fill-gray-500">{v.toFixed(1)}</text>
@@ -241,13 +241,13 @@ const CurveSVG: React.FC<CurveSVGProps> = ({
         <path
           d={`M ${scaleX(0)} ${scaleY(0)} L ${scaleX(1)} ${scaleY(1)}`}
           fill="none" stroke="currentColor" strokeWidth={2} strokeDasharray="6,4"
-          className="text-gray-400"
+          className="text-muted-foreground"
         />
       ) : baseline !== undefined && (
         <path
           d={`M ${scaleX(0)} ${scaleY(baseline)} L ${scaleX(1)} ${scaleY(baseline)}`}
           fill="none" stroke="currentColor" strokeWidth={2} strokeDasharray="6,4"
-          className="text-gray-400"
+          className="text-muted-foreground"
         />
       )}
       

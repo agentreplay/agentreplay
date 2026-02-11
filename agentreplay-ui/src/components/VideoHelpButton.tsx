@@ -58,16 +58,17 @@ export function VideoHelpButton({ pageId, className = '', size = 'md' }: VideoHe
         className={`
           ${sizeClasses[size]} 
           rounded-lg 
-          bg-red-500/10 hover:bg-red-500/20 
-          border border-red-500/30 hover:border-red-500/50
           flex items-center justify-center 
           transition-all duration-200
           group
           ${className}
         `}
+        style={{ border: '1px solid rgba(239,68,68,0.25)', backgroundColor: 'rgba(239,68,68,0.06)' }}
         title={`Watch: ${video.title}`}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.12)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.06)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}
       >
-        <Youtube className={`${iconSizes[size]} text-red-500 group-hover:scale-110 transition-transform`} />
+        <Youtube className={`${iconSizes[size]} group-hover:scale-110 transition-transform`} style={{ color: '#ef4444' }} />
       </button>
 
       {/* Video Modal */}
@@ -102,11 +103,11 @@ function VideoModal({ video, videoId, onClose }: VideoModalProps) {
   }, [onClose]);
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-4xl bg-surface border border-border rounded-xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

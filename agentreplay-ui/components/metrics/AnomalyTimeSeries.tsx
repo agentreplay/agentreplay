@@ -204,7 +204,7 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({
             y2={scaleY(tick)}
             stroke="currentColor"
             strokeOpacity={0.1}
-            className="text-gray-400"
+            className="text-muted-foreground"
           />
           <text
             x={padding.left - 8}

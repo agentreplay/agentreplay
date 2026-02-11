@@ -230,7 +230,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
       : null;
   
   return (
-    <div className={`bg-white dark:bg-gray-900 rounded-lg shadow ${className}`}>
+    <div className={`bg-card rounded-lg shadow ${className}`}>
       {/* Winner declaration */}
       {winner && (
         <div className={`flex items-center gap-2 p-4 rounded-t-lg ${
@@ -293,7 +293,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
                   key={comp.metric}
                   className={`border-b border-gray-100 dark:border-gray-800 ${
                     index % 2 === 0 
-                      ? 'bg-white dark:bg-gray-900' 
+                      ? 'bg-card' 
                       : 'bg-gray-50 dark:bg-gray-800/50'
                   } ${significant && improved ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}
                 >

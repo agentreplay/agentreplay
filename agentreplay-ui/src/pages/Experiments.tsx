@@ -21,7 +21,7 @@ import { agentreplayClient, ExperimentResponse, ExperimentStatsResponse, CreateE
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const colors: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    draft: 'bg-secondary text-foreground',
     running: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
     paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -104,7 +104,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Create New Experiment</h2>
         
         <form onSubmit={handleSubmit}>
@@ -114,7 +114,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+              className="w-full p-2 border rounded dark:bg-secondary dark:border-border"
               placeholder="e.g., GPT-4 vs Claude Comparison"
               required
             />
@@ -125,7 +125,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+              className="w-full p-2 border rounded dark:bg-secondary dark:border-border"
               placeholder="What are you testing?"
               rows={3}
             />
@@ -148,7 +148,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
                   type="text"
                   value={variant.name}
                   onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
-                  className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                  className="flex-1 p-2 border rounded dark:bg-secondary dark:border-border"
                   placeholder="Variant name"
                   required
                 />
@@ -156,7 +156,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
                   type="text"
                   value={variant.description}
                   onChange={(e) => handleVariantChange(index, 'description', e.target.value)}
-                  className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                  className="flex-1 p-2 border rounded dark:bg-secondary dark:border-border"
                   placeholder="Description"
                 />
                 {variants.length > 2 && (
@@ -205,7 +205,7 @@ const CreateExperimentModal: React.FC<CreateExperimentModalProps> = ({ isOpen, o
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-4 py-2 border rounded hover:bg-secondary"
             >
               Cancel
             </button>
@@ -238,7 +238,7 @@ const ExperimentCard: React.FC<ExperimentCardProps> = ({ experiment, onStart, on
   const totalTraffic = Object.values(experiment.traffic_split).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
+    <div className="border border-border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold text-lg">{experiment.name}</h3>
@@ -273,7 +273,7 @@ const ExperimentCard: React.FC<ExperimentCardProps> = ({ experiment, onStart, on
       <div className="flex gap-2">
         <button
           onClick={() => onView(experiment.id)}
-          className="flex-1 px-3 py-2 border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="flex-1 px-3 py-2 border rounded text-sm hover:bg-secondary"
         >
           View Details
         </button>
@@ -358,7 +358,7 @@ const ExperimentDetail: React.FC<ExperimentDetailProps> = ({ experiment, stats, 
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border">
+      <div className="bg-card rounded-lg p-6 border">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold">{experiment.name}</h2>
@@ -428,7 +428,7 @@ const ExperimentDetail: React.FC<ExperimentDetailProps> = ({ experiment, stats, 
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{variant.description}</p>
                 {Object.keys(variant.config).length > 0 && (
-                  <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto">
+                  <pre className="mt-2 text-xs bg-secondary p-2 rounded overflow-x-auto">
                     {JSON.stringify(variant.config, null, 2)}
                   </pre>
                 )}
@@ -617,7 +617,7 @@ export default function Experiments() {
             className={`px-3 py-1 rounded-full text-sm ${
               filter === status
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                : 'bg-secondary hover:bg-secondary'
             }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -640,7 +640,7 @@ export default function Experiments() {
           </button>
         </div>
       ) : experiments.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="text-center py-12 bg-secondary rounded-lg">
           <div className="text-4xl mb-4">🧪</div>
           <h3 className="text-lg font-medium mb-2">No experiments yet</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">

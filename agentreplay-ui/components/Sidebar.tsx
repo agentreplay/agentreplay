@@ -37,29 +37,31 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
+import { useAppMode } from '../src/context/app-mode-context';
 
 const navItems = [
-  { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1' },
-  { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2' },
-  { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3' },
-  { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4' },
-  { id: 'eval-pipeline', label: 'Eval Pipeline', icon: GitBranch, segment: 'eval-pipeline' },
-  { id: 'prompts', label: 'Prompts', icon: NotebookPen, segment: 'prompts', shortcut: '6' },
-  { id: 'model-comparison', label: 'Compare', icon: Scale, segment: 'model-comparison' },
-  { id: 'tools', label: 'Tools', icon: Wrench, segment: 'tools' },
-  { id: 'memory', label: 'Memory', icon: Database, segment: 'memory' },
-  { id: 'plugins', label: 'Plugins', icon: Puzzle, segment: 'plugins' },
-  { id: 'analytics', label: 'Analytics', icon: BarChart2, segment: 'analytics', shortcut: '7' },
-  { id: 'costs', label: 'Costs', icon: DollarSign, segment: 'costs' },
-  { id: 'storage', label: 'Storage', icon: HardDrive, segment: 'storage' },
-  { id: 'docs', label: 'Docs', icon: BookOpen, segment: 'docs' },
-  { id: 'settings', label: 'Settings', icon: Settings, segment: 'settings', shortcut: ',' },
+  { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1', tier: 'basic' as const },
+  { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2', tier: 'basic' as const },
+  { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3', tier: 'pro' as const },
+  { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4', tier: 'basic' as const },
+  { id: 'eval-pipeline', label: 'Eval Pipeline', icon: GitBranch, segment: 'eval-pipeline', tier: 'pro' as const },
+  { id: 'prompts', label: 'Prompts', icon: NotebookPen, segment: 'prompts', shortcut: '6', tier: 'basic' as const },
+  { id: 'model-comparison', label: 'Compare', icon: Scale, segment: 'model-comparison', tier: 'pro' as const },
+  { id: 'tools', label: 'Tools', icon: Wrench, segment: 'tools', tier: 'pro' as const },
+  { id: 'memory', label: 'Memory', icon: Database, segment: 'memory', tier: 'pro' as const },
+  { id: 'plugins', label: 'Plugins', icon: Puzzle, segment: 'plugins', tier: 'pro' as const },
+  { id: 'analytics', label: 'Analytics', icon: BarChart2, segment: 'analytics', shortcut: '7', tier: 'basic' as const },
+  { id: 'costs', label: 'Costs', icon: DollarSign, segment: 'costs', tier: 'pro' as const },
+  { id: 'storage', label: 'Storage', icon: HardDrive, segment: 'storage', tier: 'pro' as const },
+  { id: 'docs', label: 'Docs', icon: BookOpen, segment: 'docs', tier: 'basic' as const },
+  { id: 'settings', label: 'Settings', icon: Settings, segment: 'settings', shortcut: ',', tier: 'basic' as const },
 ];
 
 export default function Sidebar() {
   const { currentProject } = useProjects();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { appMode } = useAppMode();
 
   // Initialize from localStorage if available
   const [collapsed, setCollapsed] = useState(() => {
@@ -114,16 +116,21 @@ export default function Sidebar() {
     localStorage.setItem('sidebar_collapsed', String(newState));
   };
 
-  // Filter items based on experimental flag
+  // Filter items based on experimental flag and app mode
   const visibleNavItems = useMemo(() => {
     const experimentalIds = ['insights', 'storage', 'tools', 'plugins'];
     return navItems.filter(item => {
+      // Experimental features gate
       if (experimentalIds.includes(item.id)) {
-        return experimentalFeatures;
+        if (!experimentalFeatures) return false;
+      }
+      // App mode gate: in basic mode, only show basic-tier items
+      if (appMode === 'basic' && item.tier === 'pro') {
+        return false;
       }
       return true;
     });
-  }, [experimentalFeatures]);
+  }, [experimentalFeatures, appMode]);
 
   // Keyboard navigation shortcuts
   useEffect(() => {
@@ -168,21 +175,22 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'group relative flex flex-col border-r border-border/50 bg-background/80 pt-14 pb-4 text-sm transition-all duration-300 ease-in-out',
-        collapsed ? 'w-[80px] px-2' : 'w-64 px-3'
+        'group relative flex flex-col border-r border-border/60 bg-card pt-14 pb-2 transition-all duration-300 ease-in-out',
+        collapsed ? 'w-[56px]' : 'w-[208px]'
       )}
     >
+      {/* Collapse toggle — appears on hover */}
       <button
         type="button"
         className={cn(
-          "absolute -right-3 top-6 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-textSecondary shadow-sm transition-all hover:bg-surface hover:text-textPrimary z-20",
+          "absolute -right-2.5 top-[22px] flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground shadow-sm transition-all hover:bg-secondary hover:text-foreground z-20",
           "opacity-0 group-hover:opacity-100 focus:opacity-100"
         )}
         onClick={toggleCollapsed}
         style={{ WebkitAppRegion: 'no-drag' } as any}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        <ChevronLeft className={cn('h-3 w-3 transition-transform duration-300', collapsed && 'rotate-180')} />
+        <ChevronLeft className={cn('h-2.5 w-2.5 transition-transform duration-300', collapsed && 'rotate-180')} />
       </button>
 
       {/* Drag region for macOS traffic lights area */}
@@ -192,36 +200,25 @@ export default function Sidebar() {
         style={{ WebkitAppRegion: 'drag' } as any}
       />
 
-      {/* Agentreplay Icon/Logo */}
-      <div
-        className={cn(
-          'mb-6 flex items-center justify-center transition-all duration-200',
-          collapsed ? 'px-1' : 'px-3'
+      {/* Logo */}
+      <div className={cn(
+        'mb-4 flex items-center transition-all duration-200',
+        collapsed ? 'justify-center px-0' : 'px-4 gap-2'
+      )}>
+        <img
+          src="/logo.svg"
+          alt="Agentreplay"
+          className="w-8 h-8 rounded-lg shadow-md flex-shrink-0"
+        />
+        {!collapsed && (
+          <span className="inline-flex h-[18px] items-center rounded-full bg-orange-500/90 px-1.5 text-[9px] font-bold uppercase tracking-wider text-white">
+            Alpha
+          </span>
         )}
-      >
-        <div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-2')}>
-          <img
-            src="/logo.svg"
-            alt="Agentreplay"
-            className={cn(
-              'rounded-lg shadow-lg transition-all duration-200',
-              collapsed ? 'w-10 h-10' : 'w-10 h-10'
-            )}
-          />
-          {!collapsed && (
-            <span className="flex h-5 items-center rounded-full bg-orange-500 px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-white shadow-sm">
-              Alpha
-            </span>
-          )}
-          {collapsed && (
-            <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-semibold uppercase leading-none tracking-wide text-white shadow-sm">
-              Alpha
-            </span>
-          )}
-        </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-2">
+      {/* Navigation */}
+      <nav className={cn('flex flex-1 flex-col gap-0.5', collapsed ? 'px-1.5' : 'px-2')}>
         {visibleNavItems.map((item) => {
           const target = basePath ? `${basePath}/${item.segment}` : '#';
           const isActive = basePath ? pathname.startsWith(`${basePath}/${item.segment}`) : false;
@@ -233,62 +230,73 @@ export default function Sidebar() {
               to={target}
               className={({ isPending }) =>
                 cn(
-                  'flex items-center gap-3 rounded-lg py-2 text-[15px] font-medium transition-all relative group/item',
+                  'flex items-center rounded-md transition-all duration-150 relative group/item',
+                  collapsed
+                    ? 'justify-center h-9 w-full'
+                    : 'gap-2.5 px-2.5 py-[7px]',
                   isActive
-                    ? 'bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/60 dark:hover:text-gray-200',
-                  collapsed ? 'justify-center px-0' : 'px-3',
-                  (!basePath || target === '#') && 'pointer-events-none opacity-50',
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground',
+                  (!basePath || target === '#') && 'pointer-events-none opacity-40',
                   isPending && 'opacity-70'
                 )
               }
               title={collapsed ? `${item.label}${item.shortcut ? ` (⌘${item.shortcut})` : ''}` : undefined}
             >
-              <Icon className={cn("flex-shrink-0 transition-all", collapsed ? "h-6 w-6" : "h-5 w-5")} />
+              <Icon className={cn("flex-shrink-0", collapsed ? "h-[18px] w-[18px]" : "h-4 w-4")} />
 
               {!collapsed && (
                 <>
-                  <span className="truncate flex-1 tracking-tight">{item.label}</span>
+                  <span className="truncate flex-1 text-[13px] tracking-tight">{item.label}</span>
                   {item.shortcut && (
-                    <kbd className="hidden group-hover/item:inline-flex h-5 items-center gap-1 rounded border border-border/40 bg-background/50 px-1.5 font-sans text-[11px] font-medium text-textTertiary">
+                    <kbd className="hidden group-hover/item:inline-flex h-4 items-center rounded border border-border/30 bg-background/40 px-1 font-sans text-[10px] text-muted-foreground/60">
                       ⌘{item.shortcut}
                     </kbd>
                   )}
                 </>
+              )}
+
+              {/* Collapsed tooltip */}
+              {collapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/item:opacity-100 transition-opacity shadow-lg z-50">
+                  {item.label}
+                  {item.shortcut && <span className="ml-1.5 opacity-60">⌘{item.shortcut}</span>}
+                </div>
               )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Keyboard shortcuts hint */}
-      {!collapsed && (
-        <button
-          onClick={() => setShowShortcuts(true)}
-          className="flex items-center gap-2 mx-2 mb-2 px-3 py-2 rounded-md text-xs text-textTertiary hover:text-textSecondary hover:bg-surface transition-colors"
-        >
-          <Keyboard className="w-3.5 h-3.5" />
-          <span>Shortcuts</span>
-          <kbd className="ml-auto px-1.5 py-0.5 rounded border border-border/60 bg-surface font-mono text-[10px]">⌘/</kbd>
-        </button>
-      )}
-
-      {/* Report Issue button */}
-      <a
-        href="https://github.com/agentreplay/agentreplay/issues"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          'flex items-center gap-2 mx-2 mb-2 rounded-md text-xs transition-colors',
-          collapsed
-            ? 'justify-center px-0 py-2 text-textTertiary hover:text-orange-400 hover:bg-orange-500/10'
-            : 'px-3 py-2 text-textTertiary hover:text-orange-400 hover:bg-orange-500/10'
+      {/* Bottom actions */}
+      <div className={cn('flex flex-col gap-0.5 mt-auto', collapsed ? 'px-1.5' : 'px-2')}>
+        {/* Shortcuts */}
+        {!collapsed && (
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className="flex items-center gap-2 px-2.5 py-[6px] rounded-md text-[12px] text-muted-foreground/70 hover:text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+            <span>Shortcuts</span>
+            <kbd className="ml-auto px-1 py-0.5 rounded border border-border/40 font-mono text-[9px] text-muted-foreground/50">⌘/</kbd>
+          </button>
         )}
-        title="Report an issue on GitHub"
-      >
-        <Bug className={cn('flex-shrink-0', collapsed ? 'w-5 h-5' : 'w-3.5 h-3.5')} />
-        {!collapsed && <span>Report Issue</span>}
-      </a>
+
+        {/* Report Issue */}
+        <a
+          href="https://github.com/agentreplay/agentreplay/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            'flex items-center rounded-md text-[12px] transition-colors text-muted-foreground/70 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-500/8',
+            collapsed ? 'justify-center h-9 w-full' : 'gap-2 px-2.5 py-[6px]'
+          )}
+          title="Report an issue on GitHub"
+        >
+          <Bug className={cn('flex-shrink-0', collapsed ? 'w-4 h-4' : 'w-3.5 h-3.5')} />
+          {!collapsed && <span>Report Issue</span>}
+        </a>
+      </div>
 
       {/* Keyboard shortcuts overlay */}
       {showShortcuts && (
@@ -297,102 +305,98 @@ export default function Sidebar() {
           onClick={() => setShowShortcuts(false)}
         >
           <div
-            className="bg-surface border border-border rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            className="bg-card border border-border rounded-xl shadow-2xl p-5 max-w-sm w-full mx-4"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-textPrimary flex items-center gap-2">
-                <Keyboard className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Keyboard className="w-4 h-4 text-primary" />
                 Keyboard Shortcuts
               </h3>
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="text-textTertiary hover:text-textPrimary"
+                className="text-muted-foreground hover:text-foreground text-xs"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-1">
-              <div className="text-xs text-textTertiary uppercase tracking-wider mb-2">Navigation</div>
+            <div className="space-y-0.5">
+              <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1.5">Navigation</div>
               {navItems.filter(i => i.shortcut).map(item => (
-                <div key={item.id} className="flex items-center justify-between py-1.5 text-sm">
-                  <span className="text-textSecondary">{item.label}</span>
-                  <kbd className="px-2 py-1 rounded border border-border bg-background font-mono text-xs text-textTertiary">
+                <div key={item.id} className="flex items-center justify-between py-1 text-[13px]">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[11px] text-muted-foreground/70">
                     ⌘{item.shortcut}
                   </kbd>
                 </div>
               ))}
-              <div className="border-t border-border my-3" />
-              <div className="text-xs text-textTertiary uppercase tracking-wider mb-2">General</div>
-              <div className="flex items-center justify-between py-1.5 text-sm">
-                <span className="text-textSecondary">Command Palette</span>
-                <kbd className="px-2 py-1 rounded border border-border bg-background font-mono text-xs text-textTertiary">⌘K</kbd>
-              </div>
-              <div className="flex items-center justify-between py-1.5 text-sm">
-                <span className="text-textSecondary">Toggle Sidebar</span>
-                <kbd className="px-2 py-1 rounded border border-border bg-background font-mono text-xs text-textTertiary">⌘B</kbd>
-              </div>
-              <div className="flex items-center justify-between py-1.5 text-sm">
-                <span className="text-textSecondary">Show Shortcuts</span>
-                <kbd className="px-2 py-1 rounded border border-border bg-background font-mono text-xs text-textTertiary">⌘/</kbd>
-              </div>
+              <div className="border-t border-border/40 my-2" />
+              <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1.5">General</div>
+              {[
+                { label: 'Command Palette', key: '⌘K' },
+                { label: 'Toggle Sidebar', key: '⌘B' },
+                { label: 'Show Shortcuts', key: '⌘/' },
+              ].map(s => (
+                <div key={s.key} className="flex items-center justify-between py-1 text-[13px]">
+                  <span className="text-muted-foreground">{s.label}</span>
+                  <kbd className="px-1.5 py-0.5 rounded border border-border bg-background font-mono text-[11px] text-muted-foreground/70">{s.key}</kbd>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
+      {/* Project info */}
       <div className={cn(
-        'border-t border-border/40 py-4 transition-all duration-300',
-        collapsed ? 'px-0 flex justify-center' : 'px-2'
+        'border-t border-border/30 mt-1 pt-2 pb-1 transition-all duration-300',
+        collapsed ? 'px-1 flex justify-center' : 'px-3'
       )}>
         {currentProject ? (
           <div className={cn("flex flex-col", collapsed && "items-center")}>
             <div className={cn(
-              "font-semibold text-textPrimary transition-all duration-200",
-              collapsed ? "text-[10px] text-center leading-tight" : "text-sm"
+              "font-semibold text-foreground transition-all duration-200",
+              collapsed ? "text-[9px] text-center leading-tight" : "text-[12px]"
             )}>
               {collapsed ? (
-                <span className="block w-full truncate px-1">{currentProject.name.substring(0, 2).toUpperCase()}</span>
+                <span className="block truncate">{currentProject.name.substring(0, 2).toUpperCase()}</span>
               ) : (
                 currentProject.name
               )}
             </div>
             {!collapsed && (
-              <p className="text-xs text-textSecondary mt-0.5">{currentProject.trace_count.toLocaleString()} traces</p>
+              <p className="text-[11px] text-muted-foreground/70">{currentProject.trace_count.toLocaleString()} traces</p>
             )}
           </div>
         ) : (
-          !collapsed && <p className="text-xs text-textTertiary">Select a project</p>
+          !collapsed && <p className="text-[11px] text-muted-foreground/50">Select a project</p>
         )}
       </div>
 
       {/* Version & Branding */}
       <div className={cn(
-        'border-t border-border/40 py-3 transition-all duration-300',
-        collapsed ? 'px-0 flex flex-col items-center gap-1' : 'px-2'
+        'border-t border-border/30 pt-2 pb-0.5 transition-all duration-300',
+        collapsed ? 'flex flex-col items-center' : 'px-3'
       )}>
         {!collapsed ? (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <img
-                src="/icons/32x32.png"
-                alt="Agentreplay"
-                className="w-6 h-6 rounded-md flex-shrink-0"
-              />
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-textPrimary">Agentreplay</span>
-                <span className="text-[10px] text-textTertiary">v0.1.0</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <img
               src="/icons/32x32.png"
               alt="Agentreplay"
-              className="w-7 h-7 rounded-md"
+              className="w-5 h-5 rounded flex-shrink-0"
             />
-            <span className="text-[9px] text-textTertiary">v0.1</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] font-medium text-foreground/80">Agentreplay</span>
+              <span className="text-[9px] text-muted-foreground/50">v0.1.0</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <img
+              src="/icons/32x32.png"
+              alt="Agentreplay"
+              className="w-5 h-5 rounded"
+            />
           </div>
         )}
       </div>

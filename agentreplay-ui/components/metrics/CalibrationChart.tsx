@@ -188,7 +188,7 @@ const ReliabilityDiagram: React.FC<ReliabilityDiagramProps> = ({
             y2={scaleY(v)}
             stroke="currentColor"
             strokeOpacity={0.1}
-            className="text-gray-400"
+            className="text-muted-foreground"
           />
           {/* Vertical */}
           <line
@@ -198,7 +198,7 @@ const ReliabilityDiagram: React.FC<ReliabilityDiagramProps> = ({
             y2={scaleY(1)}
             stroke="currentColor"
             strokeOpacity={0.1}
-            className="text-gray-400"
+            className="text-muted-foreground"
           />
           {/* Y-axis labels */}
           <text

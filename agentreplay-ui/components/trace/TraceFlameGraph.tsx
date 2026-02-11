@@ -108,36 +108,36 @@ export function TraceFlameGraph({ spans, onSelectSpan, selectedSpanId }: TraceFl
 
     if (spans.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200 h-[400px]">
-                <Activity className="w-12 h-12 mb-4 text-gray-400" />
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-card rounded-lg border border-border h-[400px]">
+                <Activity className="w-12 h-12 mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">No data for Flame Graph</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-[600px]">
+        <div className="bg-card rounded-lg border border-border overflow-hidden flex flex-col h-[600px]">
             {/* Header / Legend / Controls could go here */}
-            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex justify-between items-center flex-shrink-0">
-                <div className="text-xs font-medium text-gray-600 uppercase">Flame Graph</div>
-                <div className="text-xs text-gray-500">
+            <div className="bg-secondary border-b border-border px-3 py-2 flex justify-between items-center flex-shrink-0">
+                <div className="text-xs font-medium text-muted-foreground uppercase">Flame Graph</div>
+                <div className="text-xs text-muted-foreground">
                     Total Duration: {totalDuration.toFixed(2)}ms
                 </div>
             </div>
 
             {/* Tooltip Area */}
-            <div className="h-8 bg-white border-b border-gray-100 px-3 flex items-center text-xs text-gray-700 flex-shrink-0">
+            <div className="h-8 bg-card border-b border-border px-3 flex items-center text-xstext-foreground flex-shrink-0">
                 {hoveredSpan ? (
                     <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${spanTypeColors[hoveredSpan.spanType]?.split(' ')[0] || 'bg-gray-400'}`} />
                         <span className="font-bold">{hoveredSpan.name}</span>
-                        <span className="text-gray-400">|</span>
+                        <span className="text-muted-foreground">|</span>
                         <span className="font-mono">{hoveredSpan.duration.toFixed(2)}ms</span>
-                        <span className="text-gray-400">|</span>
+                        <span className="text-muted-foreground">|</span>
                         <span className="capitalize">{hoveredSpan.spanType}</span>
                         {hoveredSpan.status === 'error' && (
                             <>
-                                <span className="text-gray-400">|</span>
+                                <span className="text-muted-foreground">|</span>
                                 <span className="text-red-600 flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" /> Error
                                 </span>
@@ -154,7 +154,7 @@ export function TraceFlameGraph({ spans, onSelectSpan, selectedSpanId }: TraceFl
                 <div style={{ height: totalHeight, minWidth: '100%', position: 'relative' }}>
                     {flattenedNodes.map((node) => {
                         const isSelected = selectedSpanId === node.span.id;
-                        const colorClass = spanTypeColors[node.span.spanType] || 'bg-gray-200 border-gray-300 text-gray-700';
+                        const colorClass = spanTypeColors[node.span.spanType] || 'bg-gray-200 border-gray-300text-foreground';
 
                         return (
                             <div

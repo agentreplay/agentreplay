@@ -16,17 +16,20 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Titlebar from './Titlebar';
+import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { ProjectSetupInfo } from './ProjectSetupInfo';
 import { CommandPalette } from './CommandPalette';
 import { Breadcrumbs } from './Breadcrumbs';
+import { useAppMode } from '../src/context/app-mode-context';
 
 export function Layout() {
   const { projectId, traceId, sessionId } = useParams<{ projectId?: string; traceId?: string; sessionId?: string }>();
   const { pathname } = useLocation();
   const { currentProject, loading, selectProject } = useProjects();
   const [isTauri, setIsTauri] = useState(false);
+  const { appMode, setAppMode } = useAppMode();
 
   // Determine if we're on a detail page (needs breadcrumbs)
   const isDetailPage = traceId || sessionId || pathname.includes('/prompts/') || pathname.includes('/runs/');
@@ -61,9 +64,9 @@ export function Layout() {
         <Sidebar />
 
         {/* Main content with safe area padding */}
-        <main className={`flex-1 flex flex-col min-w-0 overflow-hidden bg-background relative`}>
-          {/* Header with better spacing */}
-          <header className={`flex h-14 items-center justify-between border-b border-border/60 bg-background/95 px-6 backdrop-blur flex-shrink-0 relative z-10 ${isTauri ? 'pt-0' : ''}`}>
+        <main className={`flex-1 flex flex-col min-w-0 overflow-hidden relative`}>
+          {/* Header */}
+          <header className={`flex h-12 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-sm px-5 flex-shrink-0 relative z-10 ${isTauri ? 'pt-0' : ''}`}>
             {/* Drag region for main content area */}
             {isTauri && (
               <div
@@ -72,7 +75,7 @@ export function Layout() {
                 style={{ WebkitAppRegion: 'drag' } as any}
               />
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <ProjectSwitcher />
               {!isDetailPage && (
                 <>
@@ -81,21 +84,54 @@ export function Layout() {
                     projectName={currentProject?.name}
                   />
                   {currentProject && (
-                    <div className="hidden lg:flex flex-col text-xs text-textSecondary">
-                      <span className="uppercase tracking-widest text-[11px] text-textTertiary">Current scope</span>
-                      <span className="font-semibold text-textPrimary">
-                        {currentProject.name}
-                        <span className="text-textTertiary font-normal ml-1.5">#{currentProject.project_id}</span>
-                      </span>
+                    <div className="hidden lg:flex items-center gap-2.5">
+                      <div className="w-px h-5 bg-border/60" />
+                      <div className="flex flex-col leading-tight">
+                        <span className="uppercase tracking-widest text-[10px] text-muted-foreground">Scope</span>
+                        <span className="text-[12px] font-semibold text-foreground">
+                          {currentProject.name}
+                          <span className="text-muted-foreground font-normal ml-1">#{currentProject.project_id}</span>
+                        </span>
+                      </div>
                     </div>
                   )}
+                  {/* Basic / Pro Toggle — right next to scope */}
+                  <div className="hidden sm:flex items-center gap-2.5 ml-1">
+                    <div className="w-px h-5 bg-border/60" />
+                    <div
+                      className="flex items-center rounded-full p-0.5 bg-secondary/80 border border-border/50"
+                    >
+                      <button
+                        onClick={() => setAppMode('basic')}
+                        className={cn(
+                          'px-3 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
+                          appMode === 'basic'
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        Basic
+                      </button>
+                      <button
+                        onClick={() => setAppMode('pro')}
+                        className={cn(
+                          'px-3 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
+                          appMode === 'pro'
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        Pro
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
               {isDetailPage && (
                 <Breadcrumbs className="hidden sm:flex" />
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <CommandPalette />
             </div>
           </header>
