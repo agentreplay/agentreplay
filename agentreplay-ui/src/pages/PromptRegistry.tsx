@@ -50,7 +50,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt, onView, onDelete }) => 
               </span>
             ))
           ) : (
-            <span className="text-xs text-gray-400">No variables</span>
+            <span className="text-xs text-muted-foreground">No variables</span>
           )}
         </div>
       </div>

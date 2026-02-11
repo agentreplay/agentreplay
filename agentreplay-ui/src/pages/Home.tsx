@@ -116,7 +116,7 @@ export default function Home() {
             Unable to connect to AgentReplay backend
           </p>
           {serviceError && (
-            <p className="text-sm text-red-400 mb-6">
+            <p className="text-sm text-red-600 dark:text-red-400 mb-6">
               Error: {serviceError}
             </p>
           )}

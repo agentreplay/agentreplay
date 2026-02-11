@@ -17,22 +17,22 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useProjects } from '../context/project-context';
 import { API_BASE_URL } from '../../lib/api-config';
 import { VideoHelpButton } from '../components/VideoHelpButton';
-import { 
-  AnomalyTimeSeries, 
-  type TimeSeriesPoint as AnomalyPoint, 
-  type Anomaly, 
-  type ControlLimits 
+import {
+  AnomalyTimeSeries,
+  type TimeSeriesPoint as AnomalyPoint,
+  type Anomaly,
+  type ControlLimits
 } from '../../components/metrics';
 import {
   CostByModelChart,
   CostByOperationChart,
   TokenEfficiencyCard,
 } from '../../components/costs/CostBreakdown';
-import { 
-  DollarSign, 
-  Clock, 
-  Activity, 
-  AlertCircle, 
+import {
+  DollarSign,
+  Clock,
+  Activity,
+  AlertCircle,
   BarChart3,
   Bot,
   Server,
@@ -47,15 +47,15 @@ import {
   AlertTriangle,
   Calendar
 } from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   ScatterChart,
   Scatter,
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
       const projectFilter = projectIdNum ? `&project_id=${projectIdNum}` : '';
 
       let buckets: any[] = [];
-      
+
       const granularityMap: Record<string, string> = {
         '1h': 'minute',
         '6h': 'minute',
@@ -185,9 +185,9 @@ export default function AnalyticsPage() {
         '30d': 'day',
       };
       const granularity = granularityMap[timeRange] || 'hour';
-      
+
       let apiSummary: any = null;
-      
+
       try {
         const response = await fetch(
           `${API_BASE_URL}/api/v1/analytics/timeseries?metric=request_count&start_time=${startTime}&end_time=${endTime}&granularity=${granularity}${projectFilter}`,
@@ -197,7 +197,7 @@ export default function AnalyticsPage() {
           const data = await response.json();
           const dataPoints = data.data || data.data_points || [];
           apiSummary = data.summary || null;
-          
+
           if (dataPoints.length > 0) {
             buckets = dataPoints.map((point: any) => ({
               timestamp: point.timestamp,
@@ -222,18 +222,18 @@ export default function AnalyticsPage() {
         if (projectIdNum) {
           tracesUrl.searchParams.set('project_id', projectIdNum.toString());
         }
-        
-        const tracesResponse = await fetch(tracesUrl.toString(), { 
-          headers: { 'Content-Type': 'application/json' } 
+
+        const tracesResponse = await fetch(tracesUrl.toString(), {
+          headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (tracesResponse.ok) {
           const tracesData = await tracesResponse.json();
           const traces = tracesData.traces || [];
-          
+
           const bucketMap = new Map<number, any>();
           const intervalUs = interval * 1_000_000;
-          
+
           for (const trace of traces) {
             const bucketTs = Math.floor(trace.timestamp_us / intervalUs) * intervalUs;
             if (!bucketMap.has(bucketTs)) {
@@ -253,7 +253,7 @@ export default function AnalyticsPage() {
             bucket.total_tokens += trace.tokens || trace.token_count || 0;
             if (trace.status === 'error') bucket.error_count += 1;
           }
-          
+
           buckets = Array.from(bucketMap.values()).map(b => ({
             ...b,
             avg_duration: b.request_count > 0 ? b.total_duration / b.request_count / 1000 : 0,
@@ -265,8 +265,8 @@ export default function AnalyticsPage() {
       const totalCost = apiSummary?.total_cost ?? buckets.reduce((sum: number, b: any) => sum + (b.total_cost || 0), 0);
       const totalRequests = apiSummary?.total_requests ?? buckets.reduce((sum: number, b: any) => sum + (b.request_count || 0), 0);
       const totalErrors = buckets.reduce((sum: number, b: any) => sum + (b.error_count || 0), 0);
-      const avgLatency = apiSummary?.avg_duration_ms ?? (buckets.length > 0 
-        ? buckets.reduce((sum: number, b: any) => sum + (b.avg_duration || 0), 0) / buckets.length 
+      const avgLatency = apiSummary?.avg_duration_ms ?? (buckets.length > 0
+        ? buckets.reduce((sum: number, b: any) => sum + (b.avg_duration || 0), 0) / buckets.length
         : 0);
       const errorRate = apiSummary?.error_rate ?? (totalRequests > 0 ? (totalErrors / totalRequests) * 100 : 0);
 
@@ -281,7 +281,7 @@ export default function AnalyticsPage() {
 
       setMetrics({ totalCost, avgLatency, totalRequests, errorRate });
       setTimeSeriesData(seriesData);
-      
+
       // Fetch cost analytics with real data
       try {
         const costUrl = new URL(`${API_BASE_URL}/api/v1/analytics/costs`);
@@ -290,11 +290,11 @@ export default function AnalyticsPage() {
         if (projectIdNum) {
           costUrl.searchParams.set('project_id', projectIdNum.toString());
         }
-        
+
         const costResponse = await fetch(costUrl.toString(), {
           headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (costResponse.ok) {
           const costData = await costResponse.json();
           setCostAnalytics({
@@ -343,10 +343,10 @@ export default function AnalyticsPage() {
 
   const computeAnomalyData = (values: number[], timestamps: number[], metricName: string) => {
     if (values.length < 3) return { points: [], anomalies: [], controlLimits: { upperLimit: 0, centerLine: 0, lowerLimit: 0 } };
-    
+
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
     const stdDev = Math.sqrt(values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length);
-    
+
     const points: AnomalyPoint[] = timestamps.map((ts, i) => ({
       timestamp: ts,
       value: values[i],
@@ -394,24 +394,29 @@ export default function AnalyticsPage() {
   }, [timeSeriesData]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 px-2 py-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-textPrimary mb-1">Analytics</h1>
-            <p className="text-textSecondary text-sm">
-              Monitor performance, timeline, and system topology
-              {isGlobalMode ? (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-green-500/10 text-green-500 rounded font-medium">
-                  Global (All Projects)
-                </span>
-              ) : currentProject && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
-                  {currentProject.name}
-                </span>
-              )}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0080FF, #00c8ff)' }}>
+              <BarChart3 className="w-5 h-5" style={{ color: '#ffffff' }} />
+            </div>
+            <div>
+              <h1 className="text-[22px] font-bold text-foreground">Analytics</h1>
+              <p className="text-[13px] text-muted-foreground">
+                Monitor performance, timeline, and system topology
+                {isGlobalMode ? (
+                  <span className="ml-2 px-2 py-0.5 text-[11px] rounded font-medium" style={{ backgroundColor: 'rgba(16,185,129,0.08)', color: '#10b981' }}>
+                    Global (All Projects)
+                  </span>
+                ) : currentProject && (
+                  <span className="ml-2 px-2 py-0.5 text-[11px] rounded font-medium" style={{ backgroundColor: 'rgba(0,128,255,0.08)', color: '#0080FF' }}>
+                    {currentProject.name}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <VideoHelpButton pageId="analytics" />
@@ -419,11 +424,12 @@ export default function AnalyticsPage() {
             {activeTab === 'dashboard' && (
               <button
                 onClick={() => setIsGlobalMode(!isGlobalMode)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  isGlobalMode 
-                    ? 'bg-green-500/10 border-green-500/30 text-green-500' 
-                    : 'bg-surface border-border text-textSecondary hover:text-textPrimary'
-                }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all"
+                style={{
+                  backgroundColor: isGlobalMode ? 'rgba(16,185,129,0.08)' : 'hsl(var(--card))',
+                  border: isGlobalMode ? '1px solid rgba(16,185,129,0.2)' : '1px solid hsl(var(--border))',
+                  color: isGlobalMode ? '#10b981' : 'hsl(var(--muted-foreground))',
+                }}
               >
                 <Globe className="w-4 h-4" />
                 {isGlobalMode ? 'Global' : 'Project'}
@@ -433,7 +439,7 @@ export default function AnalyticsPage() {
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="px-4 py-2 rounded-lg bg-surface border border-border text-textPrimary text-sm"
+                className="px-4 py-2 rounded-lg text-[13px] bg-card border border-border text-foreground"
               >
                 <option value="1h">Last Hour</option>
                 <option value="6h">Last 6 Hours</option>
@@ -446,45 +452,30 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-surface border border-border rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'dashboard'
-                ? 'bg-primary text-white'
-                : 'text-textSecondary hover:text-textPrimary hover:bg-background'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('timeline')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'timeline'
-                ? 'bg-primary text-white'
-                : 'text-textSecondary hover:text-textPrimary hover:bg-background'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Timeline
-          </button>
-          <button
-            onClick={() => setActiveTab('system-map')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'system-map'
-                ? 'bg-primary text-white'
-                : 'text-textSecondary hover:text-textPrimary hover:bg-background'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            System Map
-          </button>
+        <div className="flex gap-1 mb-6 rounded-xl p-1 bg-card border border-border">
+          {[
+            { key: 'dashboard' as const, icon: <BarChart3 className="w-4 h-4" />, label: 'Dashboard' },
+            { key: 'timeline' as const, icon: <Clock className="w-4 h-4" />, label: 'Timeline' },
+            { key: 'system-map' as const, icon: <Activity className="w-4 h-4" />, label: 'System Map' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+              style={{
+                backgroundColor: activeTab === tab.key ? '#0080FF' : 'transparent',
+                color: activeTab === tab.key ? '#ffffff' : 'hsl(var(--muted-foreground))',
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}
         {activeTab === 'dashboard' && (
-          <DashboardTab 
+          <DashboardTab
             loading={loading}
             metrics={metrics}
             timeSeriesData={timeSeriesData}
@@ -543,21 +534,21 @@ function DashboardTab({
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-surface rounded-xl border border-border p-6 animate-pulse">
+            <div key={i} className="rounded-2xl p-6 animate-pulse bg-card border border-border">
               <div className="flex items-center justify-between mb-4">
-                <div className="h-10 w-10 bg-border rounded-lg" />
-                <div className="h-4 w-12 bg-border rounded" />
+                <div className="h-10 w-10 rounded-lg bg-secondary" />
+                <div className="h-4 w-12 rounded bg-secondary" />
               </div>
-              <div className="h-4 w-20 bg-border rounded mb-2" />
-              <div className="h-8 w-24 bg-border rounded" />
+              <div className="h-4 w-20 rounded mb-2 bg-secondary" />
+              <div className="h-8 w-24 rounded bg-secondary" />
             </div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-surface rounded-xl border border-border p-6 animate-pulse">
-              <div className="h-6 w-32 bg-border rounded mb-4" />
-              <div className="h-48 bg-border rounded" />
+            <div key={i} className="rounded-2xl p-6 animate-pulse bg-card border border-border">
+              <div className="h-6 w-32 rounded mb-4 bg-secondary" />
+              <div className="h-48 rounded bg-secondary" />
             </div>
           ))}
         </div>
@@ -567,21 +558,52 @@ function DashboardTab({
 
   if (timeSeriesData.length === 0) {
     return (
-      <div className="bg-surface border border-dashed border-border rounded-lg p-12 text-center">
-        <BarChart3 className="w-16 h-16 text-textTertiary mx-auto mb-4" />
-        <p className="text-lg font-semibold text-textPrimary mb-2">No data yet</p>
-        <p className="text-sm text-textSecondary mb-6">
-          Start sending traces from Agentreplay SDK to see metrics here.
-        </p>
-        <button
-          onClick={() => {
-            const projectId = currentProject?.project_id || location.pathname.split('/')[2];
-            navigate(`/projects/${projectId}/docs`);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-background rounded-lg hover:bg-primary-hover transition-colors"
-        >
-          View SDK Documentation
-        </button>
+      <div className="rounded-2xl overflow-hidden flex flex-col items-center bg-card border border-border" style={{ minHeight: '380px' }}>
+        <div className="py-14 px-10 text-center flex-1 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, rgba(0,128,255,0.1), rgba(0,200,255,0.06))' }}>
+            <BarChart3 className="w-8 h-8" style={{ color: '#0080FF' }} />
+          </div>
+          <p className="text-[18px] font-bold mb-2 text-foreground">No analytics data yet</p>
+          <p className="text-[14px] mb-5 max-w-lg mx-auto leading-relaxed text-muted-foreground">
+            Dashboard gives you a bird's-eye view of your AI agent performance — track costs, latency, request volume, error rates, and detect anomalies across all your traces.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(0,128,255,0.06)', color: '#0080FF', border: '1px solid rgba(0,128,255,0.12)' }}>📊 Cost Tracking</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(16,185,129,0.06)', color: '#10b981', border: '1px solid rgba(16,185,129,0.12)' }}>⚡ Latency Monitoring</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(139,92,246,0.06)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.12)' }}>🔍 Anomaly Detection</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(245,158,11,0.06)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.12)' }}>📈 Request Volume</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.12)' }}>🚨 Error Rate</span>
+          </div>
+
+          {/* Other Tabs Guide */}
+          <div className="flex gap-3 mb-6 max-w-lg mx-auto">
+            <div className="flex-1 rounded-xl p-3 text-left bg-secondary border border-border">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="w-3.5 h-3.5" style={{ color: '#8b5cf6' }} />
+                <span className="text-[12px] font-bold text-foreground">Timeline</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">Scatter chart of execution durations with recent activity log</p>
+            </div>
+            <div className="flex-1 rounded-xl p-3 text-left bg-secondary border border-border">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Activity className="w-3.5 h-3.5" style={{ color: '#f59e0b' }} />
+                <span className="text-[12px] font-bold text-foreground">System Map</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">Interactive topology of agents, LLM models, and service connections</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              const projectId = currentProject?.project_id || location.pathname.split('/')[2];
+              navigate(`/projects/${projectId}/docs`);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+            style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
+          >
+            View SDK Documentation
+          </button>
+        </div>
       </div>
     );
   }
@@ -619,23 +641,24 @@ function DashboardTab({
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Cost Over Time */}
-        <div className="bg-surface rounded-xl border border-border p-6">
+        <div className="rounded-2xl p-6 bg-card border border-border">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-textPrimary">Cost Over Time</h3>
+            <h3 className="text-[15px] font-bold text-foreground">Cost Over Time</h3>
             <button
               onClick={() => navigate('/traces?sort=cost&order=desc')}
-              className="text-xs text-primary hover:text-primary-hover transition-colors"
+              className="text-[12px] font-medium transition-colors"
+              style={{ color: '#0080FF' }}
             >
               Show most expensive →
             </button>
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={timeSeriesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="label" stroke="#888" tick={{ fill: '#888', fontSize: 12 }} />
-              <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 12 }} tickFormatter={(value) => `$${value.toFixed(4)}`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={(value) => `$${value.toFixed(4)}`} />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                 formatter={(value: number) => [`$${value.toFixed(4)}`, 'Cost']}
               />
               <Line type="monotone" dataKey="cost" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} activeDot={{ r: 6 }} />
@@ -644,15 +667,15 @@ function DashboardTab({
         </div>
 
         {/* Latency Over Time */}
-        <div className="bg-surface rounded-xl border border-border p-6">
-          <h3 className="text-lg font-semibold text-textPrimary mb-4">Latency Over Time</h3>
+        <div className="rounded-2xl p-6 bg-card border border-border">
+          <h3 className="text-[15px] font-bold mb-4 text-foreground">Latency Over Time</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={timeSeriesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="label" stroke="#888" tick={{ fill: '#888', fontSize: 12 }} />
-              <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 12 }} tickFormatter={(value) => `${value.toFixed(0)}ms`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} tickFormatter={(value) => `${value.toFixed(0)}ms`} />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                 formatter={(value: number) => [`${value.toFixed(0)}ms`, 'Avg Latency']}
               />
               <Line type="monotone" dataKey="latency" stroke="#eab308" strokeWidth={2} dot={{ fill: '#eab308', r: 4 }} activeDot={{ r: 6 }} />
@@ -661,15 +684,15 @@ function DashboardTab({
         </div>
 
         {/* Requests Over Time */}
-        <div className="bg-surface rounded-xl border border-border p-6">
-          <h3 className="text-lg font-semibold text-textPrimary mb-4">Requests Over Time</h3>
+        <div className="rounded-2xl p-6 bg-card border border-border">
+          <h3 className="text-[15px] font-bold mb-4 text-foreground">Requests Over Time</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={timeSeriesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="label" stroke="#888" tick={{ fill: '#888', fontSize: 12 }} />
-              <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 12 }} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                 formatter={(value: number) => [value, 'Requests']}
               />
               <Bar dataKey="requests" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -678,23 +701,24 @@ function DashboardTab({
         </div>
 
         {/* Errors Over Time */}
-        <div className="bg-surface rounded-xl border border-border p-6">
+        <div className="rounded-2xl p-6 bg-card border border-border">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-textPrimary">Errors Over Time</h3>
+            <h3 className="text-[15px] font-bold text-foreground">Errors Over Time</h3>
             <button
               onClick={() => navigate('/traces?status=error')}
-              className="text-xs text-primary hover:text-primary-hover transition-colors"
+              className="text-[12px] font-medium transition-colors"
+              style={{ color: '#0080FF' }}
             >
               View error traces →
             </button>
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={timeSeriesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="label" stroke="#888" tick={{ fill: '#888', fontSize: 12 }} />
-              <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 12 }} allowDecimals={false} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 11 }} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                 formatter={(value: number) => [value, 'Errors']}
               />
               <Bar dataKey="errors" fill="#ef4444" radius={[8, 8, 0, 0]} />
@@ -706,8 +730,13 @@ function DashboardTab({
       {/* Anomaly Detection Section */}
       {timeSeriesData.length >= 10 && (
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-textPrimary mb-4">🔍 Anomaly Detection</h3>
-          <p className="text-sm text-textSecondary mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(168,85,247,0.06))' }}>
+              <ZoomIn className="w-3.5 h-3.5" style={{ color: '#8b5cf6' }} />
+            </div>
+            <h3 className="text-[16px] font-bold text-foreground">Anomaly Detection</h3>
+          </div>
+          <p className="text-[13px] mb-4 text-muted-foreground">
             Statistical analysis using 2σ control limits to detect unusual patterns in your metrics.
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -731,18 +760,23 @@ function DashboardTab({
 
       {/* Cost Analytics Section */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-textPrimary mb-4">💰 Cost Analytics</h3>
-        <p className="text-sm text-textSecondary mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(52,211,153,0.06))' }}>
+            <DollarSign className="w-3.5 h-3.5" style={{ color: '#10b981' }} />
+          </div>
+          <h3 className="text-[16px] font-bold text-foreground">Cost Analytics</h3>
+        </div>
+        <p className="text-[13px] mb-4 text-muted-foreground">
           Breakdown of LLM costs by model and operation type to optimize spending.
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <CostByModelChart 
+          <CostByModelChart
             modelCosts={costAnalytics?.modelCosts}
-            totalCost={costAnalytics?.modelCosts?.reduce((sum, m) => sum + m.cost, 0) || metrics.totalCost} 
+            totalCost={costAnalytics?.modelCosts?.reduce((sum, m) => sum + m.cost, 0) || metrics.totalCost}
           />
           <CostByOperationChart operationCosts={costAnalytics?.operationCosts} />
         </div>
-        <TokenEfficiencyCard 
+        <TokenEfficiencyCard
           avgCostPer1k={costAnalytics?.efficiency?.avgCostPer1k}
           cacheHitRate={costAnalytics?.efficiency?.cacheHitRate}
           potentialSavings={costAnalytics?.efficiency?.potentialSavings}
@@ -794,11 +828,11 @@ function TimelineTab({ currentProject }: { currentProject: any }) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-surface border border-border p-3 rounded shadow-lg text-xs">
-          <p className="font-semibold text-textPrimary">{data.agent || 'Unknown Agent'}</p>
-          <p className="text-textSecondary">Time: {format(new Date(data.time), 'HH:mm:ss')}</p>
-          <p className="text-textSecondary">Duration: {data.duration.toFixed(0)}ms</p>
-          <p className={`capitalize ${data.status === 'error' ? 'text-error' : 'text-success'}`}>
+        <div className="p-3 rounded-xl text-xs bg-card border border-border shadow-md">
+          <p className="font-semibold text-foreground">{data.agent || 'Unknown Agent'}</p>
+          <p className="text-muted-foreground">Time: {format(new Date(data.time), 'HH:mm:ss')}</p>
+          <p className="text-muted-foreground">Duration: {data.duration.toFixed(0)}ms</p>
+          <p className="capitalize" style={{ color: data.status === 'error' ? '#ef4444' : '#10b981' }}>
             {data.status}
           </p>
         </div>
@@ -809,8 +843,41 @@ function TimelineTab({ currentProject }: { currentProject: any }) {
 
   if (error) {
     return (
-      <div className="mb-6 p-4 bg-error-bg border border-error/20 rounded-lg text-error">
+      <div className="mb-6 p-4 rounded-xl text-[13px]" style={{ backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)', color: '#ef4444' }}>
         {error}
+      </div>
+    );
+  }
+
+  const navigate = useNavigate();
+
+  if (!loading && traces.length === 0) {
+    return (
+      <div className="rounded-2xl overflow-hidden flex flex-col items-center bg-card border border-border" style={{ minHeight: '380px' }}>
+        <div className="py-14 px-10 text-center flex-1 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(168,85,247,0.06))' }}>
+            <Clock className="w-8 h-8" style={{ color: '#8b5cf6' }} />
+          </div>
+          <p className="text-[18px] font-bold mb-2 text-foreground">No timeline data yet</p>
+          <p className="text-[14px] mb-5 max-w-md mx-auto leading-relaxed text-muted-foreground">
+            Timeline shows the execution distribution and activity history of your AI agent traces.
+          </p>
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(59,130,246,0.06)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.12)' }}>📊 Scatter Chart</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(16,185,129,0.06)', color: '#10b981', border: '1px solid rgba(16,185,129,0.12)' }}>⏱️ Duration Analysis</span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: 'rgba(139,92,246,0.06)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.12)' }}>🤖 Agent Breakdown</span>
+          </div>
+          <button
+            onClick={() => {
+              const projectId = currentProject?.project_id || location.pathname.split('/')[2];
+              navigate(`/projects/${projectId}/docs`);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+            style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
+          >
+            View SDK Documentation
+          </button>
+        </div>
       </div>
     );
   }
@@ -818,16 +885,16 @@ function TimelineTab({ currentProject }: { currentProject: any }) {
   return (
     <div>
       {/* Timeline Chart */}
-      <div className="bg-surface border border-border rounded-lg p-6 mb-8 h-[300px]">
-        <h2 className="text-sm font-semibold text-textSecondary mb-4 flex items-center gap-2">
+      <div className="rounded-2xl p-6 mb-8 h-[300px] bg-card border border-border">
+        <h2 className="text-[13px] font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           <Activity className="w-4 h-4" />
           Execution Distribution (Last 100 Traces)
         </h2>
         {loading ? (
           <div className="h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#0080FF' }}></div>
           </div>
-        ) : traces.length > 0 ? (
+        ) : (
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
               <XAxis
@@ -860,17 +927,12 @@ function TimelineTab({ currentProject }: { currentProject: any }) {
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-textTertiary">
-            <Calendar className="w-8 h-8 mb-2" />
-            <p>No data to display</p>
-          </div>
         )}
       </div>
 
       {/* Recent Traces List */}
       <div>
-        <h2 className="text-lg font-semibold text-textPrimary mb-4">Recent Activity</h2>
+        <h2 className="text-[16px] font-bold mb-4 text-foreground">Recent Activity</h2>
         <TraceList traces={traces} loading={loading} />
       </div>
     </div>
@@ -886,7 +948,7 @@ function SystemMapTab() {
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [zoom, setZoom] = useState(1);
-  
+
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -896,40 +958,40 @@ function SystemMapTab() {
   const runAIAnalysis = useCallback(async () => {
     setAnalyzing(true);
     setAnalysisError(null);
-    
+
     try {
       const response = await agentreplayClient.listTraces({ limit: 100 });
       const traces = response.traces || [];
       setTraceCount(traces.length);
-      
+
       if (traces.length === 0) {
         setAnalysisError('No traces found. Run some AI agents to see the system map.');
         setAnalyzing(false);
         return;
       }
-      
+
       const nodeMap = new Map<string, { type: string; calls: number; totalDuration: number }>();
       const edgeMap = new Map<string, { count: number; from: string; to: string }>();
-      
+
       nodeMap.set('agentreplay', { type: 'service', calls: traces.length, totalDuration: 0 });
-      
+
       traces.forEach((trace: any) => {
         const model = trace.metadata?.['gen_ai.request.model'] || trace.metadata?.model || trace.model;
         const agentName = trace.agent_name || trace.metadata?.agent_name;
-        
+
         if (model) {
           const modelKey = `llm:${model}`;
           const existing = nodeMap.get(modelKey) || { type: 'llm', calls: 0, totalDuration: 0 };
           existing.calls++;
           existing.totalDuration += trace.duration_us ? trace.duration_us / 1000 : 0;
           nodeMap.set(modelKey, existing);
-          
+
           const edgeKey = agentName ? `${agentName}:${model}` : `app:${model}`;
           const edge = edgeMap.get(edgeKey) || { count: 0, from: agentName || 'app', to: model };
           edge.count++;
           edgeMap.set(edgeKey, edge);
         }
-        
+
         if (agentName) {
           const agentKey = `agent:${agentName}`;
           const existing = nodeMap.get(agentKey) || { type: 'agent', calls: 0, totalDuration: 0 };
@@ -938,7 +1000,7 @@ function SystemMapTab() {
           nodeMap.set(agentKey, existing);
         }
       });
-      
+
       const nodes = Array.from(nodeMap.entries()).map(([key, value]) => {
         const [type, name] = key.includes(':') ? key.split(':') : ['service', key];
         return {
@@ -949,14 +1011,14 @@ function SystemMapTab() {
           avgLatency: value.calls > 0 ? Math.round(value.totalDuration / value.calls) : 0,
         };
       });
-      
+
       const edges = Array.from(edgeMap.entries()).map(([, edge]) => ({
         from: edge.from,
         to: edge.to,
         count: edge.count,
         label: `${edge.count} calls`,
       }));
-      
+
       const insights: string[] = [];
       const llmNodes = nodes.filter(n => n.type === 'llm');
       if (llmNodes.length > 1) {
@@ -970,7 +1032,7 @@ function SystemMapTab() {
       if (busiestModel) {
         insights.push(`Most used model: ${busiestModel.label} (${busiestModel.calls} calls)`);
       }
-      
+
       setAiAnalysis({ nodes, edges, summary: `Analyzed ${traces.length} traces.`, insights });
       setLastAnalyzed(new Date());
     } catch (err) {
@@ -1003,13 +1065,13 @@ function SystemMapTab() {
 
     if (aiAnalysis && aiAnalysis.nodes.length > 0) {
       const centerX = 400;
-      const centerY = 300;
-      const radius = 220;
-      
+      const centerY = 200;
+      const radius = 160;
+
       const llmNodes = aiAnalysis.nodes.filter(n => n.type === 'llm');
       const agentNodes = aiAnalysis.nodes.filter(n => n.type === 'agent');
       const serviceNodes = aiAnalysis.nodes.filter(n => n.type === 'service');
-      
+
       serviceNodes.forEach((node) => {
         nodes.push({
           id: node.id,
@@ -1022,12 +1084,12 @@ function SystemMapTab() {
           avgLatency: node.avgLatency,
         });
       });
-      
+
       llmNodes.forEach((node, i) => {
         const angle = Math.PI + (i / Math.max(llmNodes.length - 1, 1)) * Math.PI;
         const x = centerX + radius * Math.cos(angle);
         const y = centerY + radius * 0.8 * Math.sin(angle);
-        
+
         nodes.push({
           id: node.id,
           type: 'external',
@@ -1039,12 +1101,12 @@ function SystemMapTab() {
           avgLatency: node.avgLatency,
         });
       });
-      
+
       agentNodes.forEach((node, i) => {
         const angle = (i / Math.max(agentNodes.length - 1, 1)) * Math.PI;
         const x = centerX + radius * Math.cos(angle);
         const y = centerY + radius * 0.8 * Math.sin(angle);
-        
+
         nodes.push({
           id: node.id,
           type: 'agent',
@@ -1056,11 +1118,11 @@ function SystemMapTab() {
           avgLatency: node.avgLatency,
         });
       });
-      
+
       aiAnalysis.edges.forEach(edge => {
         const sourceNode = nodes.find(n => n.label === edge.from || n.id.includes(edge.from));
         const targetNode = nodes.find(n => n.label === edge.to || n.id.includes(edge.to));
-        
+
         if (sourceNode && targetNode) {
           links.push({
             source: sourceNode.id,
@@ -1070,20 +1132,20 @@ function SystemMapTab() {
           });
         }
       });
-      
+
       return { nodes, links };
     }
 
     // Fallback
-    nodes.push({ id: 'hub', type: 'service', label: 'AgentReplay Core', x: 400, y: 300, status: 'active' });
-    nodes.push({ id: 'db', type: 'database', label: 'Trace Store', x: 400, y: 500, status: 'active' });
+    nodes.push({ id: 'hub', type: 'service', label: 'AgentReplay Core', x: 400, y: 130, status: 'active' });
+    nodes.push({ id: 'db', type: 'database', label: 'Trace Store', x: 400, y: 290, status: 'active' });
     links.push({ source: 'hub', target: 'db', value: 1 });
 
-    const graphRadius = 250;
+    const graphRadius = 180;
     agents.forEach((agent, index) => {
       const angle = (index / agents.length) * 2 * Math.PI;
       const x = 400 + graphRadius * Math.cos(angle);
-      const y = 300 + graphRadius * Math.sin(angle);
+      const y = 200 + graphRadius * Math.sin(angle);
 
       nodes.push({
         id: agent.agent_id,
@@ -1122,23 +1184,28 @@ function SystemMapTab() {
     }
   };
 
+  const navigate = useNavigate();
+
+  // Determine if we're showing fallback vs real data
+  const hasRealData = aiAnalysis && aiAnalysis.nodes.length > 0;
+
   return (
-    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 250px)' }}>
+    <div className="flex flex-col">
       {/* Controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {analyzing ? (
-            <span className="flex items-center gap-2 text-sm text-textSecondary">
+            <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               Analyzing...
             </span>
           ) : lastAnalyzed ? (
-            <span className="text-xs text-textTertiary">
+            <span className="text-[12px] text-muted-foreground">
               Updated {lastAnalyzed.toLocaleTimeString()}
             </span>
           ) : null}
           {aiAnalysis && (
-            <span className="text-sm text-textSecondary">
+            <span className="text-[13px] text-muted-foreground">
               AI-analyzed topology from {traceCount} traces
             </span>
           )}
@@ -1147,43 +1214,34 @@ function SystemMapTab() {
           <button
             onClick={runAIAnalysis}
             disabled={analyzing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] rounded-lg transition-all disabled:opacity-50"
+            style={{ backgroundColor: 'rgba(0,128,255,0.08)', color: '#0080FF' }}
           >
             <RefreshCcw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <div className="flex items-center gap-2 border-l border-border pl-4 ml-2">
-            <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-2 hover:bg-surface rounded text-textSecondary">
+          <div className="flex items-center gap-2 pl-4 ml-2 border-l border-border">
+            <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-2 rounded transition-all text-muted-foreground">
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="text-xs text-textSecondary w-12 text-center">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="p-2 hover:bg-surface rounded text-textSecondary">
+            <span className="text-[12px] w-12 text-center text-muted-foreground">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="p-2 rounded transition-all text-muted-foreground">
               <ZoomIn className="w-4 h-4" />
             </button>
-            <button onClick={() => setZoom(1)} className="p-2 hover:bg-surface rounded text-textSecondary">
+            <button onClick={() => setZoom(1)} className="p-2 rounded transition-all text-muted-foreground">
               <Maximize className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Analysis Error Banner */}
-      {analysisError && (
-        <div className="px-4 py-3 bg-warning/10 border border-warning/20 rounded-lg mb-4">
-          <div className="flex items-center gap-2 text-warning text-sm">
-            <AlertTriangle className="w-4 h-4" />
-            {analysisError}
-          </div>
-        </div>
-      )}
-      
       {/* AI Insights Panel */}
-      {aiAnalysis && aiAnalysis.insights.length > 0 && (
-        <div className="px-4 py-3 bg-primary/5 border border-border rounded-lg mb-4">
+      {hasRealData && aiAnalysis.insights.length > 0 && (
+        <div className="px-4 py-3 rounded-xl mb-4" style={{ backgroundColor: 'rgba(0,128,255,0.04)', border: '1px solid hsl(var(--border))' }}>
           <div className="flex items-center gap-3 overflow-x-auto">
-            <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+            <Sparkles className="w-4 h-4 flex-shrink-0" style={{ color: '#0080FF' }} />
             {aiAnalysis.insights.map((insight, i) => (
-              <span key={i} className="text-sm text-textSecondary whitespace-nowrap">
+              <span key={i} className="text-[13px] whitespace-nowrap text-muted-foreground">
                 {insight}
                 {i < aiAnalysis.insights.length - 1 && <span className="mx-3 text-border">•</span>}
               </span>
@@ -1192,13 +1250,35 @@ function SystemMapTab() {
         </div>
       )}
 
+      {/* Guided info banner for fallback state */}
+      {!hasRealData && !loading && !analyzing && (
+        <div className="rounded-xl mb-4 px-5 py-4" style={{ backgroundColor: 'rgba(0,128,255,0.03)', border: '1px solid hsl(var(--border))' }}>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.06))' }}>
+              <Activity className="w-4 h-4" style={{ color: '#f59e0b' }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold mb-1 text-foreground">Showing default system topology</p>
+              <p className="text-[12px] mb-2.5 leading-relaxed text-muted-foreground">
+                This is a preview of your system architecture. Run AI agent traces to populate the map with real topology data including agents, LLM models, and service connections.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: 'rgba(59,130,246,0.06)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.12)' }}>🔗 AI Topology</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: 'rgba(245,158,11,0.06)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.12)' }}>🌐 Node Connections</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ backgroundColor: 'rgba(139,92,246,0.06)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.12)' }}>✨ Performance Insights</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Graph */}
-      <div className="flex-1 relative overflow-hidden bg-surface border border-border rounded-lg" style={{ minHeight: '500px' }}>
+      <div className="flex-1 relative overflow-hidden rounded-2xl" style={{ height: '380px', backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}>
         {loading || analyzing ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-2" />
-              <p className="text-textSecondary text-sm">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: '#0080FF' }} />
+              <p className="text-[13px] text-muted-foreground">
                 {analyzing ? 'Analyzing trace patterns...' : 'Loading...'}
               </p>
             </div>
@@ -1207,13 +1287,13 @@ function SystemMapTab() {
           <svg
             width="100%"
             height="100%"
-            viewBox="0 0 800 600"
+            viewBox="0 0 800 400"
             className="select-none"
             style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
           >
             <defs>
               <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--border))" />
               </marker>
             </defs>
 
@@ -1228,7 +1308,7 @@ function SystemMapTab() {
                     y1={source.y}
                     x2={target.x}
                     y2={target.y}
-                    stroke="#444"
+                    stroke="hsl(var(--border))"
                     strokeWidth={Math.min(3, 1 + link.value * 0.5)}
                     markerEnd="url(#arrowhead)"
                   />
@@ -1246,18 +1326,18 @@ function SystemMapTab() {
                   className="cursor-pointer"
                   onClick={() => setSelectedNode(node)}
                 >
-                  <circle r={28} fill={color} opacity={0.15} className="transition-all hover:opacity-30" />
-                  <circle r={22} fill="var(--background)" stroke={color} strokeWidth={3} />
+                  <circle r={28} fill={color} opacity={0.1} className="transition-all hover:opacity-25" />
+                  <circle r={22} fill="hsl(var(--card))" stroke={color} strokeWidth={2.5} />
                   <foreignObject x={-10} y={-10} width={20} height={20}>
                     <div className="flex items-center justify-center w-full h-full">
                       <Icon className="w-4 h-4" style={{ color }} />
                     </div>
                   </foreignObject>
-                  <text y={40} textAnchor="middle" fill="var(--text-secondary)" fontSize={11} fontWeight={500}>
+                  <text y={40} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={11} fontWeight={600}>
                     {node.label}
                   </text>
                   {node.calls && (
-                    <text y={54} textAnchor="middle" fill="var(--text-tertiary)" fontSize={9}>
+                    <text y={54} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={9}>
                       {node.calls} calls
                     </text>
                   )}
@@ -1269,23 +1349,24 @@ function SystemMapTab() {
 
         {/* Selected Node Details */}
         {selectedNode && (
-          <div className="absolute bottom-4 left-4 bg-surface border border-border rounded-lg p-4 shadow-lg max-w-xs">
+          <div className="absolute bottom-4 left-4 rounded-2xl p-4 max-w-xs" style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
             <div className="flex items-center gap-2 mb-2">
               {(() => {
                 const Icon = getNodeIcon(selectedNode.type);
                 return <Icon className="w-5 h-5" style={{ color: getNodeColor(selectedNode.type, selectedNode.status) }} />;
               })()}
-              <span className="font-semibold text-textPrimary">{selectedNode.label}</span>
+              <span className="font-semibold text-[14px] text-foreground">{selectedNode.label}</span>
             </div>
-            <div className="text-sm text-textSecondary space-y-1">
+            <div className="text-[13px] space-y-1 text-muted-foreground">
               <p>Type: <span className="capitalize">{selectedNode.type}</span></p>
-              <p>Status: <span className={selectedNode.status === 'active' ? 'text-green-500' : 'text-gray-500'}>{selectedNode.status}</span></p>
+              <p>Status: <span className={selectedNode.status === 'active' ? 'text-emerald-500' : 'text-muted-foreground'}>{selectedNode.status}</span></p>
               {selectedNode.calls && <p>Calls: {selectedNode.calls}</p>}
               {selectedNode.avgLatency && <p>Avg Latency: {selectedNode.avgLatency}ms</p>}
             </div>
             <button
               onClick={() => setSelectedNode(null)}
-              className="mt-3 text-xs text-primary hover:underline"
+              className="mt-3 text-[12px] font-medium"
+              style={{ color: '#0080FF' }}
             >
               Close
             </button>
@@ -1308,22 +1389,23 @@ interface MetricCardProps {
 }
 
 function MetricCard({ title, value, icon, color }: MetricCardProps) {
-  const colorClasses = {
-    green: 'bg-green-500/10 text-green-500',
-    yellow: 'bg-yellow-500/10 text-yellow-500',
-    blue: 'bg-blue-500/10 text-blue-500',
-    red: 'bg-red-500/10 text-red-500',
+  const colorMap = {
+    green: { bg: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.05))', text: '#10b981' },
+    yellow: { bg: 'linear-gradient(135deg, rgba(234,179,8,0.1), rgba(250,204,21,0.05))', text: '#eab308' },
+    blue: { bg: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(96,165,250,0.05))', text: '#3b82f6' },
+    red: { bg: 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.05))', text: '#ef4444' },
   };
+  const c = colorMap[color];
 
   return (
-    <div className="bg-surface rounded-xl border border-border p-6">
+    <div className="rounded-2xl p-6 bg-card border border-border">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-textSecondary">{title}</h3>
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+        <h3 className="text-[13px] font-semibold" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</h3>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.bg, color: c.text }}>
           {icon}
         </div>
       </div>
-      <div className="text-3xl font-bold text-textPrimary">{value}</div>
+      <div className="text-[28px] font-bold text-foreground">{value}</div>
     </div>
   );
 }

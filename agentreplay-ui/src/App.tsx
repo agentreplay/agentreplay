@@ -19,6 +19,7 @@ import SetupWizard from '../components/SetupWizard';
 import '../app/globals.css';
 import { initTheme } from './lib/theme';
 import { useProjects } from './context/project-context';
+import { AppModeProvider } from './context/app-mode-context';
 import Traces from './pages/Traces';
 import TraceDetail from './pages/TraceDetail';
 import Evaluations from './pages/Evaluations';
@@ -167,9 +168,11 @@ function App() {
   }, []);
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AppContent />
-    </Router>
+    <AppModeProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AppContent />
+      </Router>
+    </AppModeProvider>
   );
 }
 

@@ -37,11 +37,11 @@ import {
 // Severity badge component
 function SeverityBadge({ severity }: { severity: string }) {
   const colors = {
-    critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-    high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    info: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    critical: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
+    high: 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30',
+    medium: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
+    low: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    info: 'bg-gray-500/20 text-muted-foreground border-gray-500/30',
   };
 
   const icons = {
@@ -66,26 +66,26 @@ function SeverityBadge({ severity }: { severity: string }) {
 // Insight type icon
 function InsightTypeIcon({ type }: { type: string }) {
   const icons: Record<string, JSX.Element> = {
-    latency_anomaly: <Clock className="w-4 h-4 text-yellow-400" />,
-    error_rate_anomaly: <AlertCircle className="w-4 h-4 text-red-400" />,
-    cost_anomaly: <DollarSign className="w-4 h-4 text-green-400" />,
-    semantic_drift: <Target className="w-4 h-4 text-purple-400" />,
-    failure_pattern: <AlertTriangle className="w-4 h-4 text-orange-400" />,
-    performance_regression: <TrendingUp className="w-4 h-4 text-blue-400" />,
-    traffic_anomaly: <Activity className="w-4 h-4 text-cyan-400" />,
-    token_usage_spike: <MessageSquare className="w-4 h-4 text-pink-400" />,
+    latency_anomaly: <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />,
+    error_rate_anomaly: <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />,
+    cost_anomaly: <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />,
+    semantic_drift: <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
+    failure_pattern: <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />,
+    performance_regression: <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+    traffic_anomaly: <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />,
+    token_usage_spike: <MessageSquare className="w-4 h-4 text-pink-600 dark:text-pink-400" />,
   };
 
-  return icons[type] || <Zap className="w-4 h-4 text-gray-400" />;
+  return icons[type] || <Zap className="w-4 h-4 text-muted-foreground" />;
 }
 
 // Health Score Gauge
 function HealthScoreGauge({ score }: { score: number }) {
   const getColor = (s: number) => {
-    if (s >= 90) return 'text-green-400';
-    if (s >= 70) return 'text-yellow-400';
-    if (s >= 50) return 'text-orange-400';
-    return 'text-red-400';
+    if (s >= 90) return 'text-green-600 dark:text-green-400';
+    if (s >= 70) return 'text-yellow-600 dark:text-yellow-400';
+    if (s >= 50) return 'text-orange-600 dark:text-orange-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getLabel = (s: number) => {
@@ -331,8 +331,8 @@ export default function InsightsPage() {
               {summary?.total_insights || 0}
             </div>
             <div className="mt-4 flex items-center gap-4 text-sm">
-              <span className="text-red-400">{summary?.critical_count || 0} critical</span>
-              <span className="text-orange-400">{summary?.high_count || 0} high</span>
+              <span className="text-red-600 dark:text-red-400">{summary?.critical_count || 0} critical</span>
+              <span className="text-orange-600 dark:text-orange-400">{summary?.high_count || 0} high</span>
             </div>
           </div>
 

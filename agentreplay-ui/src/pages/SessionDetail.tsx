@@ -221,7 +221,7 @@ export default function SessionDetail() {
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-        <AlertTriangle className="h-8 w-8 text-amber-400" />
+        <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
         <p className="text-sm text-textSecondary">{error}</p>
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           Go back
@@ -720,15 +720,15 @@ function extractSpanFromTrace(trace: TraceMetadata): SessionSpan {
 function SpanTypeIcon({ type }: { type: SessionSpan['span_type'] }) {
   switch (type) {
     case 'llm':
-      return <Bot className="h-3.5 w-3.5 text-purple-400" />;
+      return <Bot className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />;
     case 'tool':
-      return <Wrench className="h-3.5 w-3.5 text-blue-400" />;
+      return <Wrench className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />;
     case 'agent':
-      return <Cpu className="h-3.5 w-3.5 text-green-400" />;
+      return <Cpu className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />;
     case 'chain':
-      return <Activity className="h-3.5 w-3.5 text-orange-400" />;
+      return <Activity className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />;
     case 'retrieval':
-      return <MessageCircle className="h-3.5 w-3.5 text-cyan-400" />;
+      return <MessageCircle className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />;
     default:
       return <Zap className="h-3.5 w-3.5 text-textSecondary" />;
   }

@@ -386,7 +386,7 @@ export default function Playground() {
                 {health.openai.configured ? (
                   <CheckCircle className="w-4 h-4 text-blue-500" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 text-gray-400" />
+                  <AlertCircle className="w-4 h-4 text-muted-foreground" />
                 )}
                 <span className={health.openai.configured ? 'text-blue-500' : 'text-gray-400'}>
                   OpenAI
@@ -396,7 +396,7 @@ export default function Playground() {
                 {health.anthropic.configured ? (
                   <CheckCircle className="w-4 h-4 text-purple-500" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 text-gray-400" />
+                  <AlertCircle className="w-4 h-4 text-muted-foreground" />
                 )}
                 <span className={health.anthropic.configured ? 'text-purple-500' : 'text-gray-400'}>
                   Anthropic

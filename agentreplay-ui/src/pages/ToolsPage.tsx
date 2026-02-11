@@ -504,7 +504,7 @@ function ToolDetailPanel({ tool, onClose }: { tool: ToolInfo; onClose: () => voi
             {tool.rate_limit && (
               <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                 <p className="text-sm font-medium text-amber-500">Rate Limited</p>
-                <p className="text-xs text-amber-400">
+                <p className="text-xs text-amber-600 dark:text-amber-400">
                   {tool.rate_limit.max_requests} requests per {tool.rate_limit.window_seconds}s
                 </p>
               </div>
@@ -573,8 +573,8 @@ function ToolDetailPanel({ tool, onClose }: { tool: ToolInfo; onClose: () => voi
                 <pre className={`
                   p-4 rounded-lg text-sm font-mono overflow-auto max-h-60
                   ${testResult.error 
-                    ? 'bg-red-500/10 border border-red-500/20 text-red-400'
-                    : 'bg-green-500/10 border border-green-500/20 text-green-400'
+                    ? 'bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400'
+                    : 'bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400'
                   }
                 `}>
                   {JSON.stringify(testResult, null, 2)}
@@ -609,7 +609,7 @@ function ToolDetailPanel({ tool, onClose }: { tool: ToolInfo; onClose: () => voi
                     Latency: {exec.latency_ms}ms
                   </p>
                   {exec.error && (
-                    <p className="text-xs text-red-400 mt-1">{exec.error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{exec.error}</p>
                   )}
                 </div>
               ))
@@ -690,7 +690,7 @@ function MCPServerManager({ servers, onRefresh }: { servers: McpServer[]; onRefr
             )}
 
             {server.error && (
-              <p className="mt-2 text-xs text-red-400">{server.error}</p>
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">{server.error}</p>
             )}
           </div>
         ))}
@@ -796,7 +796,7 @@ function ExecutionsView({ tools }: { tools: ToolInfo[] }) {
               )}
             </div>
             {exec.error && (
-              <p className="mt-2 text-xs text-red-400">{exec.error}</p>
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">{exec.error}</p>
             )}
           </div>
         );

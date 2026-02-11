@@ -119,8 +119,8 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
 
   if (spans.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <Flame className="w-12 h-12 mb-4 text-gray-400" />
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <Flame className="w-12 h-12 mb-4 text-muted-foreground" />
         <p className="text-lg font-medium">No spans to visualize</p>
         <p className="text-sm">Add traces to see the flame graph</p>
       </div>
@@ -128,13 +128,13 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-card rounded-lg border border-border overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="bg-secondary border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Flame className="w-5 h-5 text-orange-500" />
-          <h3 className="font-semibold text-gray-900">Flame Graph</h3>
-          <span className="text-sm text-gray-500">
+          <h3 className="font-semibold text-foreground">Flame Graph</h3>
+          <span className="text-sm text-muted-foreground">
             {focusedSpan ? `Focused: ${focusedSpan.name}` : 'Full Trace'}
           </span>
         </div>
@@ -145,9 +145,9 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
             className="p-2 hover:bg-gray-200 rounded transition-colors"
             title="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4 text-gray-600" />
+            <ZoomOut className="w-4 h-4 text-muted-foreground" />
           </button>
-          <span className="text-sm text-gray-600 font-mono min-w-[60px] text-center">
+          <span className="text-sm text-muted-foreground font-mono min-w-[60px] text-center">
             {(zoom * 100).toFixed(0)}%
           </span>
           <button
@@ -155,20 +155,20 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
             className="p-2 hover:bg-gray-200 rounded transition-colors"
             title="Zoom In"
           >
-            <ZoomIn className="w-4 h-4 text-gray-600" />
+            <ZoomIn className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={handleReset}
             className="p-2 hover:bg-gray-200 rounded transition-colors ml-2"
             title="Reset View"
           >
-            <RotateCcw className="w-4 h-4 text-gray-600" />
+            <RotateCcw className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
       </div>
 
       {/* Flame Graph Canvas */}
-      <div className="overflow-x-auto overflow-y-auto min-h-[400px] max-h-[800px] p-6 bg-gray-50">
+      <div className="overflow-x-auto overflow-y-auto min-h-[400px] max-h-[800px] p-6 bg-secondary">
         <div
           style={{
             width: `${1000 * zoom}px`,
@@ -216,9 +216,9 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
                 )}
 
                 {/* Hover tooltip */}
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 text-gray-900">
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-card border border-border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 text-foreground">
                   <div className="text-sm font-semibold">{node.span.name}</div>
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     <div>Type: {node.span.spanType}</div>
                     <div>Duration: {formatDuration(node.span.duration)}</div>
                     {node.span.inputTokens && (
@@ -228,7 +228,7 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
                     )}
                     {node.span.cost && <div>Cost: ${node.span.cost.toFixed(6)}</div>}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1 italic">
+                  <div className="text-xs text-muted-foreground mt-1 italic">
                     Double-click to focus
                   </div>
                 </div>
@@ -239,8 +239,8 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
       </div>
 
       {/* Legend */}
-      <div className="bg-gray-50 border-t border-gray-200 px-4 py-2 flex items-center gap-4 text-xs">
-        <span className="text-gray-600 font-medium">Legend:</span>
+      <div className="bg-secondary border-t border-border px-4 py-2 flex items-center gap-4 text-xs">
+        <span className="text-muted-foreground font-medium">Legend:</span>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded" style={{ backgroundColor: 'rgb(239, 68, 68)' }} />
           <span className="text-gray-700">Error</span>
@@ -257,7 +257,7 @@ export function FlameGraph({ spans, onSelectSpan, selectedSpanId }: FlameGraphPr
           <div className="w-3 h-3 rounded" style={{ backgroundColor: 'rgb(34, 197, 94)' }} />
           <span className="text-gray-700">Response</span>
         </div>
-        <span className="text-gray-500 ml-auto">Click to select • Double-click to focus</span>
+        <span className="text-muted-foreground ml-auto">Click to select • Double-click to focus</span>
       </div>
     </div>
   );

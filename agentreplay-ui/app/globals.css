@@ -22,59 +22,70 @@
 
 @layer base {
   :root {
-    /* "Cash App" Light Theme - Cool Neutrals */
-    --background: 200 10% 96%;
-    /* #f4f6f7 */
-    --foreground: 220 8% 21%;
-    /* #32353b */
+    /* "Cash App" Light Theme - Warm & Structured */
+    --background: 210 20% 98%;
+    /* #f8f9fb - near white, clean and bright */
+    --foreground: 220 14% 14%;
+    /* #212529 - near black for strong readability */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 8% 21%;
+    /* #ffffff - pure white cards that pop against bg */
+    --card-foreground: 220 14% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 8% 21%;
+    --popover-foreground: 220 14% 14%;
 
     --primary: 211 100% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 11% 90%;
-    /* #e3e6ea (Neutral 100) */
-    --secondary-foreground: 220 8% 21%;
+    --secondary: 220 14% 94%;
+    /* #edf0f3 - very subtle secondary */
+    --secondary-foreground: 220 14% 14%;
 
-    --muted: 210 11% 90%;
-    /* #e3e6ea */
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 12% 94%;
+    /* #eef0f3 */
+    --muted-foreground: 220 10% 42%;
+    /* #606875 - darker for legibility */
 
-    --accent: 220 8% 21%;
-    /* #32353b (Dark for accent in light mode) */
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 96%;
+    /* light subtle accent for hover/focus states */
+    --accent-foreground: 220 14% 14%;
 
-    --destructive: 0 100% 67%;
-    /* #ff6b6b (Red 100) */
+    --destructive: 0 84% 60%;
+    /* #ef4444 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 11% 90%;
-    --input: 210 11% 90%;
-    --ring: 210 10% 82%;
-    /* #cbd1d6 */
+    --border: 220 13% 88%;
+    /* #dde1e7 - subtle but visible borders */
+    --input: 220 14% 95%;
+    --ring: 211 100% 50%;
+    /* primary blue focus ring */
 
     --radius: 0.5rem;
 
     /* Agentreplay custom colors */
     --surface: 0 0% 100%;
+    /* pure white surface */
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 210 11% 93%;
+    --surface-hover: 220 14% 93%;
+    /* visible hover state */
 
-    --text-primary: 220 8% 21%;
-    --text-secondary: 215 16% 47%;
-    --text-tertiary: 215 16% 60%;
+    --text-primary: 220 14% 14%;
+    --text-secondary: 220 10% 42%;
+    --text-tertiary: 220 8% 55%;
 
-    --success: 108 42% 68%;
-    /* #91cb80 */
-    --warning: 45 96% 63%;
-    /* #fbcd44 */
-    --error: 0 94% 64%;
-    /* #f94b4b */
+    --success: 142 50% 40%;
+    /* strong green for light bg */
+    --warning: 38 92% 45%;
+    /* warm amber */
+    --error: 0 84% 50%;
+    /* strong red */
+
+    /* Glassmorphism tokens */
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 220 13% 82% / 0.5;
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 24px -2px rgba(0, 0, 0, 0.06);
+    --accent-gradient: linear-gradient(135deg, hsl(211 100% 50%), hsl(260 80% 60%));
   }
 
   .dark {
@@ -124,6 +135,67 @@
     --success: 108 42% 68%;
     --warning: 45 96% 63%;
     --error: 0 94% 64%;
+
+    /* Glassmorphism tokens - dark */
+    --glass-bg: 218 11% 18% / 0.7;
+    --glass-border: 215 20% 40% / 0.25;
+    --glass-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.3);
+    --accent-gradient: linear-gradient(135deg, hsl(211 100% 50%), hsl(260 80% 60%));
+  }
+
+  .midnight {
+    /* "OLED Midnight" Theme - True Black */
+    --background: 0 0% 0%;
+    /* #000000 */
+    --foreground: 0 0% 95%;
+    /* #f2f2f2 */
+
+    --card: 0 0% 5%;
+    /* #0d0d0d */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 12%;
+    /* #1f1f1f */
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 5%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    /* #262626 */
+    --input: 0 0% 12%;
+    --ring: 0 0% 30%;
+
+    /* Agentreplay custom colors - midnight */
+    --surface: 0 0% 4%;
+    --surface-elevated: 0 0% 8%;
+    --surface-hover: 0 0% 14%;
+
+    --text-primary: 0 0% 95%;
+    --text-secondary: 0 0% 65%;
+    --text-tertiary: 0 0% 45%;
+
+    --success: 108 42% 68%;
+    --warning: 45 96% 63%;
+    --error: 0 94% 64%;
+
+    /* Glassmorphism tokens - midnight */
+    --glass-bg: 0 0% 5% / 0.8;
+    --glass-border: 0 0% 20% / 0.3;
+    --glass-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+    --accent-gradient: linear-gradient(135deg, hsl(211 100% 50%), hsl(260 80% 60%));
   }
 }
 
@@ -179,4 +251,100 @@
 .animate-dash {
   stroke-dasharray: 5 5;
   animation: dash 0.5s linear infinite;
+}
+
+/* Shimmer loading skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      hsl(var(--surface)) 0%,
+      hsl(var(--surface-hover)) 40%,
+      hsl(var(--surface)) 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Stagger fade-in for table rows */
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-in {
+  animation: stagger-fade-in 0.3s ease-out both;
+}
+
+/* Row left-accent slide-in */
+.trace-row-accent {
+  position: relative;
+}
+
+.trace-row-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-gradient);
+  transform: scaleY(0);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trace-row-accent:hover::before {
+  transform: scaleY(1);
+}
+
+/* Focus glow for search */
+.search-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.search-glow:focus-within {
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12), 0 4px 24px hsl(var(--primary) / 0.08);
+  border-color: hsl(var(--primary) / 0.6);
+}
+
+/* Search hero wrapper */
+.search-hero {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.04), hsl(var(--primary) / 0.01));
+  border: 1px solid hsl(var(--glass-border));
+  border-radius: 1.25rem;
+  padding: 2rem;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: hsl(var(--glass-bg));
+  border: 1px solid hsl(var(--glass-border));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Pagination button hover scale */
+.page-btn-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page-btn-hover:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }

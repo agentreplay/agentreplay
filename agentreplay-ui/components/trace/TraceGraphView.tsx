@@ -414,7 +414,7 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white relative">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <GitBranch className="w-5 h-5 text-primary" />
           <h3 className="text-base font-semibold text-textPrimary">Execution Flow</h3>
@@ -465,7 +465,7 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                           {style.label}
                         </span>
                         {node.status === 'completed' && (
@@ -483,13 +483,13 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
                     {/* Metrics */}
                     <div className="flex flex-col items-end gap-1 text-xs">
                       {node.duration_ms > 0 && (
-                        <div className="flex items-center gap-1 text-gray-500 bg-white/60 px-2 py-0.5 rounded">
+                        <div className="flex items-center gap-1 text-muted-foreground bg-card/60 px-2 py-0.5 rounded">
                           <Clock className="w-3 h-3" />
                           <span className="font-mono font-medium">{node.duration_ms.toFixed(0)}ms</span>
                         </div>
                       )}
                       {(node.tokens > 0 || node.inputTokens || node.outputTokens) && (
-                        <div className="flex items-center gap-1 text-gray-500 bg-white/60 px-2 py-0.5 rounded">
+                        <div className="flex items-center gap-1 text-muted-foreground bg-card/60 px-2 py-0.5 rounded">
                           <Coins className="w-3 h-3" />
                           <span className="font-mono font-medium">
                             {node.inputTokens && node.outputTokens 
@@ -503,8 +503,8 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
                   
                   {/* Content Preview */}
                   {node.content && (
-                    <div className="px-4 py-3 border-t border-gray-200/50">
-                      <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed">
+                    <div className="px-4 py-3 border-t border-border/50">
+                      <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
                         {node.content}
                       </p>
                     </div>
@@ -512,9 +512,9 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
                   
                   {/* Tool Arguments */}
                   {node.metadata?.arguments && (
-                    <div className="px-4 py-2 bg-white/50 border-t border-gray-200/50 rounded-b-xl">
+                    <div className="px-4 py-2 bg-card/50 border-t border-border/50 rounded-b-xl">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-gray-400 uppercase">Args:</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase">Args:</span>
                         <code className="text-xs text-gray-600 font-mono truncate">
                           {node.metadata.arguments}
                         </code>
@@ -530,8 +530,8 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
 
       {/* Detail Panel - slides in from right when node is selected */}
       {selectedNode && (
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-white border-l border-gray-200 shadow-xl overflow-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-card border-l border-border shadow-xl overflow-auto">
+          <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {(() => {
                 const style = nodeStyles[selectedNode.span_type] || nodeStyles.message;
@@ -629,8 +629,8 @@ export function TraceGraphView({ traceId, tenantId = 1, projectId = 1, trace, on
                   {selectedNode.metadata.tool_calls.map((tool: any, i: number) => (
                     <div key={i} className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <Wrench className="w-4 h-4 text-amber-400" />
-                        <span className="font-medium text-amber-300">{tool.name}</span>
+                        <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span className="font-medium text-amber-700 dark:text-amber-300">{tool.name}</span>
                       </div>
                       {tool.arguments && (
                         <pre className="text-xs text-textSecondary font-mono whitespace-pre-wrap bg-background/50 p-2 rounded">

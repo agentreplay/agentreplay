@@ -76,8 +76,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+        <div className="min-h-screen bg-secondary flex items-center justify-center p-6">
+          <div className="max-w-2xl w-full bg-card rounded-lg shadow-lg border border-border overflow-hidden">
             {/* Header */}
             <div className="bg-red-50 border-b border-red-200 px-6 py-4">
               <div className="flex items-center gap-3">
@@ -100,10 +100,10 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Error message */}
               {this.state.error && (
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  <h2 className="text-sm font-semibold text-foreground mb-2">
                     Error Message:
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-secondary border border-border rounded-lg p-4">
                     <code className="text-sm text-red-600 font-mono break-all">
                       {this.state.error.message}
                     </code>
@@ -114,11 +114,11 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Stack trace (development only) */}
               {process.env.NODE_ENV !== 'production' && this.state.error?.stack && (
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  <h2 className="text-sm font-semibold text-foreground mb-2">
                     Stack Trace:
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap">
+                  <div className="bg-secondary border border-border rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <pre className="text-xs text-foreground font-mono whitespace-pre-wrap">
                       {this.state.error.stack}
                     </pre>
                   </div>
@@ -128,11 +128,11 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Component stack (development only) */}
               {process.env.NODE_ENV !== 'production' && this.state.errorInfo?.componentStack && (
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  <h2 className="text-sm font-semibold text-foreground mb-2">
                     Component Stack:
                   </h2>
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap">
+                  <div className="bg-secondary border border-border rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <pre className="text-xs text-foreground font-mono whitespace-pre-wrap">
                       {this.state.errorInfo.componentStack}
                     </pre>
                   </div>
@@ -150,7 +150,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </button>
                 <button
                   onClick={this.handleGoHome}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg font-medium transition-colors"
                 >
                   <Home className="w-4 h-4" />
                   Go Home
@@ -158,7 +158,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
 
               {/* Help text */}
-              <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="font-medium text-blue-900 mb-1">Need help?</p>
                 <p>
                   If this error persists, please contact support with the error details above.

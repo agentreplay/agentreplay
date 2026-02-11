@@ -232,28 +232,28 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Input/Output Display */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-6 space-y-4 shadow-sm">
             <div>
-              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+              <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                 Input
               </label>
-              <div className="bg-gray-50 rounded-lg p-4 text-gray-800">
+              <div className="bg-secondary rounded-lg p-4 text-gray-800">
                 <pre className="whitespace-pre-wrap font-mono text-sm">{currentResult.input}</pre>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+              <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                 Output
               </label>
-              <div className="bg-gray-50 rounded-lg p-4 text-gray-800">
+              <div className="bg-secondary rounded-lg p-4 text-gray-800">
                 <pre className="whitespace-pre-wrap font-mono text-sm">{currentResult.output}</pre>
               </div>
             </div>
 
             {currentResult.expected_output && (
               <div>
-                <label className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                   Expected Output
                 </label>
                 <div className="bg-green-50 rounded-lg p-4 text-green-700">
@@ -264,12 +264,12 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
           </div>
 
           {/* Annotation Controls */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-6 space-y-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800">Your Annotation</h2>
 
             {/* Quick thumbs rating */}
             <div>
-              <label className="text-sm font-semibold text-gray-500 mb-3 block">
+              <label className="text-sm font-semibold text-muted-foreground mb-3 block">
                 Quick Rating
               </label>
               <div className="flex gap-3">
@@ -278,7 +278,7 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
                   className={`flex-1 py-3 rounded-lg border-2 transition-all ${
                     thumbs === 'Up'
                       ? 'border-green-500 bg-green-50 text-green-500'
-                      : 'border-gray-200 hover:border-green-500 text-gray-400'
+                      : 'border-border hover:border-green-500 text-gray-400'
                   }`}
                 >
                   <ThumbsUp />
@@ -288,7 +288,7 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
                   className={`flex-1 py-3 rounded-lg border-2 transition-all ${
                     thumbs === 'Down'
                       ? 'border-red-500 bg-red-50 text-red-500'
-                      : 'border-gray-200 hover:border-red-500 text-gray-400'
+                      : 'border-border hover:border-red-500 text-gray-400'
                   }`}
                 >
                   <ThumbsDown />
@@ -298,7 +298,7 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
 
             {/* Star rating */}
             <div>
-              <label className="text-sm font-semibold text-gray-500 mb-3 block">
+              <label className="text-sm font-semibold text-muted-foreground mb-3 block">
                 Overall Quality (Stars)
               </label>
               <div className="flex gap-2">
@@ -322,14 +322,14 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
 
             {/* Dimensional ratings */}
             <div className="space-y-4">
-              <label className="text-sm font-semibold text-gray-500 block">
+              <label className="text-sm font-semibold text-muted-foreground block">
                 Detailed Ratings
               </label>
               {campaign.dimensions.map(dim => (
                 <div key={dim.name}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-800 capitalize">{dim.name}</span>
-                    <span className="text-sm font-mono text-gray-500">
+                    <span className="text-sm font-mono text-muted-foreground">
                       {(ratings[dim.name] || 0).toFixed(2)}
                     </span>
                   </div>
@@ -345,14 +345,14 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
                     })}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   />
-                  <div className="text-xs text-gray-400 mt-1">{dim.description}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{dim.description}</div>
                 </div>
               ))}
             </div>
 
             {/* Comment */}
             <div>
-              <label className="text-sm font-semibold text-gray-500 mb-3 block">
+              <label className="text-sm font-semibold text-muted-foreground mb-3 block">
                 <MessageSquare className="w-4 h-4 inline mr-2" />
                 Comments
               </label>
@@ -360,7 +360,7 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Why did you rate this way? What could be improved?"
-                className="w-full h-24 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-24 px-4 py-3 bg-secondary border border-border rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -369,7 +369,7 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
           <div className="flex gap-3">
             <button
               onClick={skip}
-              className="flex-1 py-3 px-6 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-6 bg-gray-100 border border-border rounded-lg text-muted-foreground hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
             >
               <SkipForward />
             </button>
@@ -386,23 +386,23 @@ export function AnnotationQueue({ evalRunId }: { evalRunId: string }) {
 
       {/* Stats sidebar (optional) */}
       {stats && (
-        <div className="fixed right-4 top-20 w-64 bg-white rounded-xl border border-gray-200 p-4 space-y-3 shadow-sm">
+        <div className="fixed right-4 top-20 w-64 bg-card rounded-xl border border-border p-4 space-y-3 shadow-sm">
           <h3 className="font-semibold text-gray-800">Session Stats</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Completed</span>
+              <span className="text-muted-foreground">Completed</span>
               <span className="font-semibold text-gray-800">{stats.unique_cases_annotated}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Avg Time</span>
+              <span className="text-muted-foreground">Avg Time</span>
               <span className="font-semibold text-gray-800">{stats.avg_time_per_annotation_secs}s</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Thumbs Up</span>
+              <span className="text-muted-foreground">Thumbs Up</span>
               <span className="font-semibold text-green-500">{stats.thumbs_up_count}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Thumbs Down</span>
+              <span className="text-muted-foreground">Thumbs Down</span>
               <span className="font-semibold text-red-500">{stats.thumbs_down_count}</span>
             </div>
           </div>

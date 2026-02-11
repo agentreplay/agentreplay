@@ -13,18 +13,18 @@
 // limitations under the License.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { API_BASE_URL } from '../lib/agentreplay-api';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 import { loadPrompts, PromptRecord } from '../lib/prompt-store';
-import { 
-  Scale, 
-  Play, 
-  Plus, 
-  Minus, 
-  Loader2, 
-  Clock, 
-  DollarSign, 
+import {
+  Scale,
+  Play,
+  Plus,
+  Minus,
+  Loader2,
+  Clock,
+  DollarSign,
   Zap,
   ThumbsUp,
   ThumbsDown,
@@ -145,6 +145,7 @@ const normalizeProviderName = (provider: string): string => {
 };
 
 export default function ModelComparisonPage() {
+  const { projectId } = useParams<{ projectId: string }>();
   // State
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
@@ -157,19 +158,19 @@ export default function ModelComparisonPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
-  
+
   // Prompt source state
   const [promptSource, setPromptSource] = useState<'custom' | 'registry'>('custom');
   const [registryPrompts, setRegistryPrompts] = useState<PromptRecord[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
-  
+
   // Results state
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
   const [summary, setSummary] = useState<ComparisonSummary | null>(null);
   const [comparisonId, setComparisonId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Ratings state
   const [ratings, setRatings] = useState<Record<string, 'up' | 'down' | null>>({});
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -180,7 +181,7 @@ export default function ModelComparisonPage() {
     // Load prompts from registry
     const prompts = loadPrompts();
     setRegistryPrompts(prompts);
-    
+
     // Reload prompts when window gets focus (in case user added prompts in another tab)
     const handleFocus = () => {
       const updatedPrompts = loadPrompts();
@@ -196,20 +197,20 @@ export default function ModelComparisonPage() {
     // And {# USER PROMPT #} or {# USER #} or {# USER MESSAGE #}
     const systemMarkerRegex = /\{#\s*SYSTEM\s*(?:PROMPT|MESSAGE)?\s*#\}/i;
     const userMarkerRegex = /\{#\s*USER\s*(?:PROMPT|MESSAGE)?\s*#\}/i;
-    
+
     const systemMarkerMatch = content.match(systemMarkerRegex);
     const userMarkerMatch = content.match(userMarkerRegex);
-    
+
     if (systemMarkerMatch || userMarkerMatch) {
       let systemContent = '';
       let userContent = '';
-      
+
       if (systemMarkerMatch && userMarkerMatch) {
         // Both markers present - split content between them
         const systemStart = systemMarkerMatch.index! + systemMarkerMatch[0].length;
         const userStart = userMarkerMatch.index!;
         const userContentStart = userStart + userMarkerMatch[0].length;
-        
+
         // System content is between system marker and user marker
         systemContent = content.substring(systemStart, userStart).trim();
         // User content is after user marker
@@ -225,10 +226,10 @@ export default function ModelComparisonPage() {
         systemContent = content.substring(0, userStart).trim();
         userContent = content.substring(userContentStart).trim();
       }
-      
+
       return { system: systemContent, user: userContent };
     }
-    
+
     // Otherwise treat entire content as system prompt
     return {
       system: content.trim(),
@@ -271,19 +272,19 @@ export default function ModelComparisonPage() {
       // Load settings from localStorage (same as SettingsPage)
       const savedSettings = localStorage.getItem('agentreplay_settings');
       const settings: AgentReplaySettings | null = savedSettings ? JSON.parse(savedSettings) : null;
-      
+
       const providers: string[] = [];
       const updatedProviderModels = { ...ALL_PROVIDER_MODELS };
       const configuredModelsMap: Record<string, { id: string; name: string }[]> = {};
-      
+
       // Check which providers are configured with their models
       if (settings?.models?.providers) {
         for (const providerConfig of settings.models.providers) {
           // For cloud providers, require API key; Ollama is optional
-          const hasValidConfig = providerConfig.provider === 'ollama' 
+          const hasValidConfig = providerConfig.provider === 'ollama'
             ? providerConfig.baseUrl && providerConfig.modelName
             : providerConfig.apiKey && providerConfig.baseUrl && providerConfig.modelName;
-          
+
           if (hasValidConfig) {
             const normalizedProvider = providerConfig.provider;
             if (!providers.includes(normalizedProvider)) {
@@ -297,7 +298,7 @@ export default function ModelComparisonPage() {
             });
           }
         }
-        
+
         // Merge configured models with known models for each provider
         for (const provider of providers) {
           const configuredModels = configuredModelsMap[provider] || [];
@@ -308,7 +309,7 @@ export default function ModelComparisonPage() {
           updatedProviderModels[provider] = [...configuredModels, ...additionalKnownModels];
         }
       }
-      
+
       // Check if Ollama is available (local, no API key needed)
       const ollamaModels = await checkOllamaStatus();
       if (ollamaModels.length > 0) {
@@ -321,10 +322,10 @@ export default function ModelComparisonPage() {
           name: `${m.name} (Local)`,
         }));
       }
-      
+
       setConfiguredProviders(providers);
       setProviderModels(updatedProviderModels);
-      
+
       // Set default model selections based on configured providers
       if (providers.length >= 2) {
         const defaultSelections: ModelSelection[] = [];
@@ -348,7 +349,7 @@ export default function ModelComparisonPage() {
           setSelectedModels([{ provider, model_id: models[0].id }]);
         }
       }
-      
+
       // Also try to load pricing info from backend
       loadModels();
     } catch (e) {
@@ -372,7 +373,7 @@ export default function ModelComparisonPage() {
 
   const addModel = () => {
     if (selectedModels.length >= 3) return;
-    
+
     // Find a model that's not already selected from configured providers only
     const usedIds = new Set(selectedModels.map(m => m.model_id));
     for (const provider of configuredProviders) {
@@ -402,7 +403,7 @@ export default function ModelComparisonPage() {
       setError('Please enter a prompt');
       return;
     }
-    
+
     if (selectedModels.length < 2) {
       setError('Please select at least 2 models');
       return;
@@ -425,16 +426,16 @@ export default function ModelComparisonPage() {
         // Find matching provider config for this model
         // First try exact match on model name
         let providerConfig = providers.find(p => p.modelName === m.model_id);
-        
+
         // If no exact match, try matching by provider type
         if (!providerConfig) {
           providerConfig = providers.find(p => p.provider === m.provider);
         }
-        
+
         // If still no match, try finding any provider that might work
         // (e.g., user selected "openai" but model is from Llama API configured as "custom")
         if (!providerConfig) {
-          providerConfig = providers.find(p => 
+          providerConfig = providers.find(p =>
             p.modelName && m.model_id.toLowerCase().includes(p.modelName.toLowerCase().split('-')[0])
           );
         }
@@ -479,7 +480,7 @@ export default function ModelComparisonPage() {
       }
 
       const data: ComparisonResponse = await response.json();
-      
+
       if (data.success) {
         setResults(data.results);
         setSummary(data.summary);
@@ -531,10 +532,10 @@ export default function ModelComparisonPage() {
   // Show loading state while checking configuration
   if (isLoadingConfig) {
     return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+      <div className="flex flex-col h-full items-center justify-center" style={{ paddingTop: '8px' }}>
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-textSecondary">Loading configuration...</p>
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: '#0080FF' }} />
+          <p className="text-[14px] font-medium text-muted-foreground">Loading configuration...</p>
         </div>
       </div>
     );
@@ -543,48 +544,89 @@ export default function ModelComparisonPage() {
   // No providers configured - show helpful message
   if (configuredProviders.length === 0) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex flex-col h-full" style={{ paddingTop: '8px' }}>
+        <div>
+          {/* Header */}
           <div className="flex items-center gap-3 mb-8">
-            <Scale className="w-8 h-8 text-primary" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+              <Scale className="w-5 h-5" style={{ color: '#0080FF' }} />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-textPrimary">Model Comparison</h1>
-              <p className="text-textSecondary">
+              <h1 className="text-2xl font-bold text-foreground">Model Comparison</h1>
+              <p className="text-[14px] text-muted-foreground">
                 Compare responses from multiple models side-by-side
               </p>
             </div>
           </div>
 
-          <div className="bg-surface border border-border rounded-xl p-8 text-center">
-            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-amber-500" />
+          {/* Empty State Card */}
+          <div className="rounded-2xl p-10 text-center bg-card border border-border">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: 'rgba(245,158,11,0.08)' }}>
+              <AlertTriangle className="w-8 h-8" style={{ color: '#f59e0b' }} />
             </div>
-            <h2 className="text-xl font-semibold text-textPrimary mb-2">No Models Configured</h2>
-            <p className="text-textSecondary mb-6 max-w-md mx-auto">
-              To compare models, you need to configure at least one API provider in Settings. 
+            <h2 className="text-xl font-bold mb-2 text-foreground">No Models Configured</h2>
+            <p className="text-[14px] mb-8 max-w-md mx-auto text-muted-foreground">
+              To compare models, you need to configure at least one API provider in Settings.
               Add your OpenAI, Anthropic, or other API keys to get started.
             </p>
-            
+
             <div className="flex flex-col items-center gap-4">
               <Link
-                to="/settings"
-                className="px-6 py-3 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-colors font-medium"
+                to={`/projects/${projectId}/settings`}
+                className="px-6 py-3 rounded-xl flex items-center gap-2 transition-all font-semibold text-[14px]"
+                style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
               >
                 <Key className="w-5 h-5" />
                 Configure API Keys in Settings
                 <ExternalLink className="w-4 h-4 ml-1" />
               </Link>
-              
+
               {ollamaAvailable ? (
-                <p className="text-sm text-green-500 flex items-center gap-2">
+                <p className="text-[13px] flex items-center gap-2" style={{ color: '#10b981' }}>
                   <Check className="w-4 h-4" />
                   Ollama detected locally - refresh to use local models
                 </p>
               ) : (
-                <p className="text-sm text-textSecondary">
-                  Or install <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ollama</a> to run models locally without API keys
+                <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Or install <a href="https://ollama.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#0080FF' }}>Ollama</a> to run models locally without API keys
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Guide Card */}
+          <div className="rounded-2xl p-6 mt-6 bg-card border border-border">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+                <Scale className="w-4 h-4" style={{ color: '#0080FF' }} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-foreground">How Model Comparison Works</h4>
+                <p className="text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Evaluate quality, speed, and cost across providers</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-6">
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>1</div>
+                  <p className="text-[14px] font-bold text-foreground">Select Models</p>
+                </div>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">Choose up to 3 models from different providers to compare side-by-side.</p>
+              </div>
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>2</div>
+                  <p className="text-[14px] font-bold text-foreground">Write a Prompt</p>
+                </div>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">Enter your prompt or select one from the registry. All models receive the same input.</p>
+              </div>
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>3</div>
+                  <p className="text-[14px] font-bold text-foreground">Compare Results</p>
+                </div>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">Review responses, latency, cost, and quality. Rate outputs to track your preferences.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -594,38 +636,41 @@ export default function ModelComparisonPage() {
 
   // Only one provider with insufficient models
   const totalModelsAvailable = configuredProviders.reduce(
-    (sum, provider) => sum + (providerModels[provider]?.length || 0), 
+    (sum, provider) => sum + (providerModels[provider]?.length || 0),
     0
   );
-  
+
   if (totalModelsAvailable < 2) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-2xl mx-auto">
+      <div className="flex flex-col h-full" style={{ paddingTop: '8px' }}>
+        <div>
           <div className="flex items-center gap-3 mb-8">
-            <Scale className="w-8 h-8 text-primary" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+              <Scale className="w-5 h-5" style={{ color: '#0080FF' }} />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-textPrimary">Model Comparison</h1>
-              <p className="text-textSecondary">
+              <h1 className="text-2xl font-bold text-foreground">Model Comparison</h1>
+              <p className="text-[14px] text-muted-foreground">
                 Compare responses from multiple models side-by-side
               </p>
             </div>
           </div>
 
-          <div className="bg-surface border border-border rounded-xl p-8 text-center">
-            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Scale className="w-8 h-8 text-blue-500" />
+          <div className="rounded-2xl p-10 text-center bg-card border border-border">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+              <Scale className="w-8 h-8" style={{ color: '#0080FF' }} />
             </div>
-            <h2 className="text-xl font-semibold text-textPrimary mb-2">Need More Models</h2>
-            <p className="text-textSecondary mb-6 max-w-md mx-auto">
+            <h2 className="text-xl font-bold mb-2 text-foreground">Need More Models</h2>
+            <p className="text-[14px] mb-8 max-w-md mx-auto text-muted-foreground">
               Model comparison requires at least 2 models. You currently have {totalModelsAvailable} model(s) available.
               Add another API provider or run more Ollama models locally.
             </p>
-            
+
             <div className="flex flex-col items-center gap-4">
               <Link
-                to="/settings"
-                className="px-6 py-3 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-colors font-medium"
+                to={`/projects/${projectId}/settings`}
+                className="px-6 py-3 rounded-xl flex items-center gap-2 transition-all font-semibold text-[14px]"
+                style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
               >
                 <Key className="w-5 h-5" />
                 Add More API Keys
@@ -639,32 +684,36 @@ export default function ModelComparisonPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-col h-full" style={{ paddingTop: '8px' }}>
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Scale className="w-8 h-8 text-primary" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+              <Scale className="w-5 h-5" style={{ color: '#0080FF' }} />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-textPrimary">Model Comparison</h1>
-              <p className="text-textSecondary">
+              <h1 className="text-2xl font-bold text-foreground">Model Comparison</h1>
+              <p className="text-[14px] text-muted-foreground">
                 Compare responses from up to 3 models side-by-side
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2">
             <VideoHelpButton pageId="compare" />
             <button
               onClick={loadUserConfiguration}
-              className="px-4 py-2 bg-surface border border-border rounded-lg flex items-center gap-2 hover:bg-surface-hover transition-colors text-textPrimary"
+              className="px-3.5 py-2 rounded-xl flex items-center gap-2 text-[13px] font-medium transition-all"
+              style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
               title="Refresh available models"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="px-4 py-2 bg-surface border border-border rounded-lg flex items-center gap-2 hover:bg-surface-hover transition-colors text-textPrimary"
+              className="px-3.5 py-2 rounded-xl flex items-center gap-2 text-[13px] font-medium transition-all"
+              style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
             >
               <Settings2 className="w-4 h-4" />
               {showAdvanced ? 'Hide' : 'Show'} Settings
@@ -673,37 +722,40 @@ export default function ModelComparisonPage() {
         </div>
 
         {/* Configured Providers Info */}
-        <div className="bg-surface/50 border border-border rounded-lg px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-textSecondary">
+        <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-card border border-border">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <Key className="w-4 h-4" />
             <span>Configured providers:</span>
             <span className="flex gap-2">
               {configuredProviders.map(provider => (
-                <span 
+                <span
                   key={provider}
-                  className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-medium capitalize"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-semibold capitalize"
+                  style={{ backgroundColor: 'rgba(0,128,255,0.08)', color: '#0080FF' }}
                 >
                   {provider}
                 </span>
               ))}
             </span>
           </div>
-          <Link 
-            to="/settings?tab=models" 
-            className="text-sm text-primary hover:underline flex items-center gap-1"
+          <Link
+            to={`/projects/${projectId}/settings`}
+            className="text-[13px] font-medium flex items-center gap-1"
+            style={{ color: '#0080FF' }}
           >
             Manage <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
 
         {/* Model Selection */}
-        <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="rounded-2xl p-6 bg-card border border-border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-textPrimary">Models to Compare</h2>
+            <h2 className="text-[16px] font-bold text-foreground">Models to Compare</h2>
             <button
               onClick={addModel}
               disabled={selectedModels.length >= 3}
-              className="px-3 py-1.5 bg-primary text-white rounded-lg flex items-center gap-1.5 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-[13px] font-semibold"
+              style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
             >
               <Plus className="w-4 h-4" />
               Add Model
@@ -712,20 +764,22 @@ export default function ModelComparisonPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {selectedModels.map((model, index) => (
-              <div 
-                key={index} 
-                className="bg-surface-elevated border border-border rounded-lg p-4 space-y-3"
+              <div
+                key={index}
+                className="rounded-xl p-4 space-y-3"
+                style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-textSecondary uppercase tracking-wide">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Model {index + 1}
                   </span>
                   {selectedModels.length > 2 && (
                     <button
                       onClick={() => removeModel(index)}
-                      className="p-1 hover:bg-red-500/10 rounded transition-colors"
+                      className="p-1 rounded transition-colors"
+                      style={{ color: '#ef4444' }}
                     >
-                      <Minus className="w-4 h-4 text-red-500" />
+                      <Minus className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -739,15 +793,15 @@ export default function ModelComparisonPage() {
                       updateModel(index, newProvider, firstModel.id);
                     }
                   }}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-textPrimary text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none bg-card border border-border text-foreground"
                 >
                   {configuredProviders.map(provider => (
                     <option key={provider} value={provider}>
-                      {provider === 'openai' ? 'OpenAI' : 
-                       provider === 'anthropic' ? 'Anthropic' : 
-                       provider === 'deepseek' ? 'DeepSeek' :
-                       provider === 'ollama' ? 'Ollama (Local)' :
-                       provider.charAt(0).toUpperCase() + provider.slice(1)}
+                      {provider === 'openai' ? 'OpenAI' :
+                        provider === 'anthropic' ? 'Anthropic' :
+                          provider === 'deepseek' ? 'DeepSeek' :
+                            provider === 'ollama' ? 'Ollama (Local)' :
+                              provider.charAt(0).toUpperCase() + provider.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -755,7 +809,7 @@ export default function ModelComparisonPage() {
                 <select
                   value={model.model_id}
                   onChange={(e) => updateModel(index, model.provider, e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-textPrimary text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none bg-card border border-border text-foreground"
                 >
                   {providerModels[model.provider]?.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -766,7 +820,7 @@ export default function ModelComparisonPage() {
 
                 {/* Pricing info */}
                 {availableModels.find(m => m.model_id === model.model_id) && (
-                  <div className="flex items-center gap-2 text-xs text-textSecondary">
+                  <div className="flex items-center gap-2 text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     <DollarSign className="w-3 h-3" />
                     <span>
                       ${availableModels.find(m => m.model_id === model.model_id)?.input_cost_per_1m?.toFixed(2) || '?'}/1M in
@@ -780,12 +834,12 @@ export default function ModelComparisonPage() {
 
         {/* Advanced Settings */}
         {showAdvanced && (
-          <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-textPrimary">Advanced Settings</h2>
-            
+          <div className="rounded-2xl p-6 space-y-4 bg-card border border-border">
+            <h2 className="text-[16px] font-bold text-foreground">Advanced Settings</h2>
+
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-textSecondary mb-2">
+                <label className="block text-[13px] font-semibold mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                   Temperature: {temperature.toFixed(2)}
                 </label>
                 <input
@@ -797,15 +851,15 @@ export default function ModelComparisonPage() {
                   onChange={(e) => setTemperature(parseFloat(e.target.value))}
                   className="w-full accent-primary"
                 />
-                <div className="flex justify-between text-xs text-textSecondary">
+                <div className="flex justify-between text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <span>Precise</span>
                   <span>Balanced</span>
                   <span>Creative</span>
                 </div>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-textSecondary mb-2">
+                <label className="block text-[13px] font-semibold mb-2" style={{ color: 'hsl(var(--foreground))' }}>
                   Max Tokens: {maxTokens}
                 </label>
                 <input
@@ -823,31 +877,31 @@ export default function ModelComparisonPage() {
         )}
 
         {/* Prompt Source Selection */}
-        <div className="bg-surface border border-border rounded-xl p-6 space-y-4">
+        <div className="rounded-2xl p-6 space-y-4 bg-card border border-border">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-textPrimary">Prompt</h2>
+            <h2 className="text-[16px] font-bold text-foreground">Prompt</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
                   setPromptSource('custom');
                   setSelectedPromptId(null);
                 }}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${
-                  promptSource === 'custom'
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-elevated text-textSecondary hover:text-textPrimary border border-border'
-                }`}
+                className="px-3 py-1.5 rounded-lg flex items-center gap-2 text-[13px] font-semibold transition-all"
+                style={promptSource === 'custom'
+                  ? { backgroundColor: '#0080FF', color: '#ffffff' }
+                  : { backgroundColor: 'hsl(var(--secondary))', color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }
+                }
               >
                 <FileText className="w-4 h-4" />
                 Custom
               </button>
               <button
                 onClick={() => setPromptSource('registry')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${
-                  promptSource === 'registry'
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-elevated text-textSecondary hover:text-textPrimary border border-border'
-                }`}
+                className="px-3 py-1.5 rounded-lg flex items-center gap-2 text-[13px] font-semibold transition-all"
+                style={promptSource === 'registry'
+                  ? { backgroundColor: '#0080FF', color: '#ffffff' }
+                  : { backgroundColor: 'hsl(var(--secondary))', color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }
+                }
               >
                 <Library className="w-4 h-4" />
                 From Registry
@@ -858,13 +912,14 @@ export default function ModelComparisonPage() {
           {/* Registry Prompt Selection */}
           {promptSource === 'registry' && (
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-textSecondary">
+              <label className="block text-[13px] font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                 Select a prompt from your registry
               </label>
               <select
                 value={selectedPromptId || ''}
                 onChange={(e) => handlePromptSelection(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-textPrimary"
+                className="w-full rounded-lg px-4 py-3 text-[13px] focus:outline-none"
+                style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
               >
                 <option value="">-- Select a prompt --</option>
                 {registryPrompts.map((p) => (
@@ -874,7 +929,7 @@ export default function ModelComparisonPage() {
                 ))}
               </select>
               {selectedPromptId && (
-                <p className="text-xs text-textSecondary">
+                <p className="text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {registryPrompts.find(p => p.id === selectedPromptId)?.description || 'No description'}
                 </p>
               )}
@@ -884,14 +939,15 @@ export default function ModelComparisonPage() {
           {/* System Prompt (shown when registry prompt selected or in custom mode) */}
           {(promptSource === 'custom' || selectedPromptId) && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-textSecondary">
+              <label className="block text-[13px] font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                 System Prompt {promptSource === 'registry' && '(from registry)'}
               </label>
               <textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 placeholder="Enter a system prompt to set the model's behavior..."
-                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-textPrimary min-h-[100px] resize-y font-mono text-sm"
+                className="w-full rounded-lg px-4 py-3 min-h-[100px] resize-y font-mono text-[13px] focus:outline-none"
+                style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                 readOnly={promptSource === 'registry'}
               />
             </div>
@@ -900,10 +956,10 @@ export default function ModelComparisonPage() {
           {/* User Prompt */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-textSecondary">
+              <label className="block text-[13px] font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                 User Prompt
               </label>
-              <span className="text-xs text-textSecondary">
+              <span className="text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {prompt.length} characters
               </span>
             </div>
@@ -911,27 +967,29 @@ export default function ModelComparisonPage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Enter your prompt here. All selected models will receive the same prompt..."
-              className="w-full bg-background border border-border rounded-lg px-4 py-3 text-textPrimary min-h-[120px] resize-y font-mono text-sm"
+              className="w-full rounded-lg px-4 py-3 min-h-[120px] resize-y font-mono text-[13px] focus:outline-none"
+              style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
             />
           </div>
 
           {/* Variables hint for registry prompts */}
           {promptSource === 'registry' && selectedPromptId && (
-            <div className="text-xs text-textSecondary bg-surface-elevated rounded-lg p-3">
-              <span className="font-medium">Tip:</span> This prompt may contain variables like <code className="bg-background px-1 py-0.5 rounded">{'{{variable}}'}</code>. 
+            <div className="text-[12px] rounded-lg p-3" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
+              <span className="font-semibold">Tip:</span> This prompt may contain variables like <code className="px-1 py-0.5 rounded bg-secondary">{'{{variable}}'}</code>.
               You can replace them manually in the prompts above before comparing.
             </div>
           )}
-          
+
           <div className="flex items-center justify-between pt-2">
-            <div className="text-sm text-textSecondary">
+            <div className="text-[13px] text-muted-foreground">
               {selectedModels.length} model{selectedModels.length !== 1 ? 's' : ''} selected
             </div>
-            
+
             <button
               onClick={runComparison}
               disabled={isRunning || !prompt.trim() || selectedModels.length < 2}
-              className="px-6 py-2.5 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-[14px]"
+              style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
             >
               {isRunning ? (
                 <>
@@ -950,59 +1008,59 @@ export default function ModelComparisonPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-500">
-            <p className="font-medium">Error</p>
-            <p className="text-sm mt-1">{error}</p>
+          <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+            <p className="font-semibold text-[14px]" style={{ color: '#ef4444' }}>Error</p>
+            <p className="text-[13px] mt-1" style={{ color: '#ef4444' }}>{error}</p>
           </div>
         )}
 
         {/* Results */}
         {results.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Summary */}
             {summary && (
-              <div className="bg-surface border border-border rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-textPrimary mb-4">Summary</h2>
+              <div className="rounded-2xl p-6 bg-card border border-border">
+                <h2 className="text-[16px] font-bold mb-4 text-foreground">Summary</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-surface-elevated rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-textSecondary mb-1">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                    <div className="flex items-center gap-2 mb-1 text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      <span className="text-sm">Total Time</span>
+                      <span className="text-[12px] font-medium">Total Time</span>
                     </div>
-                    <p className="text-xl font-semibold text-textPrimary">
+                    <p className="text-[18px] font-bold text-foreground">
                       {formatLatency(summary.total_latency_ms)}
                     </p>
                   </div>
-                  
-                  <div className="bg-surface-elevated rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-textSecondary mb-1">
+
+                  <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                    <div className="flex items-center gap-2 mb-1 text-muted-foreground">
                       <DollarSign className="w-4 h-4" />
-                      <span className="text-sm">Total Cost</span>
+                      <span className="text-[12px] font-medium">Total Cost</span>
                     </div>
-                    <p className="text-xl font-semibold text-textPrimary">
+                    <p className="text-[18px] font-bold text-foreground">
                       {formatCost(summary.total_cost_usd)}
                     </p>
                   </div>
-                  
+
                   {summary.fastest_model && (
-                    <div className="bg-green-500/10 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-green-500 mb-1">
+                    <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                      <div className="flex items-center gap-2 mb-1" style={{ color: '#10b981' }}>
                         <Zap className="w-4 h-4" />
-                        <span className="text-sm">Fastest</span>
+                        <span className="text-[12px] font-medium">Fastest</span>
                       </div>
-                      <p className="text-lg font-semibold text-textPrimary truncate">
+                      <p className="text-[16px] font-bold truncate text-foreground">
                         {summary.fastest_model.split('/').pop()}
                       </p>
                     </div>
                   )}
-                  
+
                   {summary.cheapest_model && (
-                    <div className="bg-blue-500/10 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-blue-500 mb-1">
+                    <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(0,128,255,0.06)', border: '1px solid rgba(0,128,255,0.15)' }}>
+                      <div className="flex items-center gap-2 mb-1" style={{ color: '#0080FF' }}>
                         <DollarSign className="w-4 h-4" />
-                        <span className="text-sm">Cheapest</span>
+                        <span className="text-[12px] font-medium">Cheapest</span>
                       </div>
-                      <p className="text-lg font-semibold text-textPrimary truncate">
+                      <p className="text-[16px] font-bold truncate text-foreground">
                         {summary.cheapest_model.split('/').pop()}
                       </p>
                     </div>
@@ -1014,131 +1072,135 @@ export default function ModelComparisonPage() {
             {/* Results Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {results.map((result, index) => (
-                <div 
+                <div
                   key={result.model_key}
-                  className={`bg-surface border rounded-xl overflow-hidden ${
-                    summary?.fastest_model === result.model_key 
-                      ? 'border-green-500/50' 
-                      : summary?.cheapest_model === result.model_key 
-                        ? 'border-blue-500/50'
-                        : 'border-border'
-                  }`}
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: summary?.fastest_model === result.model_key
+                      ? '2px solid rgba(16,185,129,0.5)'
+                      : summary?.cheapest_model === result.model_key
+                        ? '2px solid rgba(0,128,255,0.5)'
+                        : '1px solid hsl(var(--border))'
+                  }}
                 >
                   {/* Model Header */}
-                  <div className="bg-surface-elevated px-4 py-3 border-b border-border">
+                  <div className="px-5 py-3.5" style={{ borderBottom: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--secondary))' }}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-textPrimary">
+                        <p className="font-bold text-[14px] text-foreground">
                           {providerModels[result.provider]?.find(m => m.id === result.model_id)?.name || result.model_id}
                         </p>
-                        <p className="text-xs text-textSecondary capitalize">{result.provider}</p>
+                        <p className="text-[12px] capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{result.provider}</p>
                       </div>
-                      <span className={`text-xs font-medium ${getStatusColor(result.status)}`}>
+                      <span className="text-[12px] font-semibold" style={{ color: result.status === 'completed' ? '#10b981' : result.status === 'error' ? '#ef4444' : '#f59e0b' }}>
                         {result.status}
                       </span>
                     </div>
-                    
+
                     {/* Badges */}
                     <div className="flex gap-2 mt-2">
                       {summary?.fastest_model === result.model_key && (
-                        <span className="px-2 py-0.5 bg-green-500/20 text-green-500 text-xs rounded-full flex items-center gap-1">
+                        <span className="px-2 py-0.5 text-[11px] rounded-full flex items-center gap-1 font-semibold" style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
                           <Zap className="w-3 h-3" /> Fastest
                         </span>
                       )}
                       {summary?.cheapest_model === result.model_key && (
-                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-500 text-xs rounded-full flex items-center gap-1">
+                        <span className="px-2 py-0.5 text-[11px] rounded-full flex items-center gap-1 font-semibold" style={{ backgroundColor: 'rgba(0,128,255,0.08)', color: '#0080FF' }}>
                           <DollarSign className="w-3 h-3" /> Cheapest
                         </span>
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Metrics */}
-                  <div className="grid grid-cols-3 divide-x divide-border text-center py-2 bg-surface-elevated/50">
+                  <div className="grid grid-cols-3 text-center py-3" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <div className="px-2">
-                      <p className="text-xs text-textSecondary">Latency</p>
-                      <p className="text-sm font-medium text-textPrimary">
+                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Latency</p>
+                      <p className="text-[14px] font-bold text-foreground">
                         {formatLatency(result.latency_ms)}
                       </p>
                     </div>
-                    <div className="px-2">
-                      <p className="text-xs text-textSecondary">Tokens</p>
-                      <p className="text-sm font-medium text-textPrimary">
+                    <div className="px-2" style={{ borderLeft: '1px solid hsl(var(--border))', borderRight: '1px solid hsl(var(--border))' }}>
+                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Tokens</p>
+                      <p className="text-[14px] font-bold text-foreground">
                         {result.input_tokens + result.output_tokens}
                       </p>
                     </div>
                     <div className="px-2">
-                      <p className="text-xs text-textSecondary">Cost</p>
-                      <p className="text-sm font-medium text-textPrimary">
+                      <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Cost</p>
+                      <p className="text-[14px] font-bold text-foreground">
                         {formatCost(result.cost_usd)}
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Response Content */}
-                  <div className="p-4">
+                  <div className="p-5">
                     {result.error ? (
-                      <div className="text-red-500 text-sm">
-                        <p className="font-medium">Error</p>
+                      <div className="text-[13px]" style={{ color: '#ef4444' }}>
+                        <p className="font-semibold">Error</p>
                         <p>{result.error}</p>
                       </div>
                     ) : (
                       <div className="relative">
-                        <pre className="text-sm text-textPrimary whitespace-pre-wrap font-sans max-h-64 overflow-y-auto">
+                        <pre className="text-[13px] whitespace-pre-wrap font-sans max-h-64 overflow-y-auto leading-relaxed" style={{ color: 'hsl(var(--foreground))' }}>
                           {result.content}
                         </pre>
                         <button
                           onClick={() => copyToClipboard(result.content, index)}
-                          className="absolute top-0 right-0 p-1.5 bg-surface rounded hover:bg-surface-hover transition-colors"
+                          className="absolute top-0 right-0 p-1.5 rounded-lg transition-all"
+                          style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}
                           title="Copy to clipboard"
                         >
                           {copiedIndex === index ? (
-                            <Check className="w-4 h-4 text-green-500" />
+                            <Check className="w-4 h-4" style={{ color: '#10b981' }} />
                           ) : (
-                            <Copy className="w-4 h-4 text-textSecondary" />
+                            <Copy className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                           )}
                         </button>
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Rating Buttons */}
                   {result.status === 'completed' && (
-                    <div className="px-4 pb-4 flex gap-2">
+                    <div className="px-5 pb-4 flex gap-2">
                       <button
                         onClick={() => rateResponse(result.model_key, 'up')}
-                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                          ratings[result.model_key] === 'up'
-                            ? 'bg-green-500/20 text-green-500'
-                            : 'bg-surface-elevated text-textSecondary hover:bg-surface-hover'
-                        }`}
+                        className="flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-[13px] font-medium"
+                        style={ratings[result.model_key] === 'up'
+                          ? { backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981' }
+                          : { backgroundColor: 'hsl(var(--secondary))', color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }
+                        }
                       >
                         <ThumbsUp className="w-4 h-4" />
-                        <span className="text-sm">Good</span>
+                        Good
                       </button>
                       <button
                         onClick={() => rateResponse(result.model_key, 'down')}
-                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                          ratings[result.model_key] === 'down'
-                            ? 'bg-red-500/20 text-red-500'
-                            : 'bg-surface-elevated text-textSecondary hover:bg-surface-hover'
-                        }`}
+                        className="flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-[13px] font-medium"
+                        style={ratings[result.model_key] === 'down'
+                          ? { backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+                          : { backgroundColor: 'hsl(var(--secondary))', color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }
+                        }
                       >
                         <ThumbsDown className="w-4 h-4" />
-                        <span className="text-sm">Bad</span>
+                        Bad
                       </button>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-            
+
             {/* Run Again */}
             <div className="flex justify-center">
               <button
                 onClick={runComparison}
                 disabled={isRunning}
-                className="px-6 py-2.5 bg-surface border border-border rounded-lg flex items-center gap-2 hover:bg-surface-hover transition-colors text-textPrimary"
+                className="px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all font-semibold text-[14px]"
+                style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
               >
                 <RefreshCw className="w-4 h-4" />
                 Run Again

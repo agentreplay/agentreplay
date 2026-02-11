@@ -154,7 +154,7 @@ export default function Storage() {
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-red-500 font-medium">Error</p>
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
             </div>
           </div>
         )}

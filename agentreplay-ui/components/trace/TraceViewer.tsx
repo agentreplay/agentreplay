@@ -121,7 +121,7 @@ export function TraceViewer({ traceId, tenantId, projectId }: TraceViewerProps) 
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading trace data...</p>
+          <p className="text-muted-foreground">Loading trace data...</p>
         </div>
       </div>
     );
@@ -139,11 +139,11 @@ export function TraceViewer({ traceId, tenantId, projectId }: TraceViewerProps) 
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-card rounded-lg border border-border p-6">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
           Trace: {traceId}
         </h1>
-        <div className="flex items-center gap-6 text-sm text-gray-600">
+        <div className="flex items-center gap-6 text-sm text-muted-foreground">
           <div>
             <span className="font-medium">Total Spans:</span> {spans.length}
           </div>
@@ -165,8 +165,8 @@ export function TraceViewer({ traceId, tenantId, projectId }: TraceViewerProps) 
       />
 
       {/* Visualization Tabs - Simple version without shadcn/ui */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="border-b border-gray-200">
+      <div className="bg-card rounded-lg border border-border">
+        <div className="border-b border-border">
           <nav className="flex gap-4 px-4">
             {['tree', 'canvas', 'flame', 'timeline', 'analytics'].map((tab) => (
               <button
@@ -176,7 +176,7 @@ export function TraceViewer({ traceId, tenantId, projectId }: TraceViewerProps) 
                   px-4 py-3 text-sm font-medium border-b-2 transition-colors
                   ${activeTab === tab
                     ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                   }
                 `}
               >

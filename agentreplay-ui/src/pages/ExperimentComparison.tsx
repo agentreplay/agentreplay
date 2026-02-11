@@ -127,16 +127,16 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
   };
 
   if (loading || !report) {
-    return <div className="p-8 text-center text-gray-500">Loading comparison...</div>;
+    return <div className="p-8 text-center text-muted-foreground">Loading comparison...</div>;
   }
 
   // Selected metric detailed comparison
   const selectedTests = report.statistical_tests.filter(t => t.metric === selectedMetric);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-secondary min-h-screen">
       {/* Header with winner */}
-      <div className="bg-white rounded-xl p-6 border border-purple-200 shadow-sm relative overflow-hidden">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-purple-500"></div>
         <div className="flex items-start justify-between">
           <div>
@@ -144,7 +144,7 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
               <Award />
               Experiment Comparison
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Comparing {report.compared_runs.length} evaluation runs across {report.metrics_compared.length} metrics
             </p>
           </div>
@@ -163,7 +163,7 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
       </div>
 
       {/* Radar chart placeholder */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Multi-Dimensional Comparison</h2>
         <ResponsiveContainer height={300}>
           <RadarChart />
@@ -179,7 +179,7 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
             className={`px-4 py-2 rounded-lg transition-all font-medium text-sm ${
               selectedMetric === metric
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                : 'bg-card text-muted-foreground border border-border hover:bg-secondary'
             }`}
           >
             {metric}
@@ -189,13 +189,13 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
 
       {/* Detailed comparison for selected metric */}
       {selectedTests.map((test, idx) => (
-        <div key={idx} className="bg-white rounded-xl border border-gray-200 p-6 space-y-6 shadow-sm">
+        <div key={idx} className="bg-card rounded-xl border border-border p-6 space-y-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-lg font-bold text-gray-800 capitalize">
                 {test.metric} Comparison
               </h3>
-              <p className="text-sm text-gray-500 mt-1">{test.interpretation}</p>
+              <p className="text-sm text-muted-foreground mt-1">{test.interpretation}</p>
             </div>
 
             {/* Significance badge */}
@@ -214,23 +214,23 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
           {/* Visual comparison bars */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Baseline</div>
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2 font-semibold">Baseline</div>
+              <div className="bg-secondary rounded-lg p-4 border border-gray-100">
                 <div className="text-3xl font-bold text-gray-800">
                   {test.baseline_stats.mean.toFixed(3)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   ± {test.baseline_stats.std_dev.toFixed(3)} SD
                 </div>
-                <div className="text-xs text-gray-400 mt-2">
+                <div className="text-xs text-muted-foreground mt-2">
                   n = {test.baseline_stats.sample_size}
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Treatment</div>
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2 font-semibold">Treatment</div>
+              <div className="bg-secondary rounded-lg p-4 border border-gray-100">
                 <div className="text-3xl font-bold text-gray-800 flex items-center gap-2">
                   {test.treatment_stats.mean.toFixed(3)}
                   {test.effect_size.percentage_improvement > 0 ? (
@@ -245,7 +245,7 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
                   {test.effect_size.percentage_improvement > 0 ? '+' : ''}
                   {test.effect_size.percentage_improvement.toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-400 mt-2">
+                <div className="text-xs text-muted-foreground mt-2">
                   n = {test.treatment_stats.sample_size}
                 </div>
               </div>
@@ -254,37 +254,37 @@ export function ExperimentComparison({ runIds }: { runIds: string[] }) {
 
           {/* Statistical details */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-              <div className="text-xs text-gray-500 font-medium uppercase">p-value</div>
+            <div className="bg-secondary rounded-lg p-3 border border-gray-100">
+              <div className="text-xs text-muted-foreground font-medium uppercase">p-value</div>
               <div className={`text-lg font-bold ${
                 test.test_result.p_value < 0.05 ? 'text-green-600' : 'text-gray-800'
               }`}>
                 {test.test_result.p_value.toFixed(4)}
               </div>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 {test.test_result.significant_at_01 ? 'p < 0.01' : test.test_result.statistically_significant ? 'p < 0.05' : 'p ≥ 0.05'}
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-              <div className="text-xs text-gray-500 font-medium uppercase">Effect Size</div>
+            <div className="bg-secondary rounded-lg p-3 border border-gray-100">
+              <div className="text-xs text-muted-foreground font-medium uppercase">Effect Size</div>
               <div className="text-lg font-bold text-gray-800">
                 d = {test.effect_size.cohens_d.toFixed(2)}
               </div>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 {test.effect_size.interpretation}
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-              <div className="text-xs text-gray-500 font-medium uppercase">t-statistic</div>
+            <div className="bg-secondary rounded-lg p-3 border border-gray-100">
+              <div className="text-xs text-muted-foreground font-medium uppercase">t-statistic</div>
               <div className="text-lg font-bold text-gray-800">
                 {test.test_result.t_statistic.toFixed(2)}
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-              <div className="text-xs text-gray-500 font-medium uppercase">95% CI</div>
+            <div className="bg-secondary rounded-lg p-3 border border-gray-100">
+              <div className="text-xs text-muted-foreground font-medium uppercase">95% CI</div>
               <div className="text-sm font-mono text-gray-800 mt-1">
                 [{test.test_result.confidence_interval[0].toFixed(3)}, {test.test_result.confidence_interval[1].toFixed(3)}]
               </div>

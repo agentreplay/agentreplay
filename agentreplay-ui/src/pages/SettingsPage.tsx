@@ -129,7 +129,7 @@ interface AgentReplaySettings {
     max_payload_size_mb: number;
   };
   ui: {
-    theme: 'light' | 'dark' | 'system';
+    theme: 'light' | 'dark' | 'midnight';
     animations_enabled: boolean;
     auto_refresh_interval_secs: number;
     experimental_features: boolean;
@@ -158,7 +158,7 @@ interface AgentReplaySettings {
 type SettingsScope = 'user' | 'project' | 'local';
 
 // BackupsList Component - shows list of available backups with export/import
-function BackupsList({ onMessage, onRefreshNeeded }: { 
+function BackupsList({ onMessage, onRefreshNeeded }: {
   onMessage: (msg: { type: 'success' | 'error'; text: string }) => void;
   onRefreshNeeded?: () => void;
 }) {
@@ -207,16 +207,16 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
     try {
       setExporting(backupId);
       onMessage({ type: 'success', text: 'Preparing backup for download...' });
-      
+
       // Request the server to create a zip and return it
       const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}/export`, {
         method: 'GET',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to export backup');
       }
-      
+
       // Get the blob and create download link
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -231,7 +231,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       onMessage({ type: 'success', text: `Backup exported: ${filename}` });
     } catch (error) {
       onMessage({ type: 'error', text: `Export failed: ${error}` });
@@ -244,24 +244,24 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
   const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     try {
       setImporting(true);
       onMessage({ type: 'success', text: `Importing backup: ${file.name}...` });
-      
+
       const formData = new FormData();
       formData.append('backup', file);
-      
+
       const response = await fetch('http://localhost:47100/api/v1/admin/backups/import', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Import failed');
       }
-      
+
       const result = await response.json();
       onMessage({ type: 'success', text: `Backup imported: ${result.backup_id}. Restart the app to apply.` });
       loadBackups(); // Refresh the list
@@ -280,12 +280,12 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
     if (!confirm(`Are you sure you want to delete backup "${backupId}"?`)) {
       return;
     }
-    
+
     try {
       const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         onMessage({ type: 'success', text: `Deleted backup: ${backupId}` });
         loadBackups();
@@ -302,16 +302,16 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
 
   const handleRestoreBackup = async (backupId: string, mode: 'replace' | 'merge' = 'replace') => {
     setShowRestoreDialog(null);
-    
+
     try {
       onMessage({ type: 'success', text: `${mode === 'merge' ? 'Merging' : 'Restoring'} backup... Please wait.` });
-      
+
       const response = await fetch(`http://localhost:47100/api/v1/admin/backups/${backupId}/restore?mode=${mode}`, {
         method: 'POST',
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         onMessage({ type: 'success', text: result.message });
         // Refresh the backups list to show the new pre-restore backup
@@ -326,12 +326,12 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
 
   if (loading) {
     return (
-      <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6 mt-6">
+      <div className="bg-card rounded-lg border border-border p-6 mt-6">
         <div className="flex items-center gap-3 mb-4">
-          <Folder className="w-6 h-6 text-blue-400" />
-          <h2 className="text-xl font-semibold text-white">Available Backups</h2>
+          <Folder className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-xl font-semibold text-foreground">Available Backups</h2>
         </div>
-        <div className="flex items-center justify-center py-8 text-gray-400">
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
           Loading backups...
         </div>
@@ -340,12 +340,12 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
   }
 
   return (
-    <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6 mt-6">
+    <div className="bg-card rounded-lg border border-border p-6 mt-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Folder className="w-6 h-6 text-blue-400" />
-          <h2 className="text-xl font-semibold text-white">Backups</h2>
-          <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">
+          <Folder className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-xl font-semibold text-foreground">Backups</h2>
+          <span className="px-2 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs rounded-full">
             {backups.length}
           </span>
         </div>
@@ -361,7 +361,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={importing}
-            className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-purple-600 text-foreground rounded-lg hover:bg-purple-700 flex items-center gap-1.5 disabled:opacity-50"
             title="Import backup from ZIP file"
           >
             {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -369,7 +369,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
           </button>
           <button
             onClick={loadBackups}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
@@ -378,7 +378,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
       </div>
 
       {backups.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
+        <div className="text-center py-8 text-muted-foreground">
           <HardDrive className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No backups found</p>
           <p className="text-sm mt-1">Create your first backup using the button above</p>
@@ -388,28 +388,28 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
           {backups.map((backup) => (
             <div
               key={backup.backup_id}
-              className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/50"
+              className="flex items-center justify-between p-4 bg-card rounded-lg border border-border/50"
             >
               <div className="flex items-center gap-4">
                 <div className="p-2 bg-orange-500/20 rounded-lg">
-                  <HardDrive className="w-5 h-5 text-orange-400" />
+                  <HardDrive className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-white">{backup.backup_id}</p>
-                  <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                  <p className="font-medium text-foreground">{backup.backup_id}</p>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                     <span>{formatDate(backup.created_at)}</span>
                     <span>•</span>
                     <span>{formatBytes(backup.size_bytes)}</span>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 {/* Export/Download as ZIP */}
                 <button
                   onClick={() => handleExportBackup(backup.backup_id)}
                   disabled={exporting === backup.backup_id}
-                  className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-green-600 text-foreground rounded-lg hover:bg-green-700 flex items-center gap-1.5 disabled:opacity-50"
                   title="Download backup as ZIP"
                 >
                   {exporting === backup.backup_id ? (
@@ -423,7 +423,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
                 <button
                   onClick={() => setShowRestoreDialog(backup.backup_id)}
                   disabled={restoring === backup.backup_id}
-                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-foreground rounded-lg hover:bg-blue-700 flex items-center gap-1.5 disabled:opacity-50"
                   title="Restore from this backup"
                 >
                   {restoring === backup.backup_id ? (
@@ -436,7 +436,7 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
                 {/* Delete */}
                 <button
                   onClick={() => handleDeleteBackup(backup.backup_id)}
-                  className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-sm bg-red-600/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600/30 flex items-center gap-1.5"
                   title="Delete backup"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -446,24 +446,24 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
           ))}
         </div>
       )}
-      
-      <p className="text-xs text-gray-500 mt-4">
+
+      <p className="text-xs text-muted-foreground mt-4">
         💡 Export downloads a ZIP file you can save anywhere. Import uploads a previously exported ZIP to restore.
       </p>
 
       {/* Restore Dialog */}
       {showRestoreDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-white mb-4">Restore Backup</h3>
-            <p className="text-gray-300 mb-4">
-              Restore from backup <span className="text-blue-400 font-mono">{showRestoreDialog}</span>
+          <div className="bg-secondary rounded-lg border border-border p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Restore Backup</h3>
+            <p className="text-muted-foreground mb-4">
+              Restore from backup <span className="text-blue-600 dark:text-blue-400 font-mono">{showRestoreDialog}</span>
             </p>
-            
+
             <div className="mb-4">
-              <label className="text-sm text-gray-400 mb-2 block">Restore Mode:</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Restore Mode:</label>
               <div className="space-y-2">
-                <label className="flex items-start gap-3 p-3 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-700">
+                <label className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary/80">
                   <input
                     type="radio"
                     name="restoreMode"
@@ -473,11 +473,11 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
                     className="mt-1"
                   />
                   <div>
-                    <p className="text-white font-medium">Replace (Full Restore)</p>
-                    <p className="text-sm text-gray-400">Replace all current data with backup data. A pre-restore backup will be created.</p>
+                    <p className="text-foreground font-medium">Replace (Full Restore)</p>
+                    <p className="text-sm text-muted-foreground">Replace all current data with backup data. A pre-restore backup will be created.</p>
                   </div>
                 </label>
-                <label className="flex items-start gap-3 p-3 bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-700">
+                <label className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary/80">
                   <input
                     type="radio"
                     name="restoreMode"
@@ -487,23 +487,23 @@ function BackupsList({ onMessage, onRefreshNeeded }: {
                     className="mt-1"
                   />
                   <div>
-                    <p className="text-white font-medium">Merge (Append) <span className="text-yellow-400 text-xs">(Experimental)</span></p>
-                    <p className="text-sm text-gray-400">Add backup traces to existing data. ⚠️ Project associations may not be preserved - traces may appear in wrong projects.</p>
+                    <p className="text-foreground font-medium">Merge (Append) <span className="text-yellow-600 dark:text-yellow-400 text-xs">(Experimental)</span></p>
+                    <p className="text-sm text-muted-foreground">Add backup traces to existing data. ⚠️ Project associations may not be preserved - traces may appear in wrong projects.</p>
                   </div>
                 </label>
               </div>
             </div>
-            
+
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowRestoreDialog(null)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white"
+                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleRestoreBackup(showRestoreDialog, restoreMode)}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 text-sm bg-blue-600 text-foreground rounded-lg hover:bg-blue-700"
               >
                 {restoreMode === 'merge' ? 'Merge Data' : 'Restore'}
               </button>
@@ -680,7 +680,7 @@ export function SettingsPage() {
           max_payload_size_mb: 10,
         },
         ui: {
-          theme: 'light',
+          theme: 'dark',
           animations_enabled: true,
           auto_refresh_interval_secs: 30,
           experimental_features: true,
@@ -760,6 +760,13 @@ export function SettingsPage() {
         };
       }
 
+      // Sync the loaded settings theme with the actual applied theme from localStorage
+      // (theme is stored separately in 'agentreplay-theme' by applyTheme)
+      const actualTheme = localStorage.getItem('agentreplay-theme') as 'light' | 'dark' | 'midnight' | null;
+      if (actualTheme && loaded.ui) {
+        loaded.ui.theme = actualTheme;
+      }
+
       setSettings(loaded);
       setHasChanges(false);
 
@@ -815,7 +822,8 @@ export function SettingsPage() {
   };
 
   // Apply theme function - uses imported function from theme.ts
-  const applyTheme = (theme: 'light' | 'dark' | 'system') => {
+  const applyTheme = (theme: 'light' | 'dark' | 'midnight') => {
+    localStorage.setItem('agentreplay-theme', theme);
     applyThemeFromLib(resolveTheme(theme));
   };
 
@@ -836,7 +844,7 @@ export function SettingsPage() {
           max_payload_size_mb: 10,
         },
         ui: {
-          theme: 'light',
+          theme: 'dark',
           animations_enabled: true,
           auto_refresh_interval_secs: 30,
           experimental_features: true,
@@ -1331,15 +1339,15 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-gray-950">
+    <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="flex-none border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="p-6">
+      <div className="flex-none border-b border-border bg-card backdrop-blur-sm">
+        <div className="px-5 pt-5 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-white mb-1">Settings</h1>
-                <p className="text-gray-400">Configure Agentreplay for your workflow</p>
+                <h1 className="text-2xl font-bold text-foreground mb-1">Settings</h1>
+                <p className="text-muted-foreground">Configure Agentreplay for your workflow</p>
               </div>
             </div>
 
@@ -1350,7 +1358,7 @@ export function SettingsPage() {
                 disabled={saving || !hasChanges}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset
@@ -1361,7 +1369,7 @@ export function SettingsPage() {
                 disabled={saving || !hasChanges}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-foreground rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving ? (
                   <>
@@ -1386,8 +1394,8 @@ export function SettingsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${message.type === 'success'
-                  ? 'bg-green-900/50 border border-green-700 text-green-300'
-                  : 'bg-red-900/50 border border-red-700 text-red-300'
+                  ? 'bg-green-100 dark:bg-green-900/50 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                  : 'bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                   }`}
               >
                 {message.type === 'success' ? (
@@ -1402,15 +1410,15 @@ export function SettingsPage() {
         </div>
 
         {/* Scope Tabs */}
-        <div className="flex gap-1 px-6 pb-4">
+        <div className="flex gap-1 px-5 pb-4">
           {(['user', 'project', 'local'] as SettingsScope[]).map((s) => (
             <button
               key={s}
               onClick={() => setScope(s)}
               disabled={s !== 'user' && !projectPath}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${scope === s
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                ? 'bg-blue-600 text-foreground'
+                : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
                 } ${s !== 'user' && !projectPath ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {s === 'user' && <User className="w-4 h-4" />}
@@ -1422,7 +1430,7 @@ export function SettingsPage() {
         </div>
 
         {/* Settings Category Tabs */}
-        <div className="flex gap-1 px-6 pb-4 border-t border-gray-800 pt-4 flex-wrap">
+        <div className="flex gap-1 px-5 pb-4 border-t border-border pt-4 flex-wrap">
           {[
             { id: 'database' as const, icon: Database, label: 'Database', color: 'purple' },
             { id: 'server' as const, icon: Server, label: 'Server', color: 'green' },
@@ -1437,7 +1445,7 @@ export function SettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${activeTab === tab.id
                 ? `bg-${tab.color}-600/20 text-${tab.color}-400 border border-${tab.color}-600/40`
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700 hover:text-gray-300 border border-transparent'
+                : 'bg-card text-muted-foreground hover:bg-secondary/80 hover:text-foreground border border-transparent'
                 }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -1448,22 +1456,22 @@ export function SettingsPage() {
       </div>
 
       {/* Settings Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-5 py-5">
         {settings ? (
           <div>
             {/* Database Settings */}
             {activeTab === 'database' && (
               <div className="space-y-6">
                 {/* Database Configuration */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Database className="w-6 h-6 text-purple-400" />
-                    <h2 className="text-xl font-semibold text-white">Database Configuration</h2>
+                    <Database className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Database Configuration</h2>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Max Traces (0 for unlimited)
                       </label>
                       <input
@@ -1472,12 +1480,12 @@ export function SettingsPage() {
                         onChange={(e) => updateDatabaseSettings({
                           max_traces: e.target.value === '0' ? null : parseInt(e.target.value)
                         })}
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Retention Days (0 for keep forever)
                       </label>
                       <input
@@ -1486,7 +1494,7 @@ export function SettingsPage() {
                         onChange={(e) => updateDatabaseSettings({
                           retention_days: e.target.value === '0' ? null : parseInt(e.target.value)
                         })}
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -1496,20 +1504,20 @@ export function SettingsPage() {
                       type="checkbox"
                       checked={settings.database.auto_compact}
                       onChange={(e) => updateDatabaseSettings({ auto_compact: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                      className="w-5 h-5 rounded border-border bg-background text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-300">Enable Auto-Compaction</span>
+                    <span className="text-sm text-muted-foreground">Enable Auto-Compaction</span>
                   </label>
                 </div>
 
                 {/* System Calibration - Auto-Configure */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Gauge className="w-6 h-6 text-teal-400" />
-                    <h2 className="text-xl font-semibold text-white">Auto-Configure from System</h2>
+                    <Gauge className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Auto-Configure from System</h2>
                   </div>
 
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     Analyze your system resources and automatically configure optimal database limits.
                   </p>
 
@@ -1521,7 +1529,7 @@ export function SettingsPage() {
                     disabled={isCalibrating}
                     className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${isCalibrating
                       ? 'bg-teal-600/50 text-teal-200 cursor-not-allowed'
-                      : 'bg-teal-600 text-white hover:bg-teal-700'
+                      : 'bg-teal-600 text-foreground hover:bg-teal-700'
                       }`}
                   >
                     {isCalibrating ? (
@@ -1539,8 +1547,8 @@ export function SettingsPage() {
 
                   {/* Error Display */}
                   {calibrationError && (
-                    <div className="mt-4 bg-red-900/20 border border-red-700/50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-red-400 text-sm">
+                    <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
                         <AlertCircle className="w-4 h-4" />
                         {calibrationError}
                       </div>
@@ -1551,12 +1559,12 @@ export function SettingsPage() {
                   {calibrationResults && (
                     <div className="mt-4 space-y-4">
                       {/* Real System Info from sysinfo crate */}
-                      <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-4">
+                      <div className="bg-card rounded-lg border border-border p-4">
                         <div className="flex items-center gap-2 mb-3">
-                          <Cpu className="w-4 h-4 text-purple-400" />
-                          <span className="text-sm font-medium text-gray-300">System Information</span>
+                          <Cpu className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <span className="text-sm font-medium text-muted-foreground">System Information</span>
                           {calibrationResults.systemInfo.isTauriApp && (
-                            <span className="px-2 py-0.5 bg-teal-600/30 text-teal-400 text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-teal-600/30 text-teal-600 dark:text-teal-400 text-xs rounded-full">
                               Native
                             </span>
                           )}
@@ -1564,55 +1572,55 @@ export function SettingsPage() {
 
                         {/* OS & Host Info */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-xs">
-                          <div className="bg-gray-800/50 rounded px-2 py-1.5">
-                            <span className="text-gray-500">OS: </span>
-                            <span className="text-white">{calibrationResults.systemInfo.osType}</span>
+                          <div className="bg-card rounded px-2 py-1.5">
+                            <span className="text-muted-foreground">OS: </span>
+                            <span className="text-foreground">{calibrationResults.systemInfo.osType}</span>
                           </div>
-                          <div className="bg-gray-800/50 rounded px-2 py-1.5">
-                            <span className="text-gray-500">Version: </span>
-                            <span className="text-white">{calibrationResults.systemInfo.osVersion}</span>
+                          <div className="bg-card rounded px-2 py-1.5">
+                            <span className="text-muted-foreground">Version: </span>
+                            <span className="text-foreground">{calibrationResults.systemInfo.osVersion}</span>
                           </div>
-                          <div className="bg-gray-800/50 rounded px-2 py-1.5">
-                            <span className="text-gray-500">Arch: </span>
-                            <span className="text-white">{calibrationResults.systemInfo.arch}</span>
+                          <div className="bg-card rounded px-2 py-1.5">
+                            <span className="text-muted-foreground">Arch: </span>
+                            <span className="text-foreground">{calibrationResults.systemInfo.arch}</span>
                           </div>
-                          <div className="bg-gray-800/50 rounded px-2 py-1.5">
-                            <span className="text-gray-500">Host: </span>
-                            <span className="text-white">{calibrationResults.systemInfo.hostname}</span>
+                          <div className="bg-card rounded px-2 py-1.5">
+                            <span className="text-muted-foreground">Host: </span>
+                            <span className="text-foreground">{calibrationResults.systemInfo.hostname}</span>
                           </div>
                         </div>
 
                         {/* CPU Info */}
-                        <div className="bg-gray-800/30 rounded-lg p-3 mb-3">
-                          <p className="text-xs text-gray-500 mb-1">CPU</p>
-                          <p className="text-sm font-medium text-white">{calibrationResults.systemInfo.cpuBrand}</p>
+                        <div className="bg-card/80 rounded-lg p-3 mb-3">
+                          <p className="text-xs text-muted-foreground mb-1">CPU</p>
+                          <p className="text-sm font-medium text-foreground">{calibrationResults.systemInfo.cpuBrand}</p>
                           <div className="flex items-center gap-4 mt-1">
-                            <span className="text-xs text-gray-400">{calibrationResults.systemInfo.cpuCores} cores</span>
-                            <span className="text-xs text-gray-400">Usage: {calibrationResults.systemInfo.cpuUsagePercent}%</span>
+                            <span className="text-xs text-muted-foreground">{calibrationResults.systemInfo.cpuCores} cores</span>
+                            <span className="text-xs text-muted-foreground">Usage: {calibrationResults.systemInfo.cpuUsagePercent}%</span>
                           </div>
                         </div>
 
                         {/* Memory Info */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">Total RAM</p>
-                            <p className="text-lg font-bold text-white">{calibrationResults.systemInfo.totalMemoryGB} GB</p>
+                          <div className="bg-card rounded-lg p-3 text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Total RAM</p>
+                            <p className="text-lg font-bold text-foreground">{calibrationResults.systemInfo.totalMemoryGB} GB</p>
                           </div>
-                          <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">Used</p>
-                            <p className="text-lg font-bold text-yellow-400">{calibrationResults.systemInfo.usedMemoryGB} GB</p>
+                          <div className="bg-card rounded-lg p-3 text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Used</p>
+                            <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{calibrationResults.systemInfo.usedMemoryGB} GB</p>
                           </div>
-                          <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">Available</p>
-                            <p className="text-lg font-bold text-green-400">{calibrationResults.systemInfo.availableMemoryGB} GB</p>
+                          <div className="bg-card rounded-lg p-3 text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Available</p>
+                            <p className="text-lg font-bold text-green-600 dark:text-green-400">{calibrationResults.systemInfo.availableMemoryGB} GB</p>
                           </div>
-                          <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">Memory Usage</p>
+                          <div className="bg-card rounded-lg p-3 text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Memory Usage</p>
                             <p className={`text-lg font-bold ${calibrationResults.systemInfo.memoryUsagePercent > 80
-                              ? 'text-red-400'
+                              ? 'text-red-600 dark:text-red-400'
                               : calibrationResults.systemInfo.memoryUsagePercent > 60
-                                ? 'text-yellow-400'
-                                : 'text-green-400'
+                                ? 'text-yellow-600 dark:text-yellow-400'
+                                : 'text-green-600 dark:text-green-400'
                               }`}>{calibrationResults.systemInfo.memoryUsagePercent}%</p>
                           </div>
                         </div>
@@ -1620,25 +1628,25 @@ export function SettingsPage() {
 
                       {/* I/O Benchmarks */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-                          <p className="text-xs text-gray-500 mb-1">Write Speed</p>
-                          <p className="text-lg font-bold text-white">{calibrationResults.benchmarks.writeSpeedMBps.toFixed(0)} MB/s</p>
+                        <div className="bg-card rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Write Speed</p>
+                          <p className="text-lg font-bold text-foreground">{calibrationResults.benchmarks.writeSpeedMBps.toFixed(0)} MB/s</p>
                         </div>
-                        <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-                          <p className="text-xs text-gray-500 mb-1">Read Speed</p>
-                          <p className="text-lg font-bold text-white">{calibrationResults.benchmarks.readSpeedMBps.toFixed(0)} MB/s</p>
+                        <div className="bg-card rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Read Speed</p>
+                          <p className="text-lg font-bold text-foreground">{calibrationResults.benchmarks.readSpeedMBps.toFixed(0)} MB/s</p>
                         </div>
-                        <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-                          <p className="text-xs text-gray-500 mb-1">IOPS</p>
-                          <p className="text-lg font-bold text-white">{calibrationResults.benchmarks.opsPerSecond?.toLocaleString()}</p>
+                        <div className="bg-card rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">IOPS</p>
+                          <p className="text-lg font-bold text-foreground">{calibrationResults.benchmarks.opsPerSecond?.toLocaleString()}</p>
                         </div>
-                        <div className="bg-gray-900/50 rounded-lg p-3 text-center">
-                          <p className="text-xs text-gray-500 mb-1">Performance</p>
+                        <div className="bg-card rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Performance</p>
                           <p className={`text-lg font-bold ${calibrationResults.recommendations.performanceLevel === 'high'
-                            ? 'text-green-400'
+                            ? 'text-green-600 dark:text-green-400'
                             : calibrationResults.recommendations.performanceLevel === 'medium'
-                              ? 'text-yellow-400'
-                              : 'text-orange-400'
+                              ? 'text-yellow-600 dark:text-yellow-400'
+                              : 'text-orange-600 dark:text-orange-400'
                             }`}>
                             {calibrationResults.recommendations.performanceLevel.toUpperCase()}
                           </p>
@@ -1647,26 +1655,26 @@ export function SettingsPage() {
 
                       {/* Current Storage Usage (if available) */}
                       {calibrationResults.systemInfo.serverOnline && calibrationResults.systemInfo.currentTraceCount !== undefined && (
-                        <div className="bg-purple-900/20 border border-purple-700/30 rounded-lg p-3">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/30 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <Database className="w-4 h-4 text-purple-400" />
-                            <span className="text-sm font-medium text-purple-300">Current Storage</span>
-                            <span className="px-2 py-0.5 bg-green-600/30 text-green-400 text-xs rounded-full">
+                            <Database className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span className="text-sm font-medium text-purple-600 dark:text-purple-300">Current Storage</span>
+                            <span className="px-2 py-0.5 bg-green-600/30 text-green-600 dark:text-green-400 text-xs rounded-full">
                               Server Online
                             </span>
                           </div>
                           <div className="grid grid-cols-3 gap-3 text-center">
                             <div>
-                              <p className="text-xs text-gray-500">Traces</p>
-                              <p className="text-sm font-bold text-purple-400">{calibrationResults.systemInfo.currentTraceCount?.toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">Traces</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{calibrationResults.systemInfo.currentTraceCount?.toLocaleString()}</p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500">Storage</p>
-                              <p className="text-sm font-bold text-purple-400">{calibrationResults.systemInfo.currentStorageMB?.toFixed(1)} MB</p>
+                              <p className="text-xs text-muted-foreground">Storage</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{calibrationResults.systemInfo.currentStorageMB?.toFixed(1)} MB</p>
                             </div>
                             <div>
-                              <p className="text-xs text-gray-500">Avg Size</p>
-                              <p className="text-sm font-bold text-purple-400">{calibrationResults.systemInfo.avgTraceSizeKB?.toFixed(1)} KB</p>
+                              <p className="text-xs text-muted-foreground">Avg Size</p>
+                              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{calibrationResults.systemInfo.avgTraceSizeKB?.toFixed(1)} KB</p>
                             </div>
                           </div>
                         </div>
@@ -1675,17 +1683,17 @@ export function SettingsPage() {
                       {/* Recommendations */}
                       <div className="bg-teal-900/20 border border-teal-700/30 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-3">
-                          <Zap className="w-4 h-4 text-teal-400" />
+                          <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                           <span className="text-sm font-medium text-teal-300">Recommended Settings</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Max Traces</p>
-                            <p className="text-xl font-bold text-teal-400">{calibrationResults.recommendations.maxTraces.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground mb-1">Max Traces</p>
+                            <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{calibrationResults.recommendations.maxTraces.toLocaleString()}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Est. Storage</p>
-                            <p className="text-xl font-bold text-teal-400">{calibrationResults.recommendations.estimatedStorageGB.toFixed(1)} GB</p>
+                            <p className="text-xs text-muted-foreground mb-1">Est. Storage</p>
+                            <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{calibrationResults.recommendations.estimatedStorageGB.toFixed(1)} GB</p>
                           </div>
                         </div>
                         <motion.button
@@ -1701,7 +1709,7 @@ export function SettingsPage() {
                               text: `Applied: Max ${calibrationResults.recommendations.maxTraces.toLocaleString()} traces with auto-compaction`
                             });
                           }}
-                          className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2 text-sm font-medium"
+                          className="w-full px-4 py-2 bg-teal-600 text-foreground rounded-lg hover:bg-teal-700 flex items-center justify-center gap-2 text-sm font-medium"
                         >
                           <CheckCircle className="w-4 h-4" />
                           Apply Recommended Settings
@@ -1717,15 +1725,15 @@ export function SettingsPage() {
             {activeTab === 'server' && (
               <div className="space-y-6">
                 {/* Running Services Status */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <Activity className="w-6 h-6 text-green-400" />
-                      <h2 className="text-xl font-semibold text-white">Running Services</h2>
+                      <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      <h2 className="text-xl font-semibold text-foreground">Running Services</h2>
                     </div>
                     <button
                       onClick={checkServiceStatus}
-                      className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                      className="px-3 py-1.5 bg-secondary hover:bg-secondary text-muted-foreground rounded-lg flex items-center gap-2 text-sm transition-colors"
                     >
                       <RefreshCw className="w-4 h-4" />
                       Refresh
@@ -1737,24 +1745,24 @@ export function SettingsPage() {
                       <div
                         key={idx}
                         className={`p-4 rounded-lg border ${service.status === 'online'
-                          ? 'bg-green-900/20 border-green-700/50'
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700/50'
                           : service.status === 'checking'
-                            ? 'bg-gray-900/50 border-gray-700'
-                            : 'bg-red-900/20 border-red-700/50'
+                            ? 'bg-card border-border'
+                            : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700/50'
                           }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {service.status === 'online' ? (
-                              <Wifi className="w-5 h-5 text-green-400" />
+                              <Wifi className="w-5 h-5 text-green-600 dark:text-green-400" />
                             ) : service.status === 'checking' ? (
-                              <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                             ) : (
-                              <WifiOff className="w-5 h-5 text-red-400" />
+                              <WifiOff className="w-5 h-5 text-red-600 dark:text-red-400" />
                             )}
                             <div>
-                              <h3 className="font-medium text-white">{service.name}</h3>
-                              <p className="text-sm text-gray-400">
+                              <h3 className="font-medium text-foreground">{service.name}</h3>
+                              <p className="text-sm text-muted-foreground">
                                 Port {service.port}
                                 {service.version && ` · v${service.version}`}
                                 {service.uptime && ` · Uptime: ${service.uptime}`}
@@ -1763,17 +1771,17 @@ export function SettingsPage() {
                           </div>
                           <span
                             className={`px-2 py-1 rounded text-xs font-medium ${service.status === 'online'
-                              ? 'bg-green-600/30 text-green-300'
+                              ? 'bg-green-100 dark:bg-green-600/30 text-green-700 dark:text-green-300'
                               : service.status === 'checking'
-                                ? 'bg-gray-600/30 text-gray-300'
-                                : 'bg-red-600/30 text-red-300'
+                                ? 'bg-gray-100 dark:bg-gray-600/30 text-gray-600 dark:text-muted-foreground'
+                                : 'bg-red-100 dark:bg-red-600/30 text-red-700 dark:text-red-300'
                               }`}
                           >
                             {service.status === 'online' ? 'Online' : service.status === 'checking' ? 'Checking...' : 'Offline'}
                           </span>
                         </div>
                         {service.error && (
-                          <p className="mt-2 text-sm text-red-400">{service.error}</p>
+                          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{service.error}</p>
                         )}
                       </div>
                     ))}
@@ -1781,34 +1789,34 @@ export function SettingsPage() {
                 </div>
 
                 {/* Server Configuration */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Server className="w-6 h-6 text-green-400" />
-                    <h2 className="text-xl font-semibold text-white">Server Configuration</h2>
+                    <Server className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Server Configuration</h2>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         HTTP Port
                       </label>
                       <input
                         type="number"
                         value={settings.server.port}
                         onChange={(e) => updateServerSettings({ port: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Max Payload Size (MB)
                       </label>
                       <input
                         type="number"
                         value={settings.server.max_payload_size_mb}
                         onChange={(e) => updateServerSettings({ max_payload_size_mb: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -1817,9 +1825,9 @@ export function SettingsPage() {
                         type="checkbox"
                         checked={settings.server.enable_cors}
                         onChange={(e) => updateServerSettings({ enable_cors: e.target.checked })}
-                        className="w-5 h-5 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                        className="w-5 h-5 rounded border-border bg-background text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-300">Enable CORS</span>
+                      <span className="text-sm text-muted-foreground">Enable CORS</span>
                     </label>
                   </div>
                 </div>
@@ -1828,37 +1836,51 @@ export function SettingsPage() {
 
             {/* UI Settings */}
             {activeTab === 'ui' && (
-              <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+              <div className="bg-card rounded-lg border border-border p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Palette className="w-6 h-6 text-pink-400" />
-                  <h2 className="text-xl font-semibold text-white">Theme & Appearance</h2>
+                  <Palette className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+                  <h2 className="text-xl font-semibold text-foreground">Theme & Appearance</h2>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Theme
-                    </label>
-                    <select
-                      value={settings.ui.theme}
-                      onChange={(e) => updateUiSettings({ theme: e.target.value as any })}
-                      className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="dark">Dark</option>
-                      <option value="light">Light</option>
-                      <option value="system">System</option>
-                    </select>
+                    <h3 className="text-sm font-medium text-foreground mb-3">Appearance</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: 'dark' as const, label: 'Dark', icon: '🌙', desc: 'Deep gunmetal' },
+                        { id: 'midnight' as const, label: 'Midnight', icon: '🖥️', desc: 'True black OLED' },
+                        { id: 'light' as const, label: 'Light', icon: '☀️', desc: 'Clean & bright' },
+                      ].map((theme) => (
+                        <button
+                          key={theme.id}
+                          onClick={() => updateUiSettings({ theme: theme.id })}
+                          className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 ${settings.ui.theme === theme.id
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-lg shadow-primary/10'
+                            : 'border-border bg-card hover:border-muted-foreground/40 hover:bg-secondary/50'
+                            }`}
+                        >
+                          <span className="text-2xl">{theme.icon}</span>
+                          <span className={`text-sm font-medium ${settings.ui.theme === theme.id ? 'text-primary' : 'text-foreground'
+                            }`}>
+                            {theme.label}
+                          </span>
+                          {settings.ui.theme === theme.id && (
+                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Auto-Refresh Interval (seconds)
                     </label>
                     <input
                       type="number"
                       value={settings.ui.auto_refresh_interval_secs}
                       onChange={(e) => updateUiSettings({ auto_refresh_interval_secs: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -1867,9 +1889,9 @@ export function SettingsPage() {
                       type="checkbox"
                       checked={settings.ui.animations_enabled}
                       onChange={(e) => updateUiSettings({ animations_enabled: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                      className="w-5 h-5 rounded border-border bg-background text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-300">Enable Animations</span>
+                    <span className="text-sm text-muted-foreground">Enable Animations</span>
                   </label>
 
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -1884,11 +1906,11 @@ export function SettingsPage() {
                           alert('Experimental features disabled. Please restart the application.');
                         }
                       }}
-                      className="w-5 h-5 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                      className="w-5 h-5 rounded border-border bg-background text-blue-600 focus:ring-blue-500"
                     />
                     <div>
-                      <span className="text-sm text-gray-300">Experimental Features</span>
-                      <p className="text-xs text-gray-500">Enable Tools, Plugins, Memory, Insights, and Storage features</p>
+                      <span className="text-sm text-muted-foreground">Experimental Features</span>
+                      <p className="text-xs text-muted-foreground">Enable Tools, Plugins, Memory, Insights, and Storage features</p>
                     </div>
                   </label>
                 </div>
@@ -1897,14 +1919,14 @@ export function SettingsPage() {
 
             {/* Privacy & Analytics Settings - shown after UI */}
             {activeTab === 'ui' && settings.analytics && (
-              <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6 mt-6">
+              <div className="bg-card rounded-lg border border-border p-6 mt-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Activity className="w-6 h-6 text-green-400" />
-                  <h2 className="text-xl font-semibold text-white">Privacy & Analytics</h2>
+                  <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  <h2 className="text-xl font-semibold text-foreground">Privacy & Analytics</h2>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
+                  <div className="bg-card rounded-lg p-4 border border-border">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1917,11 +1939,11 @@ export function SettingsPage() {
                           });
                           setHasChanges(true);
                         }}
-                        className="w-5 h-5 rounded border-gray-700 bg-gray-900 text-green-600 focus:ring-green-500 mt-0.5"
+                        className="w-5 h-5 rounded border-border bg-background text-green-600 focus:ring-green-500 mt-0.5"
                       />
                       <div>
-                        <span className="text-sm font-medium text-gray-200">Share Anonymous Usage Data</span>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <span className="text-sm font-medium text-foreground">Share Anonymous Usage Data</span>
+                        <p className="text-xs text-muted-foreground mt-1">
                           Help improve AgentReplay by sharing anonymous usage analytics.
                           No personal data, trace contents, or API keys are ever collected.
                         </p>
@@ -1929,7 +1951,7 @@ export function SettingsPage() {
                     </label>
                   </div>
 
-                  <div className="text-xs text-gray-500 flex items-start gap-2">
+                  <div className="text-xs text-muted-foreground flex items-start gap-2">
                     <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <span>
                       We collect only aggregated feature usage metrics (e.g., which features are used most).
@@ -1942,23 +1964,23 @@ export function SettingsPage() {
 
             {/* Model Configuration - OpenAI Compatible Provider Setup */}
             {activeTab === 'models' && (
-              <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+              <div className="bg-card rounded-lg border border-border p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Cpu className="w-6 h-6 text-indigo-400" />
-                  <h2 className="text-xl font-semibold text-white">LLM Provider Configuration</h2>
+                  <Cpu className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <h2 className="text-xl font-semibold text-foreground">LLM Provider Configuration</h2>
                 </div>
 
                 {/* Intro Banner */}
-                <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4 mb-6">
-                  <h3 className="text-sm font-semibold text-blue-300 mb-2">📋 How to Configure</h3>
-                  <ol className="text-sm text-blue-200/80 space-y-1 list-decimal list-inside">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/30 rounded-lg p-4 mb-6">
+                  <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">📋 How to Configure</h3>
+                  <ol className="text-sm text-blue-600 dark:text-blue-200/80 space-y-1 list-decimal list-inside">
                     <li>Click a provider button below (OpenAI, Anthropic, Ollama, or Custom)</li>
                     <li>Enter a <strong>Display Name</strong> to identify this config (e.g., "Production GPT-4")</li>
                     <li>Enter the exact <strong>Model Name</strong> from your provider (e.g., "gpt-4o", "claude-3-5-sonnet-20241022")</li>
                     <li>Set the <strong>API Endpoint</strong> (pre-filled for known providers)</li>
                     <li>Add your <strong>API Key</strong> (not needed for local Ollama)</li>
                   </ol>
-                  <p className="text-xs text-blue-200/60 mt-2">
+                  <p className="text-xs text-blue-500 dark:text-blue-200/60 mt-2">
                     💡 You can add multiple configurations for different models or API endpoints.
                   </p>
                 </div>
@@ -1966,11 +1988,11 @@ export function SettingsPage() {
                 <div className="space-y-6">
                   {/* Default Generation Settings */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Default Generation Settings</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Default Generation Settings</h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Temperature
                         </label>
                         <input
@@ -1980,13 +2002,13 @@ export function SettingsPage() {
                           max="2"
                           value={settings.models?.defaultTemperature ?? 0.7}
                           onChange={(e) => updateModelSettings({ defaultTemperature: parseFloat(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <p className="text-xs text-gray-500 mt-1">0 = deterministic, 2 = creative</p>
+                        <p className="text-xs text-muted-foreground mt-1">0 = deterministic, 2 = creative</p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Max Tokens
                         </label>
                         <input
@@ -1995,42 +2017,42 @@ export function SettingsPage() {
                           max="128000"
                           value={settings.models?.defaultMaxTokens ?? 2048}
                           onChange={(e) => updateModelSettings({ defaultMaxTokens: parseInt(e.target.value) })}
-                          className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Maximum tokens for response</p>
+                        <p className="text-xs text-muted-foreground mt-1">Maximum tokens for response</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Provider Configurations */}
-                  <div className="space-y-4 border-t border-gray-700 pt-4">
+                  <div className="space-y-4 border-t border-border pt-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                         <Key className="w-4 h-4" />
                         Configured Providers
                       </h3>
                       <div className="flex gap-2">
                         <button
                           onClick={() => addProvider('openai')}
-                          className="px-3 py-1 text-xs bg-green-600/20 text-green-400 border border-green-600/40 rounded hover:bg-green-600/30"
+                          className="px-3 py-1 text-xs bg-green-600/20 text-green-600 dark:text-green-400 border border-green-600/40 rounded hover:bg-green-600/30"
                         >
                           + OpenAI
                         </button>
                         <button
                           onClick={() => addProvider('anthropic')}
-                          className="px-3 py-1 text-xs bg-purple-600/20 text-purple-400 border border-purple-600/40 rounded hover:bg-purple-600/30"
+                          className="px-3 py-1 text-xs bg-purple-600/20 text-purple-600 dark:text-purple-400 border border-purple-600/40 rounded hover:bg-purple-600/30"
                         >
                           + Anthropic
                         </button>
                         <button
                           onClick={() => addProvider('ollama')}
-                          className="px-3 py-1 text-xs bg-orange-600/20 text-orange-400 border border-orange-600/40 rounded hover:bg-orange-600/30"
+                          className="px-3 py-1 text-xs bg-orange-600/20 text-orange-600 dark:text-orange-400 border border-orange-600/40 rounded hover:bg-orange-600/30"
                         >
                           + Ollama
                         </button>
                         <button
                           onClick={() => addProvider('custom')}
-                          className="px-3 py-1 text-xs bg-gray-600/20 text-gray-400 border border-gray-600/40 rounded hover:bg-gray-600/30"
+                          className="px-3 py-1 text-xs bg-secondary text-muted-foreground border border-border/80/40 rounded hover:bg-secondary/30"
                         >
                           + Custom
                         </button>
@@ -2038,61 +2060,61 @@ export function SettingsPage() {
                     </div>
 
                     {settings.models?.providers?.length === 0 ? (
-                      <div className="text-center py-8 border border-dashed border-gray-700 rounded-lg">
-                        <Cpu className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No providers configured</p>
-                        <p className="text-xs text-gray-600 mt-1">Add a provider to start using LLM features</p>
+                      <div className="text-center py-8 border border-dashed border-border rounded-lg">
+                        <Cpu className="w-8 h-8 text-muted-foreground/60 mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No providers configured</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Add a provider to start using LLM features</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {settings.models?.providers?.map((provider) => (
                           <div
                             key={provider.id}
-                            className={`p-4 bg-gray-900/50 rounded-lg border ${settings.models?.defaultProviderId === provider.id
+                            className={`p-4 bg-card rounded-lg border ${settings.models?.defaultProviderId === provider.id
                               ? 'border-blue-500/50 ring-1 ring-blue-500/30'
-                              : 'border-gray-700'
+                              : 'border-border'
                               }`}
                           >
                             {/* Provider Header */}
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center gap-3">
-                                <span className={`px-2 py-1 text-xs rounded font-medium ${provider.provider === 'openai' ? 'bg-green-600/20 text-green-400' :
-                                  provider.provider === 'anthropic' ? 'bg-purple-600/20 text-purple-400' :
-                                    provider.provider === 'ollama' ? 'bg-orange-600/20 text-orange-400' :
-                                      'bg-gray-600/20 text-gray-400'
+                                <span className={`px-2 py-1 text-xs rounded font-medium ${provider.provider === 'openai' ? 'bg-green-600/20 text-green-600 dark:text-green-400' :
+                                  provider.provider === 'anthropic' ? 'bg-purple-600/20 text-purple-600 dark:text-purple-400' :
+                                    provider.provider === 'ollama' ? 'bg-orange-600/20 text-orange-600 dark:text-orange-400' :
+                                      'bg-secondary text-muted-foreground'
                                   }`}>
                                   {provider.provider.toUpperCase()}
                                 </span>
                                 {settings.models?.defaultProviderId === provider.id && (
-                                  <span className="px-2 py-0.5 text-xs bg-blue-600/20 text-blue-400 rounded">
+                                  <span className="px-2 py-0.5 text-xs bg-blue-600/20 text-blue-600 dark:text-blue-400 rounded">
                                     DEFAULT
                                   </span>
                                 )}
                                 {provider.isValid === true && (
-                                  <span className="text-green-400 text-xs">✓ Configured</span>
+                                  <span className="text-green-600 dark:text-green-400 text-xs">✓ Configured</span>
                                 )}
                                 {provider.isValid === false && (
-                                  <span className="text-red-400 text-xs">✗ Invalid</span>
+                                  <span className="text-red-600 dark:text-red-400 text-xs">✗ Invalid</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {settings.models?.defaultProviderId !== provider.id && (
                                   <button
                                     onClick={() => setDefaultProvider(provider.id)}
-                                    className="px-2 py-1 text-xs text-blue-400 hover:bg-blue-900/20 rounded"
+                                    className="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                                   >
                                     Set Default
                                   </button>
                                 )}
                                 <button
                                   onClick={() => testProviderConnection(provider)}
-                                  className="px-2 py-1 text-xs text-gray-400 hover:bg-gray-700 rounded"
+                                  className="px-2 py-1 text-xs text-muted-foreground hover:bg-secondary/80 rounded"
                                 >
                                   Test
                                 </button>
                                 <button
                                   onClick={() => removeProvider(provider.id)}
-                                  className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                                  className="p-1 text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                 >
                                   ×
                                 </button>
@@ -2103,7 +2125,7 @@ export function SettingsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {/* Display Name */}
                               <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
                                   Display Name
                                 </label>
                                 <input
@@ -2111,13 +2133,13 @@ export function SettingsPage() {
                                   value={provider.name}
                                   onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
                                   placeholder="My Provider"
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </div>
 
                               {/* Model Name - FREEFORM INPUT */}
                               <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
                                   Model Name
                                 </label>
                                 <input
@@ -2125,13 +2147,13 @@ export function SettingsPage() {
                                   value={provider.modelName}
                                   onChange={(e) => updateProvider(provider.id, { modelName: e.target.value })}
                                   placeholder={PROVIDER_DEFAULTS[provider.provider]?.placeholder || 'Enter model name...'}
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </div>
 
                               {/* Base URL / Endpoint */}
                               <div className="md:col-span-2">
-                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
                                   API Endpoint (Base URL)
                                 </label>
                                 <input
@@ -2139,17 +2161,17 @@ export function SettingsPage() {
                                   value={provider.baseUrl}
                                   onChange={(e) => updateProvider(provider.id, { baseUrl: e.target.value })}
                                   placeholder="https://api.example.com/v1"
-                                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-muted-foreground mt-1">
                                   OpenAI-compatible endpoint (e.g., /v1/chat/completions will be appended)
                                 </p>
                               </div>
 
                               {/* API Key */}
                               <div className="md:col-span-2">
-                                <label className="block text-xs font-medium text-gray-400 mb-1">
-                                  API Key {provider.provider === 'ollama' && <span className="text-gray-500">(optional for local)</span>}
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                  API Key {provider.provider === 'ollama' && <span className="text-muted-foreground">(optional for local)</span>}
                                 </label>
                                 <div className="relative">
                                   <input
@@ -2157,11 +2179,11 @@ export function SettingsPage() {
                                     value={provider.apiKey}
                                     onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
                                     placeholder={provider.provider === 'ollama' ? 'Optional for local Ollama' : 'sk-...'}
-                                    className="w-full px-3 py-2 pr-10 bg-gray-800 border border-gray-700 rounded text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 pr-10 bg-input border border-border rounded text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   />
                                   <button
                                     onClick={() => toggleKeyVisibility(settings.models.providers.indexOf(provider))}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                                   >
                                     {visibleKeys.has(settings.models.providers.indexOf(provider)) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                   </button>
@@ -2170,9 +2192,9 @@ export function SettingsPage() {
 
                               {/* Tags / Purpose Routing */}
                               <div className="md:col-span-2">
-                                <label className="block text-xs font-medium text-gray-400 mb-2">
+                                <label className="block text-xs font-medium text-muted-foreground mb-2">
                                   Purpose Tags
-                                  <span className="ml-2 text-gray-500 font-normal">(each tag can only be assigned to one provider)</span>
+                                  <span className="ml-2 text-muted-foreground font-normal">(each tag can only be assigned to one provider)</span>
                                 </label>
                                 <div className="flex flex-wrap gap-2">
                                   {PROVIDER_TAGS.map(tagInfo => {
@@ -2202,10 +2224,10 @@ export function SettingsPage() {
                                           ? `Already assigned to another provider`
                                           : tagInfo.description}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-all ${isSelected
-                                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
+                                          ? 'bg-blue-100 dark:bg-blue-600/30 border-blue-400 dark:border-blue-500 text-blue-700 dark:text-blue-300'
                                           : isDisabled
-                                            ? 'bg-gray-900 border-gray-700 text-gray-600 cursor-not-allowed opacity-50'
-                                            : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'
+                                            ? 'bg-input border-border text-muted-foreground/60 cursor-not-allowed opacity-50'
+                                            : 'bg-input border-border/80 text-muted-foreground hover:border-gray-500'
                                           }`}
                                       >
                                         {tagInfo.id === 'default' && '🎯 '}
@@ -2218,7 +2240,7 @@ export function SettingsPage() {
                                     );
                                   })}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
+                                <p className="text-xs text-muted-foreground mt-2">
                                   <strong>Default:</strong> General fallback • <strong>Eval:</strong> G-EVAL scoring • <strong>Chat:</strong> Conversations • <strong>Analysis:</strong> Trace analysis
                                 </p>
                               </div>
@@ -2228,20 +2250,20 @@ export function SettingsPage() {
                       </div>
                     )}
 
-                    <div className="bg-gray-900/30 rounded-lg p-4 border border-gray-700/50">
-                      <p className="text-xs text-gray-500">
+                    <div className="bg-card/80 rounded-lg p-4 border border-border/50">
+                      <p className="text-xs text-muted-foreground">
                         🔒 All credentials are stored locally on your device and never sent to AgentReplay servers.
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         💡 <strong>Tip:</strong> Use any OpenAI-compatible API. Popular options include:
                       </p>
-                      <ul className="text-xs text-gray-500 mt-1 ml-4 list-disc">
-                        <li>OpenAI: <code className="text-gray-400">https://api.openai.com/v1</code></li>
-                        <li>Anthropic: <code className="text-gray-400">https://api.anthropic.com/v1</code></li>
-                        <li>Ollama (local): <code className="text-gray-400">http://localhost:11434/v1</code></li>
-                        <li>Together AI: <code className="text-gray-400">https://api.together.xyz/v1</code></li>
-                        <li>Groq: <code className="text-gray-400">https://api.groq.com/openai/v1</code></li>
-                        <li>OpenRouter: <code className="text-gray-400">https://openrouter.ai/api/v1</code></li>
+                      <ul className="text-xs text-muted-foreground mt-1 ml-4 list-disc">
+                        <li>OpenAI: <code className="text-muted-foreground">https://api.openai.com/v1</code></li>
+                        <li>Anthropic: <code className="text-muted-foreground">https://api.anthropic.com/v1</code></li>
+                        <li>Ollama (local): <code className="text-muted-foreground">http://localhost:11434/v1</code></li>
+                        <li>Together AI: <code className="text-muted-foreground">https://api.together.xyz/v1</code></li>
+                        <li>Groq: <code className="text-muted-foreground">https://api.groq.com/openai/v1</code></li>
+                        <li>OpenRouter: <code className="text-muted-foreground">https://openrouter.ai/api/v1</code></li>
                       </ul>
                     </div>
                   </div>
@@ -2251,16 +2273,16 @@ export function SettingsPage() {
 
             {/* Embedding Configuration */}
             {activeTab === 'embedding' && (
-              <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+              <div className="bg-card rounded-lg border border-border p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Layers className="w-6 h-6 text-cyan-400" />
-                  <h2 className="text-xl font-semibold text-white">Embedding Configuration</h2>
+                  <Layers className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                  <h2 className="text-xl font-semibold text-foreground">Embedding Configuration</h2>
                 </div>
 
                 {/* Intro Banner */}
-                <div className="bg-cyan-900/20 border border-cyan-700/30 rounded-lg p-4 mb-6">
-                  <h3 className="text-sm font-semibold text-cyan-300 mb-2">🔍 What are Embeddings?</h3>
-                  <p className="text-sm text-cyan-200/80">
+                <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-700/30 rounded-lg p-4 mb-6">
+                  <h3 className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 mb-2">🔍 What are Embeddings?</h3>
+                  <p className="text-sm text-cyan-600 dark:text-cyan-200/80">
                     Embeddings convert text into numerical vectors for semantic search. This enables finding traces
                     by meaning, not just keyword matching. Configure an embedding provider to enable semantic search
                     across your traces, prompts, and outputs.
@@ -2269,12 +2291,12 @@ export function SettingsPage() {
 
                 <div className="space-y-6">
                   {/* Enable/Disable Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                  <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
                     <div className="flex items-center gap-3">
-                      <Zap className={`w-5 h-5 ${settings.embedding?.enabled ? 'text-cyan-400' : 'text-gray-500'}`} />
+                      <Zap className={`w-5 h-5 ${settings.embedding?.enabled ? 'text-cyan-600 dark:text-cyan-400' : 'text-muted-foreground'}`} />
                       <div>
-                        <p className="text-sm font-medium text-white">Enable Embeddings</p>
-                        <p className="text-xs text-gray-400">Turn on semantic indexing for traces</p>
+                        <p className="text-sm font-medium text-foreground">Enable Embeddings</p>
+                        <p className="text-xs text-muted-foreground">Turn on semantic indexing for traces</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -2287,13 +2309,13 @@ export function SettingsPage() {
                         })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:after:bg-white"></div>
+                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:after:bg-white"></div>
                     </label>
                   </div>
 
                   {/* Provider Selection */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Embedding Provider</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Embedding Provider</h3>
 
                     <div className="grid grid-cols-4 gap-3">
                       {[
@@ -2326,24 +2348,24 @@ export function SettingsPage() {
                           }}
                           className={`p-3 rounded-lg border transition-all text-left ${settings.embedding?.provider === provider.id
                             ? `bg-${provider.color}-600/20 border-${provider.color}-500/50 ring-1 ring-${provider.color}-500/30`
-                            : 'bg-gray-900/50 border-gray-700 hover:border-gray-600'
+                            : 'bg-card border-border hover:border-border/80'
                             }`}
                         >
-                          <p className={`text-sm font-medium ${settings.embedding?.provider === provider.id ? `text-${provider.color}-400` : 'text-white'
+                          <p className={`text-sm font-medium ${settings.embedding?.provider === provider.id ? `text-${provider.color}-400` : 'text-foreground'
                             }`}>{provider.label}</p>
-                          <p className="text-xs text-gray-500">{provider.desc}</p>
+                          <p className="text-xs text-muted-foreground">{provider.desc}</p>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {/* Model Configuration */}
-                  <div className="space-y-4 border-t border-gray-700 pt-4">
-                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Model Configuration</h3>
+                  <div className="space-y-4 border-t border-border pt-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Model Configuration</h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Model Name
                         </label>
                         <input
@@ -2362,9 +2384,9 @@ export function SettingsPage() {
                                 settings.embedding?.provider === 'ollama' ? 'nomic-embed-text' :
                                   'Enter model name'
                           }
-                          className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {settings.embedding?.provider === 'fastembed' && 'Supports BAAI/bge-*, sentence-transformers/*'}
                           {settings.embedding?.provider === 'openai' && 'text-embedding-3-small (1536d) or text-embedding-3-large (3072d)'}
                           {settings.embedding?.provider === 'ollama' && 'nomic-embed-text, mxbai-embed-large, etc.'}
@@ -2372,7 +2394,7 @@ export function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                           Dimensions
                         </label>
                         <input
@@ -2387,9 +2409,9 @@ export function SettingsPage() {
                           }}
                           min="64"
                           max="4096"
-                          className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Vector dimensions (must match model)</p>
+                        <p className="text-xs text-muted-foreground mt-1">Vector dimensions (must match model)</p>
                       </div>
                     </div>
 
@@ -2397,7 +2419,7 @@ export function SettingsPage() {
                     {settings.embedding?.provider !== 'fastembed' && (
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                          <label className="block text-sm font-medium text-muted-foreground mb-2">
                             API Endpoint
                           </label>
                           <input
@@ -2415,13 +2437,13 @@ export function SettingsPage() {
                                 settings.embedding?.provider === 'ollama' ? 'http://localhost:11434' :
                                   'https://your-api.com/v1'
                             }
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                           />
                         </div>
 
                         {settings.embedding?.provider !== 'ollama' && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-muted-foreground mb-2">
                               API Key
                             </label>
                             <input
@@ -2435,9 +2457,9 @@ export function SettingsPage() {
                                 setHasChanges(true);
                               }}
                               placeholder="sk-..."
-                              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Required for OpenAI and custom endpoints</p>
+                            <p className="text-xs text-muted-foreground mt-1">Required for OpenAI and custom endpoints</p>
                           </div>
                         )}
                       </div>
@@ -2445,13 +2467,13 @@ export function SettingsPage() {
                   </div>
 
                   {/* Indexing Settings */}
-                  <div className="space-y-4 border-t border-gray-700 pt-4">
-                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Indexing Settings</h3>
+                  <div className="space-y-4 border-t border-border pt-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Indexing Settings</h3>
 
-                    <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
                       <div>
-                        <p className="text-sm font-medium text-white">Auto-index New Traces</p>
-                        <p className="text-xs text-gray-400">Automatically create embeddings for new traces</p>
+                        <p className="text-sm font-medium text-foreground">Auto-index New Traces</p>
+                        <p className="text-xs text-muted-foreground">Automatically create embeddings for new traces</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -2466,12 +2488,12 @@ export function SettingsPage() {
                           }}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:after:bg-white"></div>
+                        <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:after:bg-white"></div>
                       </label>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Batch Size
                       </label>
                       <input
@@ -2486,19 +2508,19 @@ export function SettingsPage() {
                         }}
                         min="1"
                         max="256"
-                        className="w-48 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-48 px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Number of texts to embed in each batch (higher = faster, but more memory)</p>
+                      <p className="text-xs text-muted-foreground mt-1">Number of texts to embed in each batch (higher = faster, but more memory)</p>
                     </div>
                   </div>
 
                   {/* Recommended Models Info */}
-                  <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-4">
-                    <h4 className="text-sm font-semibold text-gray-300 mb-2">📚 Recommended Models</h4>
-                    <ul className="text-xs text-gray-500 space-y-1">
-                      <li><span className="text-cyan-400">FastEmbed (Local):</span> BAAI/bge-small-en-v1.5 (384d, fast), BAAI/bge-base-en-v1.5 (768d)</li>
-                      <li><span className="text-green-400">OpenAI:</span> text-embedding-3-small (1536d, $0.02/1M tokens), text-embedding-3-large (3072d)</li>
-                      <li><span className="text-orange-400">Ollama:</span> nomic-embed-text (768d), mxbai-embed-large (1024d)</li>
+                  <div className="bg-card rounded-lg border border-border p-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">📚 Recommended Models</h4>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li><span className="text-cyan-600 dark:text-cyan-400">FastEmbed (Local):</span> BAAI/bge-small-en-v1.5 (384d, fast), BAAI/bge-base-en-v1.5 (768d)</li>
+                      <li><span className="text-green-600 dark:text-green-400">OpenAI:</span> text-embedding-3-small (1536d, $0.02/1M tokens), text-embedding-3-large (3072d)</li>
+                      <li><span className="text-orange-500 dark:text-orange-400">Ollama:</span> nomic-embed-text (768d), mxbai-embed-large (1024d)</li>
                     </ul>
                   </div>
                 </div>
@@ -2508,14 +2530,14 @@ export function SettingsPage() {
             {/* Backup & Restore */}
             {activeTab === 'backup' && (
               <>
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+                <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <HardDrive className="w-6 h-6 text-orange-400" />
-                    <h2 className="text-xl font-semibold text-white">Backup & Restore</h2>
+                    <HardDrive className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Backup & Restore</h2>
                   </div>
 
                   <div className="space-y-4">
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       Create backups of your database to prevent data loss. Backups are stored in your app data directory.
                     </p>
 
@@ -2531,7 +2553,7 @@ export function SettingsPage() {
                           setMessage({ type: 'error', text: `Backup failed: ${error}` });
                         }
                       }}
-                      className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                      className="w-full px-4 py-3 bg-green-600 text-foreground rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" />
                       Create Backup
@@ -2543,17 +2565,17 @@ export function SettingsPage() {
                 <BackupsList onMessage={setMessage} />
 
                 {/* Updates */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-6 mt-6">
+                <div className="bg-card rounded-lg border border-border p-6 mt-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <RefreshCw className="w-6 h-6 text-cyan-400" />
-                    <h2 className="text-xl font-semibold text-white">Updates</h2>
+                    <RefreshCw className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Updates</h2>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-300">Current Version</p>
-                        <p className="text-xs text-gray-500 mt-1">v0.1.0</p>
+                        <p className="text-sm font-medium text-muted-foreground">Current Version</p>
+                        <p className="text-xs text-muted-foreground mt-1">v0.1.0</p>
                       </div>
 
                       <motion.button
@@ -2578,7 +2600,7 @@ export function SettingsPage() {
                       </motion.button>
                     </div>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       AgentReplay automatically checks for updates on startup. Click to manually check now.
                     </p>
                   </div>
@@ -2589,39 +2611,39 @@ export function SettingsPage() {
             {/* Danger Zone - Reset Data */}
             {activeTab === 'danger' && (
               <div className="space-y-6">
-                <div className="bg-red-900/20 rounded-lg border border-red-700/50 p-6">
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700/50 p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <AlertTriangle className="w-6 h-6 text-red-400" />
-                    <h2 className="text-xl font-semibold text-white">Danger Zone</h2>
+                    <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    <h2 className="text-xl font-semibold text-foreground">Danger Zone</h2>
                   </div>
 
-                  <p className="text-sm text-gray-400 mb-6">
+                  <p className="text-sm text-muted-foreground mb-6">
                     These actions are irreversible. Please proceed with caution.
                   </p>
 
                   {/* Delete All Data */}
-                  <div className="bg-gray-900/50 rounded-lg border border-red-700/30 p-6">
+                  <div className="bg-card rounded-lg border border-red-700/30 p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <Trash2 className="w-5 h-5 text-red-400" />
-                      <h3 className="text-lg font-medium text-white">Delete All Data</h3>
+                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      <h3 className="text-lg font-medium text-foreground">Delete All Data</h3>
                     </div>
 
-                    <p className="text-sm text-gray-400 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       This will permanently delete all traces, sessions, spans, and analytics data from the database.
                       This action cannot be undone. Make sure to create a backup first if you need to preserve any data.
                     </p>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Type <span className="text-red-400 font-mono">DELETE ALL DATA</span> to confirm
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                          Type <span className="text-red-600 dark:text-red-400 font-mono">DELETE ALL DATA</span> to confirm
                         </label>
                         <input
                           type="text"
                           value={resetConfirmation}
                           onChange={(e) => setResetConfirmation(e.target.value)}
                           placeholder="DELETE ALL DATA"
-                          className="w-full px-3 py-2 bg-gray-800 border border-red-700/50 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="w-full px-3 py-2 bg-input border border-red-700/50 rounded-lg text-foreground placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                         />
                       </div>
 
@@ -2649,8 +2671,8 @@ export function SettingsPage() {
                           }
                         }}
                         className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors ${resetConfirmation === 'DELETE ALL DATA' && !isResetting
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          ? 'bg-red-600 text-foreground hover:bg-red-700'
+                          : 'bg-secondary text-muted-foreground cursor-not-allowed'
                           }`}
                       >
                         {isResetting ? (
@@ -2669,13 +2691,13 @@ export function SettingsPage() {
                   </div>
 
                   {/* Clear Local Settings */}
-                  <div className="bg-gray-900/50 rounded-lg border border-orange-700/30 p-6 mt-4">
+                  <div className="bg-card rounded-lg border border-orange-700/30 p-6 mt-4">
                     <div className="flex items-center gap-3 mb-4">
-                      <RotateCcw className="w-5 h-5 text-orange-400" />
-                      <h3 className="text-lg font-medium text-white">Reset Local Settings</h3>
+                      <RotateCcw className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                      <h3 className="text-lg font-medium text-foreground">Reset Local Settings</h3>
                     </div>
 
-                    <p className="text-sm text-gray-400 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Reset all local settings (theme, preferences, cached data) to their default values.
                       This will not affect your traces or server data.
                     </p>
@@ -2692,7 +2714,7 @@ export function SettingsPage() {
                           setTimeout(() => window.location.reload(), 1500);
                         }
                       }}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                      className="px-4 py-2 bg-orange-600 text-foreground rounded-lg hover:bg-orange-700 flex items-center gap-2"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Reset Local Settings
@@ -2703,8 +2725,8 @@ export function SettingsPage() {
             )}
 
             {/* Scope Information */}
-            <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 mt-6">
-              <p className="text-sm text-blue-300">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-lg p-4 mt-6">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
                 <strong>Current Scope: {scope}</strong>
                 <br />
                 {scope === 'user' && '~/.agentreplay/settings.json - Applies to all AgentReplay instances'}
@@ -2714,7 +2736,7 @@ export function SettingsPage() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-muted-foreground">
             No settings loaded
           </div>
         )}

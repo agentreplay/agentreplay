@@ -281,7 +281,7 @@ export function AITraceAnalysis({ traceId, tenantId = 1, projectId = 1, observat
     return (
       <div className="flex flex-col items-center justify-center h-full py-12 px-6">
         <div className="bg-red-500/20 rounded-full p-4 mb-4">
-          <AlertCircle className="w-8 h-8 text-red-400" />
+          <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
         <h3 className="text-lg font-semibold text-textPrimary mb-2">Analysis Failed</h3>
         <p className="text-textSecondary text-center mb-4">{error}</p>

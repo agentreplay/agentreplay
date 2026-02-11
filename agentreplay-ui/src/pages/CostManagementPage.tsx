@@ -65,7 +65,7 @@ export default function CostManagementPage() {
   const [editingModel, setEditingModel] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
-  
+
   // New model form state
   const [newModel, setNewModel] = useState<CustomPricingEntry>({
     model_id: '',
@@ -85,7 +85,7 @@ export default function CostManagementPage() {
         setModels(data.models || []);
         setLastSyncTime(data.last_sync || null);
       }
-      
+
       // Fetch custom pricing entries
       const customResponse = await fetch(`${API_BASE_URL}/api/v1/pricing/custom`);
       if (customResponse.ok) {
@@ -133,7 +133,7 @@ export default function CostManagementPage() {
       setMessage({ type: 'error', text: 'Model ID is required' });
       return;
     }
-    
+
     setSaving(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/pricing/custom`, {
@@ -141,7 +141,7 @@ export default function CostManagementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newModel),
       });
-      
+
       if (response.ok) {
         setMessage({ type: 'success', text: `Added custom pricing for ${newModel.model_id}` });
         setShowAddModal(false);
@@ -166,12 +166,12 @@ export default function CostManagementPage() {
   // Delete custom pricing
   const handleDeleteCustom = async (modelId: string) => {
     if (!confirm(`Delete custom pricing for ${modelId}?`)) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/pricing/custom/${encodeURIComponent(modelId)}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         setMessage({ type: 'success', text: `Deleted custom pricing for ${modelId}` });
         await fetchPricing();
@@ -192,7 +192,7 @@ export default function CostManagementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
       });
-      
+
       if (response.ok) {
         setMessage({ type: 'success', text: `Updated pricing for ${entry.model_id}` });
         setEditingModel(null);
@@ -208,7 +208,7 @@ export default function CostManagementPage() {
   };
 
   // Filter models by search query
-  const filteredModels = models.filter(m => 
+  const filteredModels = models.filter(m =>
     m.model_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (m.provider?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -227,27 +227,33 @@ export default function CostManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 px-2 py-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-textPrimary mb-1">Cost Management</h1>
-            <p className="text-textSecondary text-sm">
-              Manage model pricing for accurate cost tracking
-              {lastSyncTime && (
-                <span className="ml-2 text-textTertiary">
-                  Last synced: {new Date(lastSyncTime * 1000).toLocaleDateString()}
-                </span>
-              )}
-            </p>
-          </div>
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+              <DollarSign className="w-5 h-5" style={{ color: '#ffffff' }} />
+            </div>
+            <div>
+              <h1 className="text-[22px] font-bold text-foreground">Cost Management</h1>
+              <p className="text-[13px] text-muted-foreground">
+                Manage model pricing for accurate cost tracking
+                {lastSyncTime && (
+                  <span className="ml-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    · Last synced: {new Date(lastSyncTime * 1000).toLocaleDateString()}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
             <VideoHelpButton pageId="cost-management" />
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-textSecondary hover:text-textPrimary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-50"
+              style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
             >
               {syncing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -258,7 +264,8 @@ export default function CostManagementPage() {
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+              style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
             >
               <Plus className="w-4 h-4" />
               Add Custom Pricing
@@ -268,103 +275,118 @@ export default function CostManagementPage() {
 
         {/* Status Message */}
         {message && (
-          <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
-            message.type === 'success' 
-              ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-              : 'bg-red-500/10 text-red-500 border border-red-500/20'
-          }`}>
+          <div
+            className="mb-4 px-4 py-3 rounded-xl flex items-center gap-2 text-[13px]"
+            style={{
+              backgroundColor: message.type === 'success' ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
+              border: `1px solid ${message.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+              color: message.type === 'success' ? '#10b981' : '#ef4444',
+            }}
+          >
             {message.type === 'success' ? (
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
             )}
             <span>{message.text}</span>
-            <button 
+            <button
               onClick={() => setMessage(null)}
               className="ml-auto hover:opacity-70"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
 
         {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-textTertiary" />
+        <div className="relative mb-5">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
           <input
             type="text"
             placeholder="Search models..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-lg text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-[13px] focus:outline-none transition-all"
+            style={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              color: 'hsl(var(--foreground))',
+            }}
           />
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: '#0080FF' }} />
+              <p className="text-[13px] text-muted-foreground">Loading pricing data...</p>
+            </div>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Custom Pricing Section */}
             <div>
-              <h2 className="text-lg font-semibold text-textPrimary mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-500" />
+              <h2 className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <DollarSign className="w-4 h-4" style={{ color: '#10b981' }} />
                 Custom Pricing Overrides
-                <span className="text-sm font-normal text-textTertiary">
+                <span className="font-normal text-muted-foreground">
                   ({filteredCustom.length} models)
                 </span>
               </h2>
-              
+
               {filteredCustom.length === 0 ? (
-                <div className="bg-surface border border-border rounded-lg p-8 text-center">
-                  <DollarSign className="w-12 h-12 text-textTertiary mx-auto mb-3" />
-                  <p className="text-textSecondary">No custom pricing configured</p>
-                  <p className="text-textTertiary text-sm mt-1">
+                <div className="rounded-2xl p-8 text-center bg-card border border-border">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.06))' }}>
+                    <DollarSign className="w-6 h-6" style={{ color: '#10b981' }} />
+                  </div>
+                  <p className="text-[14px] font-semibold mb-1 text-foreground">No custom pricing configured</p>
+                  <p className="text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     Add custom pricing for models not in the registry or override existing prices
                   </p>
                 </div>
               ) : (
-                <div className="bg-surface border border-border rounded-lg overflow-hidden">
+                <div className="rounded-2xl overflow-hidden bg-card border border-border">
                   <table className="w-full">
-                    <thead className="bg-background">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Model</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Provider</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Input (per 1M)</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Output (per 1M)</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Actions</th>
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Model</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Provider</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Input (per 1M)</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Output (per 1M)</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody>
                       {filteredCustom.map((entry) => (
-                        <tr key={entry.model_id} className="hover:bg-background/50">
+                        <tr key={entry.model_id} className="transition-colors border-b border-border/50">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Cpu className="w-4 h-4 text-primary" />
-                              <span className="font-medium text-textPrimary">{entry.model_id}</span>
+                              <Cpu className="w-3.5 h-3.5" style={{ color: '#0080FF' }} />
+                              <span className="text-[13px] font-medium text-foreground">{entry.model_id}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-textSecondary">{entry.provider}</td>
-                          <td className="px-4 py-3 text-right font-mono text-green-500">
+                          <td className="px-4 py-3 text-[13px] text-muted-foreground">{entry.provider}</td>
+                          <td className="px-4 py-3 text-right text-[13px] font-mono" style={{ color: '#10b981' }}>
                             {formatCost(entry.input_cost_per_token * 1_000_000)}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-green-500">
+                          <td className="px-4 py-3 text-right text-[13px] font-mono" style={{ color: '#10b981' }}>
                             {formatCost(entry.output_cost_per_token * 1_000_000)}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => setEditingModel(entry.model_id)}
-                                className="p-1.5 text-textTertiary hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                                className="p-1.5 rounded-lg transition-all"
+                                style={{ color: 'hsl(var(--muted-foreground))' }}
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteCustom(entry.model_id)}
-                                className="p-1.5 text-textTertiary hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-colors"
+                                className="p-1.5 rounded-lg transition-all"
+                                style={{ color: 'hsl(var(--muted-foreground))' }}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </td>
@@ -378,49 +400,49 @@ export default function CostManagementPage() {
 
             {/* Registry Pricing Section */}
             <div>
-              <h2 className="text-lg font-semibold text-textPrimary mb-4 flex items-center gap-2">
-                <Cloud className="w-5 h-5 text-blue-500" />
+              <h2 className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Cloud className="w-4 h-4" style={{ color: '#0080FF' }} />
                 Registry Pricing (from LiteLLM)
-                <span className="text-sm font-normal text-textTertiary">
+                <span className="font-normal text-muted-foreground">
                   ({filteredModels.length} models)
                 </span>
               </h2>
-              
-              <div className="bg-surface border border-border rounded-lg overflow-hidden">
+
+              <div className="rounded-2xl overflow-hidden bg-card border border-border">
                 <table className="w-full">
-                  <thead className="bg-background">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Model</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Provider</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Input (per 1M)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Output (per 1M)</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-textTertiary uppercase tracking-wider">Context</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-textTertiary uppercase tracking-wider">Features</th>
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Model</th>
+                      <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Provider</th>
+                      <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Input (per 1M)</th>
+                      <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Output (per 1M)</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Context</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Features</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody>
                     {filteredModels.slice(0, 50).map((model) => (
-                      <tr key={model.model_id} className="hover:bg-background/50">
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-textPrimary">{model.model_id}</span>
+                      <tr key={model.model_id} className="transition-colors border-b border-border/50">
+                        <td className="px-4 py-2.5">
+                          <span className="text-[13px] font-medium text-foreground">{model.model_id}</span>
                         </td>
-                        <td className="px-4 py-3 text-textSecondary">{model.provider || 'unknown'}</td>
-                        <td className="px-4 py-3 text-right font-mono text-textSecondary">
+                        <td className="px-4 py-2.5 text-[13px] text-muted-foreground">{model.provider || 'unknown'}</td>
+                        <td className={`px-4 py-2.5 text-right text-[13px] font-mono ${model.input_cost_per_1m === 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                           {formatCost(model.input_cost_per_1m)}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-textSecondary">
+                        <td className={`px-4 py-2.5 text-right text-[13px] font-mono ${model.output_cost_per_1m === 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                           {formatCost(model.output_cost_per_1m)}
                         </td>
-                        <td className="px-4 py-3 text-center text-textTertiary text-sm">
+                        <td className="px-4 py-2.5 text-center text-[12px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                           {model.context_window ? `${(model.context_window / 1000).toFixed(0)}K` : '-'}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2.5 text-center">
                           <div className="flex items-center justify-center gap-1">
                             {model.supports_vision && (
-                              <span className="px-1.5 py-0.5 text-xs bg-purple-500/10 text-purple-500 rounded">Vision</span>
+                              <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(139,92,246,0.06)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.12)' }}>Vision</span>
                             )}
                             {model.supports_function_calling && (
-                              <span className="px-1.5 py-0.5 text-xs bg-blue-500/10 text-blue-500 rounded">Functions</span>
+                              <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(0,128,255,0.06)', color: '#0080FF', border: '1px solid rgba(0,128,255,0.12)' }}>Functions</span>
                             )}
                           </div>
                         </td>
@@ -429,7 +451,7 @@ export default function CostManagementPage() {
                   </tbody>
                 </table>
                 {filteredModels.length > 50 && (
-                  <div className="px-4 py-3 bg-background text-center text-textTertiary text-sm">
+                  <div className="px-4 py-2.5 text-center text-[12px] text-muted-foreground border-t border-border">
                     Showing 50 of {filteredModels.length} models. Use search to filter.
                   </div>
                 )}
@@ -440,21 +462,27 @@ export default function CostManagementPage() {
 
         {/* Add Custom Pricing Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-textPrimary">Add Custom Pricing</h3>
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+            <div className="w-full max-w-md p-6 rounded-2xl" style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(0,128,255,0.1), rgba(0,200,255,0.06))' }}>
+                    <Plus className="w-4 h-4" style={{ color: '#0080FF' }} />
+                  </div>
+                  <h3 className="text-[16px] font-bold text-foreground">Add Custom Pricing</h3>
+                </div>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-textTertiary hover:text-textPrimary"
+                  className="p-1.5 rounded-lg transition-all"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div>
-                  <label className="block text-sm font-medium text-textSecondary mb-1">
+                  <label className="block text-[12px] font-semibold mb-1.5" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     Model ID *
                   </label>
                   <input
@@ -462,18 +490,20 @@ export default function CostManagementPage() {
                     value={newModel.model_id}
                     onChange={(e) => setNewModel({ ...newModel, model_id: e.target.value })}
                     placeholder="e.g., gpt-4o, claude-3-opus"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 rounded-xl text-[13px] focus:outline-none transition-all"
+                    style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-textSecondary mb-1">
+                  <label className="block text-[12px] font-semibold mb-1.5" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     Provider
                   </label>
                   <select
                     value={newModel.provider}
                     onChange={(e) => setNewModel({ ...newModel, provider: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 rounded-xl text-[13px] focus:outline-none transition-all"
+                    style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                   >
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
@@ -485,59 +515,62 @@ export default function CostManagementPage() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-1">
-                      Input Cost (per 1M tokens)
+                    <label className="block text-[12px] font-semibold mb-1.5" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Input (per 1M)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textTertiary">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>$</span>
                       <input
                         type="number"
                         step="0.0001"
                         min="0"
                         value={newModel.input_cost_per_token * 1_000_000}
-                        onChange={(e) => setNewModel({ 
-                          ...newModel, 
-                          input_cost_per_token: parseFloat(e.target.value) / 1_000_000 || 0 
+                        onChange={(e) => setNewModel({
+                          ...newModel,
+                          input_cost_per_token: parseFloat(e.target.value) / 1_000_000 || 0
                         })}
-                        className="w-full pl-8 pr-3 py-2 bg-background border border-border rounded-lg text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full pl-7 pr-3 py-2 rounded-xl text-[13px] focus:outline-none transition-all"
+                        style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-textSecondary mb-1">
-                      Output Cost (per 1M tokens)
+                    <label className="block text-[12px] font-semibold mb-1.5" style={{ color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      Output (per 1M)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-textTertiary">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: 'hsl(var(--muted-foreground))' }}>$</span>
                       <input
                         type="number"
                         step="0.0001"
                         min="0"
                         value={newModel.output_cost_per_token * 1_000_000}
-                        onChange={(e) => setNewModel({ 
-                          ...newModel, 
-                          output_cost_per_token: parseFloat(e.target.value) / 1_000_000 || 0 
+                        onChange={(e) => setNewModel({
+                          ...newModel,
+                          output_cost_per_token: parseFloat(e.target.value) / 1_000_000 || 0
                         })}
-                        className="w-full pl-8 pr-3 py-2 bg-background border border-border rounded-lg text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full pl-7 pr-3 py-2 rounded-xl text-[13px] focus:outline-none transition-all"
+                        style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end gap-3">
+                <div className="pt-3 flex justify-end gap-2.5">
                   <button
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 text-textSecondary hover:text-textPrimary transition-colors"
+                    className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all text-muted-foreground"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAddCustom}
                     disabled={saving || !newModel.model_id.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-50"
+                    style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

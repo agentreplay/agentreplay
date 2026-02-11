@@ -19,18 +19,18 @@ import { agentreplayClient, EvalDataset as ApiDataset, EvalRun as ApiEvalRun, Ev
 import { DatasetFlywheel } from '../components/DatasetFlywheel';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 import { GoldenTestCaseEditor, GoldenTestCase } from '../components/GoldenTestCaseEditor';
-import { 
+import {
   StatisticalComparison,
   EnhancedMetricCard,
   ConfidenceInterval,
   type VariantStats,
   type StatisticalTestResult
 } from '../../components/metrics';
-import { 
-  Database, 
-  Plus, 
-  Play, 
-  GitCompare, 
+import {
+  Database,
+  Plus,
+  Play,
+  GitCompare,
   Download,
   Upload,
   Trash2,
@@ -134,67 +134,70 @@ export default function EvalsPage() {
   }, [evalRuns, datasets]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-textPrimary mb-2">Evals & Testing</h1>
-            <p className="text-textSecondary">
-              Close the loop from production to development
-            </p>
+    <div className="flex flex-col h-full" style={{ paddingTop: '8px' }}>
+      {/* Header */}
+      <header className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: 'rgba(0,128,255,0.1)' }}
+          >
+            <Target className="w-4 h-4" style={{ color: '#0080FF' }} />
           </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Evals & Testing</h1>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Close the loop · Production to Development</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
           <VideoHelpButton pageId="evals" />
         </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: '24px' }}>
 
         {/* Tabs */}
-        <div className="inline-flex bg-surface-elevated border border-border rounded-xl p-1 mb-8">
+        <div className="inline-flex rounded-xl p-1 mb-5 bg-secondary">
           <button
             onClick={() => setActiveTab('datasets')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'datasets'
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-transparent text-textSecondary hover:bg-surface-hover hover:text-textPrimary'
-            }`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+            style={activeTab === 'datasets'
+              ? { backgroundColor: 'hsl(var(--card))', color: '#0080FF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+              : { backgroundColor: 'transparent', color: 'hsl(var(--muted-foreground))' }
+            }
           >
-            <div className="flex items-center gap-2">
-              <Table className="w-5 h-5" />
-              Datasets
-            </div>
+            <Table className="w-4 h-4" />
+            Datasets
           </button>
           <button
             onClick={() => setActiveTab('runs')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'runs'
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-transparent text-textSecondary hover:bg-surface-hover hover:text-textPrimary'
-            }`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+            style={activeTab === 'runs'
+              ? { backgroundColor: 'hsl(var(--card))', color: '#0080FF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+              : { backgroundColor: 'transparent', color: 'hsl(var(--muted-foreground))' }
+            }
           >
-            <div className="flex items-center gap-2">
-              <PlayCircle className="w-5 h-5" />
-              Runs
-            </div>
+            <PlayCircle className="w-4 h-4" />
+            Runs
           </button>
           <button
             onClick={() => setActiveTab('compare')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              activeTab === 'compare'
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-transparent text-textSecondary hover:bg-surface-hover hover:text-textPrimary'
-            }`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+            style={activeTab === 'compare'
+              ? { backgroundColor: 'hsl(var(--card))', color: '#0080FF', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }
+              : { backgroundColor: 'transparent', color: 'hsl(var(--muted-foreground))' }
+            }
           >
-            <div className="flex items-center gap-2">
-              <Columns2 className="w-5 h-5" />
-              Compare
-            </div>
+            <Columns2 className="w-4 h-4" />
+            Compare
           </button>
         </div>
 
         {/* Content */}
         {activeTab === 'datasets' ? (
-          <DatasetsTab 
-            datasets={datasets} 
-            setDatasets={setDatasets} 
+          <DatasetsTab
+            datasets={datasets}
+            setDatasets={setDatasets}
             onRunCreated={(newRun) => {
               setEvalRuns([newRun, ...evalRuns]);
               setActiveTab('runs');
@@ -231,16 +234,16 @@ function normaliseRuns(runs: ApiEvalRun[], datasetNameMap: Map<string, string>):
       totalCases === 0
         ? 0
         : run.results.reduce((sum, result) => {
-            const latency = result.eval_metrics?.latency_ms || (result as any).metadata?.latency_ms || 0;
-            return sum + Number(latency);
-          }, 0) / totalCases;
+          const latency = result.eval_metrics?.latency_ms || (result as any).metadata?.latency_ms || 0;
+          return sum + Number(latency);
+        }, 0) / totalCases;
     const avgCost =
       totalCases === 0
         ? 0
         : run.results.reduce((sum, result) => {
-            const cost = result.eval_metrics?.cost || (result as any).metadata?.cost || 0;
-            return sum + Number(cost);
-          }, 0) / totalCases;
+          const cost = result.eval_metrics?.cost || (result as any).metadata?.cost || 0;
+          return sum + Number(cost);
+        }, 0) / totalCases;
     const groundedness = averageEvalMetric(run, 'groundedness');
     const contextRelevance = averageEvalMetric(run, 'context_relevance');
     const answerRelevance = averageEvalMetric(run, 'answer_relevance');
@@ -248,7 +251,7 @@ function normaliseRuns(runs: ApiEvalRun[], datasetNameMap: Map<string, string>):
     // Handle both started_at (new) and created_at (old) timestamps
     const timestamp = run.started_at || run.created_at || Date.now() * 1000;
     const runId = run.run_id || (run as any).id || '';
-    
+
     // Use status from response or derive from results
     const status = run.status || (totalCases === 0 ? 'running' : 'completed');
 
@@ -331,9 +334,9 @@ function EvalRunDetails({ runId }: { runId: string }) {
           const fluency = metrics.fluency || metrics.Fluency || 0;
           const helpfulness = metrics.helpfulness || metrics.Helpfulness || 0;
           const overall = metrics.overall || metrics.Overall || ((coherence + relevance + fluency + helpfulness) / 4);
-          
+
           return (
-            <div 
+            <div
               key={result.test_case_id || idx}
               className={`p-3 rounded-lg border ${result.passed ? 'border-success/30 bg-success/5' : 'border-error/30 bg-error/5'}`}
             >
@@ -399,13 +402,13 @@ interface TestCaseForm {
 }
 
 // Create Dataset Modal with Test Cases support
-function CreateDatasetModal({ 
-  isOpen, 
-  onClose, 
-  onCreated 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+function CreateDatasetModal({
+  isOpen,
+  onClose,
+  onCreated
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   onCreated: (dataset: Dataset) => void;
 }) {
   const [name, setName] = useState('');
@@ -489,7 +492,7 @@ function CreateDatasetModal({
 
     try {
       const result = await agentreplayClient.createDataset(name.trim(), description.trim() || undefined);
-      
+
       // If we have test cases, add them
       if (testCases.length > 0) {
         const examples: EvalExample[] = testCases.map(tc => ({
@@ -503,7 +506,7 @@ function CreateDatasetModal({
             return acc;
           }, {} as Record<string, string>),
         }));
-        
+
         await agentreplayClient.addExamples(result.dataset_id, examples);
       }
 
@@ -547,21 +550,19 @@ function CreateDatasetModal({
         <div className="flex gap-2 mb-6 border-b border-border">
           <button
             onClick={() => setActiveTab('basic')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'basic'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-textSecondary hover:text-textPrimary'
-            }`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'basic'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-textSecondary hover:text-textPrimary'
+              }`}
           >
             Basic Info
           </button>
           <button
             onClick={() => setActiveTab('testcases')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'testcases'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-textSecondary hover:text-textPrimary'
-            }`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'testcases'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-textSecondary hover:text-textPrimary'
+              }`}
           >
             Test Cases ({testCases.length})
           </button>
@@ -599,7 +600,7 @@ function CreateDatasetModal({
 
               <div className="p-4 bg-info/10 border border-info/20 rounded-lg">
                 <p className="text-sm text-textSecondary">
-                  <strong className="text-info">💡 Tip:</strong> You can add test cases now or import them later. 
+                  <strong className="text-info">💡 Tip:</strong> You can add test cases now or import them later.
                   Switch to the "Test Cases" tab to add input/output pairs for evaluation.
                 </p>
               </div>
@@ -736,7 +737,7 @@ function CreateDatasetModal({
                     <button
                       type="button"
                       onClick={() => setShowTestCaseForm(false)}
-                      className="px-3 py-1.5 text-sm rounded-lg bg-gray-200 border-2 border-gray-300 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white transition-colors"
+                      className="px-3 py-1.5 text-sm rounded-lg bg-secondary border border-border hover:bg-secondary/80 text-foreground transition-colors"
                     >
                       Cancel
                     </button>
@@ -782,7 +783,7 @@ function CreateDatasetModal({
             <button
               type="button"
               onClick={() => { resetForm(); onClose(); }}
-              className="px-4 py-2 rounded-lg bg-gray-200 border-2 border-gray-300 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white transition-colors"
+              className="px-4 py-2 rounded-lg bg-secondary border border-border hover:bg-secondary/80 text-foreground transition-colors"
             >
               Cancel
             </button>
@@ -802,13 +803,13 @@ function CreateDatasetModal({
 }
 
 // Import Dataset Modal
-function ImportDatasetModal({ 
-  isOpen, 
-  onClose, 
-  onImported 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+function ImportDatasetModal({
+  isOpen,
+  onClose,
+  onImported
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   onImported: (dataset: Dataset) => void;
 }) {
   const [name, setName] = useState('');
@@ -831,7 +832,7 @@ function ImportDatasetModal({
     try {
       const text = await selectedFile.text();
       const data = JSON.parse(text);
-      
+
       let examples: any[] = [];
       if (Array.isArray(data)) {
         examples = data;
@@ -875,7 +876,7 @@ function ImportDatasetModal({
       // Parse file content
       const text = await file.text();
       const data = JSON.parse(text);
-      
+
       let examples: any[] = [];
       if (Array.isArray(data)) {
         examples = data;
@@ -887,16 +888,16 @@ function ImportDatasetModal({
 
       // Create the dataset first
       const result = await agentreplayClient.createDataset(name.trim(), description.trim() || undefined);
-      
+
       // Convert examples to EvalExample format
       const evalExamples: EvalExample[] = examples.map((ex, idx) => ({
         example_id: ex.id || `example-${idx}`,
         input: typeof ex.input === 'string' ? ex.input : JSON.stringify(ex.input || ex.prompt || ex.question || ''),
-        expected_output: typeof ex.expected_output === 'string' 
-          ? ex.expected_output 
-          : (ex.expected_output ? JSON.stringify(ex.expected_output) : undefined) 
-            || (ex.expected ? (typeof ex.expected === 'string' ? ex.expected : JSON.stringify(ex.expected)) : undefined)
-            || (ex.answer ? (typeof ex.answer === 'string' ? ex.answer : JSON.stringify(ex.answer)) : undefined),
+        expected_output: typeof ex.expected_output === 'string'
+          ? ex.expected_output
+          : (ex.expected_output ? JSON.stringify(ex.expected_output) : undefined)
+          || (ex.expected ? (typeof ex.expected === 'string' ? ex.expected : JSON.stringify(ex.expected)) : undefined)
+          || (ex.answer ? (typeof ex.answer === 'string' ? ex.answer : JSON.stringify(ex.answer)) : undefined),
         context: ex.context,
         metadata: ex.metadata || {},
       }));
@@ -914,7 +915,7 @@ function ImportDatasetModal({
         created_at: new Date().toISOString(),
         source: 'imported',
       });
-      
+
       setName('');
       setDescription('');
       setFile(null);
@@ -1026,7 +1027,7 @@ function ImportDatasetModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-200 border-2 border-gray-300 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white transition-colors"
+              className="px-4 py-2 rounded-lg bg-secondary border border-border hover:bg-secondary/80 text-foreground transition-colors"
             >
               Cancel
             </button>
@@ -1046,13 +1047,13 @@ function ImportDatasetModal({
 }
 
 // Create Run Modal
-function CreateRunModal({ 
-  isOpen, 
-  onClose, 
+function CreateRunModal({
+  isOpen,
+  onClose,
   datasets,
-  onCreated 
-}: { 
-  isOpen: boolean; 
+  onCreated
+}: {
+  isOpen: boolean;
   onClose: () => void;
   datasets: Dataset[];
   onCreated: (run: EvalRun) => void;
@@ -1080,7 +1081,7 @@ function CreateRunModal({
       });
 
       const selectedDataset = datasets.find(d => d.id === selectedDatasetId);
-      
+
       // Create a new run object for the UI
       const newRun: EvalRun = {
         id: response.run_id,
@@ -1203,7 +1204,7 @@ function CreateRunModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-200 border-2 border-gray-300 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-white transition-colors"
+              className="px-4 py-2 rounded-lg bg-secondary border border-border hover:bg-secondary/80 text-foreground transition-colors"
             >
               Cancel
             </button>
@@ -1222,11 +1223,11 @@ function CreateRunModal({
   );
 }
 
-function DatasetsTab({ 
-  datasets, 
+function DatasetsTab({
+  datasets,
   setDatasets,
   onRunCreated
-}: { 
+}: {
   datasets: Dataset[];
   setDatasets: (datasets: Dataset[]) => void;
   onRunCreated?: (run: EvalRun) => void;
@@ -1263,7 +1264,7 @@ function DatasetsTab({
         dataset_id: dataset.id,
         name: runName,
       });
-      
+
       // Create a new run object for the UI
       const newRun: EvalRun = {
         id: response.run_id,
@@ -1280,11 +1281,11 @@ function DatasetsTab({
           avg_cost: 0,
         },
       };
-      
+
       if (onRunCreated) {
         onRunCreated(newRun);
       }
-      
+
       // Show success toast or switch to runs tab
       alert(`Evaluation run "${runName}" started! Check the Runs tab for progress.`);
     } catch (error) {
@@ -1371,31 +1372,33 @@ function DatasetsTab({
       </AnimatePresence>
 
       {/* Actions */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-sm text-textSecondary">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
           {datasets.length} dataset{datasets.length !== 1 ? 's' : ''}
         </div>
-        <div className="flex items-center gap-3">
-          <button 
+        <div className="flex items-center gap-2">
+          <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface border border-border text-textPrimary hover:bg-surface-hover transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+            style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
           >
-            <Upload className="w-4 h-4" />
-            Import Dataset
+            <Upload className="w-3.5 h-3.5" />
+            Import
           </button>
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+            style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Create Dataset
           </button>
         </div>
       </div>
 
       {/* Info Box - Golden Dataset Workflow */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl">
-        <h3 className="font-semibold text-blue-500 mb-3 flex items-center gap-2">
+      <div className="mb-4 p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(0,128,255,0.06) 0%, rgba(139,92,246,0.06) 100%)', border: '1px solid rgba(0,128,255,0.12)' }}>
+        <h3 className="font-semibold text-[13px] mb-3 flex items-center gap-2" style={{ color: '#0080FF' }}>
           ✨ Building a Golden Evaluation Dataset
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -1423,27 +1426,74 @@ function DatasetsTab({
         </div>
       </div>
 
-      {/* Dataset Flywheel - Auto-curate fine-tuning data */}
-      <div className="mb-8">
+      {/* Dataset Flywheel */}
+      <div className="mb-5">
         <DatasetFlywheel />
       </div>
 
       {/* Datasets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {datasets.length === 0 ? (
-          <div className="col-span-full text-center py-12 bg-surface rounded-xl border border-border">
-            <Database className="w-12 h-12 text-textTertiary mx-auto mb-4 opacity-50" />
-            <p className="text-textSecondary mb-2">No datasets yet</p>
-            <p className="text-sm text-textTertiary mb-4">
-              Create your first dataset to start testing
-            </p>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-4 h-4 inline mr-2" />
-              Create Dataset
-            </button>
+          <div className="col-span-full rounded-2xl bg-card border border-border">
+            {/* Feature Explanation Header */}
+            <div className="px-6 pt-6 pb-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+                  <Database className="w-5 h-5" style={{ color: '#0080FF' }} />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-bold text-foreground">Evaluation Datasets</h3>
+                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Curated test cases to measure your AI agent's quality</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>1</span>
+                    <span className="text-[13px] font-semibold text-foreground">Create a Dataset</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">Define a collection of test cases with inputs, expected outputs, and metadata to benchmark your agent.</p>
+                </div>
+                <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>2</span>
+                    <span className="text-[13px] font-semibold text-foreground">Add Test Cases</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">Add golden test cases from production traces, import from JSON files, or manually define input/output pairs.</p>
+                </div>
+                <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>3</span>
+                    <span className="text-[13px] font-semibold text-foreground">Run Evaluations</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">Execute your agent against the dataset and get automatic scoring on coherence, relevance, fluency, and helpfulness.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: 'hsl(var(--secondary))', borderTop: '1px solid hsl(var(--border))', borderRadius: '0 0 16px 16px' }}>
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Start by creating your first evaluation dataset</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                  style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                >
+                  <Upload className="w-3 h-3" />
+                  Import JSON
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                  style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
+                >
+                  <Plus className="w-3 h-3" />
+                  Create Dataset
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           datasets.map((dataset, index) => (
@@ -1453,7 +1503,8 @@ function DatasetsTab({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => handleViewDataset(dataset.id)}
-              className="bg-surface rounded-xl border border-border p-6 hover:border-primary transition-all group cursor-pointer"
+              className="rounded-2xl border border-border/60 p-5 hover:border-primary/40 transition-all group cursor-pointer"
+              style={{ backgroundColor: 'hsl(var(--card))', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -1464,7 +1515,7 @@ function DatasetsTab({
                     <p className="text-sm text-textSecondary">{dataset.description}</p>
                   )}
                 </div>
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteDataset(dataset.id);
@@ -1485,7 +1536,7 @@ function DatasetsTab({
               </div>
 
               <div className="mt-4 pt-4 border-t border-border flex gap-2">
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleViewDataset(dataset.id);
@@ -1495,7 +1546,7 @@ function DatasetsTab({
                   <Eye className="w-3 h-3 inline mr-1" />
                   View
                 </button>
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRunDataset(dataset);
@@ -1506,7 +1557,7 @@ function DatasetsTab({
                   <Play className="w-3 h-3 inline mr-1" />
                   {runningDatasetId === dataset.id ? 'Starting...' : 'Run'}
                 </button>
-                <button 
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleExportDataset(dataset.id, dataset.name);
@@ -1619,7 +1670,7 @@ function DatasetDetailView({
               <X className="w-5 h-5 text-textSecondary" />
             </button>
           </div>
-          
+
           <GoldenTestCaseEditor
             onSave={handleSaveGoldenTestCase}
             onCancel={() => setShowGoldenEditor(false)}
@@ -1715,7 +1766,7 @@ function DatasetDetailView({
                     };
                     return labels[cat] || cat;
                   };
-                  
+
                   return (
                     <tr key={tc.id} className="hover:bg-surface-hover">
                       <td className="px-4 py-3 text-sm text-textTertiary">{index + 1}</td>
@@ -1767,13 +1818,13 @@ function DatasetDetailView({
   );
 }
 
-function EvalRunsTab({ 
+function EvalRunsTab({
   evalRuns,
   datasets,
   selectedRuns,
   setSelectedRuns,
   setEvalRuns
-}: { 
+}: {
   evalRuns: EvalRun[];
   datasets: Dataset[];
   selectedRuns: string[];
@@ -1782,7 +1833,7 @@ function EvalRunsTab({
 }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
-  
+
   const toggleRunSelection = (runId: string) => {
     setSelectedRuns(
       selectedRuns.includes(runId)
@@ -1797,55 +1848,101 @@ function EvalRunsTab({
 
   return (
     <div className="space-y-4">
-      {/* Explanation Banner */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-        <h3 className="font-medium text-primary mb-2">📊 How Eval Runs Work</h3>
-        <p className="text-sm text-textSecondary mb-2">
-          Each test case in your dataset is evaluated on 4 LLM-as-judge criteria (1-5 scale):
+      {/* Info Banner */}
+      <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(0,128,255,0.06) 0%, rgba(16,185,129,0.06) 100%)', border: '1px solid rgba(0,128,255,0.12)' }}>
+        <h3 className="font-semibold text-[13px] mb-2" style={{ color: '#0080FF' }}>📊 How Eval Runs Work</h3>
+        <p className="text-xs mb-2 text-muted-foreground">
+          Each test case is evaluated on 4 LLM-as-judge criteria (1-5 scale):
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          <div className="bg-background rounded-lg p-2">
-            <span className="font-medium text-textPrimary">Coherence</span>
-            <p className="text-textTertiary">Logical structure</p>
+          <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
+            <span className="font-medium text-foreground">Coherence</span>
+            <p style={{ color: 'hsl(var(--muted-foreground))' }}>Logical structure</p>
           </div>
-          <div className="bg-background rounded-lg p-2">
-            <span className="font-medium text-textPrimary">Relevance</span>
-            <p className="text-textTertiary">Addresses the input</p>
+          <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
+            <span className="font-medium text-foreground">Relevance</span>
+            <p style={{ color: 'hsl(var(--muted-foreground))' }}>Addresses the input</p>
           </div>
-          <div className="bg-background rounded-lg p-2">
-            <span className="font-medium text-textPrimary">Fluency</span>
-            <p className="text-textTertiary">Grammar &amp; clarity</p>
+          <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
+            <span className="font-medium text-foreground">Fluency</span>
+            <p style={{ color: 'hsl(var(--muted-foreground))' }}>Grammar &amp; clarity</p>
           </div>
-          <div className="bg-background rounded-lg p-2">
-            <span className="font-medium text-textPrimary">Helpfulness</span>
-            <p className="text-textTertiary">Useful information</p>
+          <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
+            <span className="font-medium text-foreground">Helpfulness</span>
+            <p style={{ color: 'hsl(var(--muted-foreground))' }}>Useful information</p>
           </div>
         </div>
-        <p className="text-xs text-textTertiary mt-2">
+        <p className="text-xs mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
           Pass threshold: Overall score ≥ 70%. Click any run to see detailed results.
         </p>
       </div>
 
       {/* Header with Create Button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-textPrimary">Evaluation Runs</h2>
+        <div className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          {evalRuns.length} run{evalRuns.length !== 1 ? 's' : ''}
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           disabled={datasets.length === 0}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
         >
-          <PlayCircle className="w-4 h-4" />
+          <PlayCircle className="w-3.5 h-3.5" />
           New Eval Run
         </button>
       </div>
 
       {evalRuns.length === 0 ? (
-        <div className="text-center py-12 bg-surface rounded-xl border border-border">
-          <Play className="w-12 h-12 text-textTertiary mx-auto mb-4 opacity-50" />
-          <p className="text-textSecondary mb-2">No eval runs yet</p>
-          <p className="text-sm text-textTertiary">
-            Run your first evaluation to see results here
-          </p>
+        <div className="rounded-2xl bg-card border border-border">
+          <div className="px-6 pt-6 pb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(16,185,129,0.08)' }}>
+                <Play className="w-5 h-5" style={{ color: '#10b981' }} />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground">Evaluation Runs</h3>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Execute your agent against datasets and track quality over time</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#10b981', color: '#ffffff' }}>1</span>
+                  <span className="text-[13px] font-semibold text-foreground">Select a Dataset</span>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">Choose which dataset to run against. Each test case will be evaluated independently.</p>
+              </div>
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#10b981', color: '#ffffff' }}>2</span>
+                  <span className="text-[13px] font-semibold text-foreground">LLM-as-Judge Scoring</span>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">Each response is scored on coherence, relevance, fluency, and helpfulness using an LLM judge (1-5 scale).</p>
+              </div>
+              <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#10b981', color: '#ffffff' }}>3</span>
+                  <span className="text-[13px] font-semibold text-foreground">Track & Compare</span>
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">View pass/fail rates, latency, cost metrics and compare runs side-by-side in the Compare tab.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: 'hsl(var(--secondary))', borderTop: '1px solid hsl(var(--border))', borderRadius: '0 0 16px 16px' }}>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{datasets.length === 0 ? 'Create a dataset first, then run evaluations' : 'Ready to evaluate — select a dataset to begin'}</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              disabled={datasets.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all disabled:opacity-40"
+              style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+            >
+              <PlayCircle className="w-3 h-3" />
+              New Eval Run
+            </button>
+          </div>
         </div>
       ) : (
         evalRuns.map((run) => (
@@ -1853,24 +1950,22 @@ function EvalRunsTab({
             key={run.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`bg-surface rounded-xl border p-6 transition-all ${
-              selectedRuns.includes(run.id)
-                ? 'border-primary'
-                : 'border-border hover:border-border-hover'
-            }`}
+            className={`bg-surface rounded-xl border p-6 transition-all ${selectedRuns.includes(run.id)
+              ? 'border-primary'
+              : 'border-border hover:border-border-hover'
+              }`}
           >
-            <div 
+            <div
               className="flex items-start justify-between mb-4 cursor-pointer"
               onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-lg font-semibold text-textPrimary">{run.name}</h3>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    run.status === 'completed' ? 'bg-success/20 text-success' :
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${run.status === 'completed' ? 'bg-success/20 text-success' :
                     run.status === 'running' ? 'bg-warning/20 text-warning' :
-                    'bg-error/20 text-error'
-                  }`}>
+                      'bg-error/20 text-error'
+                    }`}>
                     {run.status}
                   </span>
                   <span className="text-xs text-textTertiary">
@@ -1979,13 +2074,13 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
   const [error, setError] = useState<string | null>(null);
 
   // Transform API comparison result into StatisticalComparison component props
-  const transformMetricForComparison = (metric: any): { 
-    baseline: VariantStats; 
-    treatment: VariantStats; 
+  const transformMetricForComparison = (metric: any): {
+    baseline: VariantStats;
+    treatment: VariantStats;
     testResult: StatisticalTestResult;
   } | null => {
     if (!metric) return null;
-    
+
     const baseline: VariantStats = {
       name: evalRuns[0]?.name || 'Baseline',
       mean: metric.baseline?.mean ?? 0,
@@ -2036,7 +2131,7 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
 
   const runComparison = async () => {
     if (evalRuns.length !== 2) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -2052,23 +2147,59 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
 
   if (evalRuns.length < 2) {
     return (
-      <div className="text-center py-12 bg-surface rounded-xl border border-border">
-        <GitCompare className="w-12 h-12 text-textTertiary mx-auto mb-4 opacity-50" />
-        <p className="text-textSecondary mb-2">Select 2 runs to compare</p>
-        <p className="text-sm text-textTertiary">
-          Use the checkboxes in the Eval Runs tab to select runs for A/B comparison
-        </p>
+      <div className="rounded-2xl bg-card border border-border">
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(139,92,246,0.08)' }}>
+              <GitCompare className="w-5 h-5" style={{ color: '#8b5cf6' }} />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-bold text-foreground">A/B Comparison</h3>
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Statistical analysis between two evaluation runs</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+            <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#8b5cf6', color: '#ffffff' }}>1</span>
+                <span className="text-[13px] font-semibold text-foreground">Select 2 Runs</span>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">Go to the Runs tab and check the boxes next to exactly 2 evaluation runs you want to compare.</p>
+            </div>
+            <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#8b5cf6', color: '#ffffff' }}>2</span>
+                <span className="text-[13px] font-semibold text-foreground">Statistical Tests</span>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">Welch's t-test, Cohen's d, and confidence intervals are computed automatically for each quality metric.</p>
+            </div>
+            <div className="rounded-xl p-4" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#8b5cf6', color: '#ffffff' }}>3</span>
+                <span className="text-[13px] font-semibold text-foreground">Actionable Insights</span>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">See which model or prompt change is statistically better, with effect size and power analysis.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4" style={{ backgroundColor: 'hsl(var(--secondary))', borderTop: '1px solid hsl(var(--border))', borderRadius: '0 0 16px 16px' }}>
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Select exactly 2 runs from the Runs tab to begin comparison</p>
+        </div>
       </div>
     );
   }
 
   if (evalRuns.length > 2) {
     return (
-      <div className="text-center py-12 bg-surface rounded-xl border border-border">
-        <GitCompare className="w-12 h-12 text-textTertiary mx-auto mb-4 opacity-50" />
-        <p className="text-textSecondary mb-2">Select exactly 2 runs for statistical comparison</p>
-        <p className="text-sm text-textTertiary">
-          Currently selected: {evalRuns.length} runs. Deselect {evalRuns.length - 2} to compare.
+      <div className="rounded-2xl p-6 bg-card border border-border">
+        <div className="flex items-center gap-3 mb-2">
+          <GitCompare className="w-5 h-5" style={{ color: '#8b5cf6' }} />
+          <p className="text-[13px] font-semibold text-foreground">Too many runs selected</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Select exactly 2 runs for statistical comparison. Currently selected: {evalRuns.length}. Deselect {evalRuns.length - 2} from the Runs tab.
         </p>
       </div>
     );
@@ -2126,7 +2257,7 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
             />
           </div>
         </div>
-        
+
         {/* Treatment Run */}
         <div className="space-y-3">
           <div className="bg-surface rounded-xl border border-border p-4">
@@ -2176,21 +2307,19 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
       {comparisonResult && (
         <>
           {/* Recommendation Banner */}
-          <div className={`p-4 rounded-xl border ${
-            comparisonResult.recommendation.action === 'deploy_treatment' 
-              ? 'bg-success/10 border-success/30' 
-              : comparisonResult.recommendation.action === 'keep_baseline'
+          <div className={`p-4 rounded-xl border ${comparisonResult.recommendation.action === 'deploy_treatment'
+            ? 'bg-success/10 border-success/30'
+            : comparisonResult.recommendation.action === 'keep_baseline'
               ? 'bg-warning/10 border-warning/30'
               : 'bg-surface border-border'
-          }`}>
+            }`}>
             <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg ${
-                comparisonResult.recommendation.action === 'deploy_treatment' 
-                  ? 'bg-success/20' 
-                  : comparisonResult.recommendation.action === 'keep_baseline'
+              <div className={`p-2 rounded-lg ${comparisonResult.recommendation.action === 'deploy_treatment'
+                ? 'bg-success/20'
+                : comparisonResult.recommendation.action === 'keep_baseline'
                   ? 'bg-warning/20'
                   : 'bg-surface-hover'
-              }`}>
+                }`}>
                 {comparisonResult.recommendation.action === 'deploy_treatment' ? (
                   <CheckCircle className="w-5 h-5 text-success" />
                 ) : comparisonResult.recommendation.action === 'keep_baseline' ? (
@@ -2201,11 +2330,11 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
               </div>
               <div>
                 <div className="font-semibold text-textPrimary">
-                  {comparisonResult.recommendation.action === 'deploy_treatment' 
-                    ? '✅ Deploy Treatment' 
+                  {comparisonResult.recommendation.action === 'deploy_treatment'
+                    ? '✅ Deploy Treatment'
                     : comparisonResult.recommendation.action === 'keep_baseline'
-                    ? '⚠️ Keep Baseline'
-                    : '🤔 Inconclusive'}
+                      ? '⚠️ Keep Baseline'
+                      : '🤔 Inconclusive'}
                 </div>
                 <div className="text-sm text-textSecondary mt-1">
                   {comparisonResult.recommendation.explanation}
@@ -2305,13 +2434,12 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
                         <div className="text-xs text-textTertiary">±{metric.treatment.std_dev.toFixed(3)} (n={metric.treatment.n})</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`font-medium ${
-                          metric.percent_change > 0 
-                            ? metric.higher_is_better ? 'text-success' : 'text-error'
-                            : metric.percent_change < 0 
+                        <span className={`font-medium ${metric.percent_change > 0
+                          ? metric.higher_is_better ? 'text-success' : 'text-error'
+                          : metric.percent_change < 0
                             ? metric.higher_is_better ? 'text-error' : 'text-success'
                             : 'text-textSecondary'
-                        }`}>
+                          }`}>
                           {metric.percent_change > 0 ? '+' : ''}{metric.percent_change.toFixed(1)}%
                         </span>
                       </td>
@@ -2322,12 +2450,11 @@ function CompareTab({ evalRuns }: { evalRuns: EvalRun[] }) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          metric.effect_size === 'large' ? 'bg-primary/20 text-primary' :
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${metric.effect_size === 'large' ? 'bg-primary/20 text-primary' :
                           metric.effect_size === 'medium' ? 'bg-warning/20 text-warning' :
-                          metric.effect_size === 'small' ? 'bg-success/20 text-success' :
-                          'bg-surface-hover text-textTertiary'
-                        }`}>
+                            metric.effect_size === 'small' ? 'bg-success/20 text-success' :
+                              'bg-surface-hover text-textTertiary'
+                          }`}>
                           {metric.effect_size} (d={metric.cohens_d.toFixed(2)})
                         </span>
                       </td>

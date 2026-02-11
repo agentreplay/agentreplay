@@ -150,7 +150,7 @@ export function EmptyState({
           {secondaryAction && (
             <button
               onClick={secondaryAction.onClick}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg font-medium transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-card hover:bg-secondary text-foreground border border-border rounded-lg font-medium transition-colors"
             >
               {secondaryAction.label}
             </button>
@@ -159,7 +159,7 @@ export function EmptyState({
           {!secondaryAction && config.secondaryActionLabel && (
             <button
               onClick={() => {}}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg font-medium transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-card hover:bg-secondary text-foreground border border-border rounded-lg font-medium transition-colors"
             >
               {config.secondaryActionLabel}
             </button>

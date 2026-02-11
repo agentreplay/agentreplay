@@ -80,7 +80,7 @@ export default function EvaluationRunDetail() {
   if (error || !run) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-        <AlertCircle className="h-10 w-10 text-red-400" />
+        <AlertCircle className="h-10 w-10 text-red-600 dark:text-red-400" />
         <p className="text-sm text-textSecondary">{error || 'Run not found.'}</p>
         <Button variant="outline" onClick={() => navigate(-1)}>
           Go back
@@ -147,11 +147,11 @@ export default function EvaluationRunDetail() {
                     <td className="px-4 py-3">{typeof score === 'number' ? score.toFixed(2) : '—'}</td>
                     <td className="px-4 py-3">
                       {result.passed ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-400">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="h-3 w-3" /> Passed
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-xs font-semibold text-red-400">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-1 text-xs font-semibold text-red-600 dark:text-red-400">
                           <XCircle className="h-3 w-3" /> Failed
                         </span>
                       )}

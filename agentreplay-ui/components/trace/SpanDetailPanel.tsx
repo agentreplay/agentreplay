@@ -72,7 +72,7 @@ export function SpanDetailPanel({ span, onClose }: SpanDetailPanelProps) {
   ];
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[700px] bg-white shadow-2xl border-l border-gray-200 overflow-hidden z-50 flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-[700px] bg-card shadow-2xl border-l border-border overflow-hidden z-50 flex flex-col">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex-1 min-w-0">
@@ -91,7 +91,7 @@ export function SpanDetailPanel({ span, onClose }: SpanDetailPanelProps) {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 bg-gray-50 flex-shrink-0">
+      <div className="border-b border-border bg-secondary flex-shrink-0">
         <div className="flex overflow-x-auto">
           {tabs.map((tab) => (
             <button
@@ -101,8 +101,8 @@ export function SpanDetailPanel({ span, onClose }: SpanDetailPanelProps) {
                 flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
                 ${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-white'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'border-blue-600 text-blue-600 bg-card'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-gray-100'
                 }
               `}
             >
@@ -148,7 +148,7 @@ function OverviewTab({ span, copyToClipboard, copiedSection }: { span: Span; cop
       </div>
 
       {/* Basic Info */}
-      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+      <div className="bg-secondary rounded-lg p-4 space-y-3">
         <MetricRow label="Span ID" value={span.id} />
         <MetricRow label="Type" value={span.spanType} />
         <MetricRow label="Duration" value={`${span.duration}ms`} highlight />
@@ -160,7 +160,7 @@ function OverviewTab({ span, copyToClipboard, copiedSection }: { span: Span; cop
       {span.metadata?.input && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-gray-900">Input</h4>
+            <h4 className="text-sm font-semibold text-foreground">Input</h4>
             <button
               onClick={() => copyToClipboard(
                 typeof span.metadata?.input === 'string' ? span.metadata.input : JSON.stringify(span.metadata?.input, null, 2),
@@ -168,7 +168,7 @@ function OverviewTab({ span, copyToClipboard, copiedSection }: { span: Span; cop
               )}
               className="p-1 hover:bg-gray-200 rounded"
             >
-              {copiedSection === 'input' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-600" />}
+              {copiedSection === 'input' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
             </button>
           </div>
           <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-60">
@@ -180,7 +180,7 @@ function OverviewTab({ span, copyToClipboard, copiedSection }: { span: Span; cop
       {span.metadata?.output && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-gray-900">Output</h4>
+            <h4 className="text-sm font-semibold text-foreground">Output</h4>
             <button
               onClick={() => copyToClipboard(
                 typeof span.metadata?.output === 'string' ? span.metadata.output : JSON.stringify(span.metadata?.output, null, 2),
@@ -188,7 +188,7 @@ function OverviewTab({ span, copyToClipboard, copiedSection }: { span: Span; cop
               )}
               className="p-1 hover:bg-gray-200 rounded"
             >
-              {copiedSection === 'output' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-600" />}
+              {copiedSection === 'output' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
             </button>
           </div>
           <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-60">
@@ -206,23 +206,23 @@ function AttributesTab({ span, copyToClipboard, copiedSection }: { span: Span; c
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-gray-900">
+        <h4 className="text-sm font-semibold text-foreground">
           All Attributes ({Object.keys(attributes).length})
         </h4>
         <button
           onClick={() => copyToClipboard(JSON.stringify(attributes, null, 2), 'attributes')}
           className="p-2 hover:bg-gray-200 rounded"
         >
-          {copiedSection === 'attributes' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-600" />}
+          {copiedSection === 'attributes' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
         </button>
       </div>
 
-      <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
+      <div className="border border-border rounded-lg divide-y divide-gray-200">
         {Object.entries(attributes).map(([key, value]) => (
-          <div key={key} className="p-3 hover:bg-gray-50">
+          <div key={key} className="p-3 hover:bg-secondary">
             <div className="flex justify-between items-start gap-4">
-              <span className="text-sm font-medium text-gray-700 break-all">{key}</span>
-              <span className="text-sm text-gray-900 font-mono text-right break-all">
+              <span className="text-sm font-mediumtext-foreground break-all">{key}</span>
+              <span className="text-sm text-foreground font-mono text-right break-all">
                 {typeof value === 'object' ? JSON.stringify(value) : String(value)}
               </span>
             </div>
@@ -231,8 +231,8 @@ function AttributesTab({ span, copyToClipboard, copiedSection }: { span: Span; c
       </div>
 
       {Object.keys(attributes).length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <List className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-8 text-muted-foreground">
+          <List className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>No attributes available</p>
         </div>
       )}
@@ -250,7 +250,7 @@ function PerformanceTab({ span }: { span: Span }) {
       {/* Token Metrics */}
       {hasTokens && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">Token Usage</h4>
+          <h4 className="text-sm font-semibold text-foreground mb-3">Token Usage</h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="text-xs text-blue-600 font-medium mb-1">Input Tokens</div>
@@ -275,12 +275,12 @@ function PerformanceTab({ span }: { span: Span }) {
       {/* Cost Breakdown */}
       {span.cost && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">Cost Analysis</h4>
+          <h4 className="text-sm font-semibold text-foreground mb-3">Cost Analysis</h4>
           <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600 mb-1">Estimated Cost</div>
-            <div className="text-3xl font-bold text-gray-900">${span.cost.toFixed(6)}</div>
+            <div className="text-sm text-muted-foreground mb-1">Estimated Cost</div>
+            <div className="text-3xl font-bold text-foreground">${span.cost.toFixed(6)}</div>
             {totalTokens > 0 && (
-              <div className="text-xs text-gray-600 mt-2">
+              <div className="text-xs text-muted-foreground mt-2">
                 ${(span.cost / totalTokens * 1000).toFixed(4)} per 1K tokens
               </div>
             )}
@@ -290,19 +290,19 @@ function PerformanceTab({ span }: { span: Span }) {
 
       {/* Duration Metrics */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">Duration</h4>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-600 mb-1">Total Duration</div>
-          <div className="text-2xl font-bold text-gray-900">{span.duration}ms</div>
-          <div className="text-xs text-gray-600 mt-1">
+        <h4 className="text-sm font-semibold text-foreground mb-3">Duration</h4>
+        <div className="bg-secondary rounded-lg p-4">
+          <div className="text-sm text-muted-foreground mb-1">Total Duration</div>
+          <div className="text-2xl font-bold text-foreground">{span.duration}ms</div>
+          <div className="text-xs text-muted-foreground mt-1">
             {(span.duration / 1000).toFixed(3)}s
           </div>
         </div>
       </div>
 
       {!hasTokens && !span.cost && (
-        <div className="text-center py-8 text-gray-500">
-          <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-8 text-muted-foreground">
+          <TrendingUp className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>No performance metrics available</p>
         </div>
       )}
@@ -317,21 +317,21 @@ function EventsTab({ span }: { span: Span }) {
     <div className="space-y-4">
       {Array.isArray(events) && events.length > 0 ? (
         events.map((event: any, idx: number) => (
-          <div key={idx} className="border border-gray-200 rounded-lg p-4">
+          <div key={idx} className="border border-border rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-gray-900">{event.name || `Event ${idx + 1}`}</span>
-              <span className="text-xs text-gray-500">{event.timestamp || 'N/A'}</span>
+              <span className="font-medium text-foreground">{event.name || `Event ${idx + 1}`}</span>
+              <span className="text-xs text-muted-foreground">{event.timestamp || 'N/A'}</span>
             </div>
             {event.attributes && (
-              <pre className="bg-gray-50 p-3 rounded text-xs font-mono overflow-x-auto">
+              <pre className="bg-secondary p-3 rounded text-xs font-mono overflow-x-auto">
                 {JSON.stringify(event.attributes, null, 2)}
               </pre>
             )}
           </div>
         ))
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <Activity className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-12 text-muted-foreground">
+          <Activity className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>No events recorded</p>
         </div>
       )}
@@ -348,11 +348,11 @@ function LogsTab({ span }: { span: Span }) {
         logs.map((log: any, idx: number) => (
           <div key={idx} className="bg-gray-900 text-gray-100 rounded-lg p-3 font-mono text-xs">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-gray-400">[{log.timestamp || 'N/A'}]</span>
+              <span className="text-muted-foreground">[{log.timestamp || 'N/A'}]</span>
               <span className={`font-semibold ${
-                log.level === 'error' ? 'text-red-400' :
-                log.level === 'warn' ? 'text-yellow-400' :
-                log.level === 'info' ? 'text-blue-400' :
+                log.level === 'error' ? 'text-red-600 dark:text-red-400' :
+                log.level === 'warn' ? 'text-yellow-600 dark:text-yellow-400' :
+                log.level === 'info' ? 'text-blue-600 dark:text-blue-400' :
                 'text-gray-300'
               }`}>
                 {log.level?.toUpperCase() || 'LOG'}
@@ -362,8 +362,8 @@ function LogsTab({ span }: { span: Span }) {
           </div>
         ))
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <Code className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-12 text-muted-foreground">
+          <Code className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>No logs available</p>
         </div>
       )}
@@ -378,26 +378,26 @@ function LinksTab({ span }: { span: Span }) {
     <div className="space-y-4">
       {Array.isArray(links) && links.length > 0 ? (
         links.map((link: any, idx: number) => (
-          <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+          <div key={idx} className="border border-border rounded-lg p-4 hover:bg-secondary">
             <div className="flex items-center gap-2 mb-2">
               <Link2 className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-gray-900">{link.type || 'Link'}</span>
+              <span className="font-medium text-foreground">{link.type || 'Link'}</span>
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex gap-2">
-                <span className="text-gray-600">Trace ID:</span>
-                <span className="font-mono text-gray-900">{link.trace_id || 'N/A'}</span>
+                <span className="text-muted-foreground">Trace ID:</span>
+                <span className="font-mono text-foreground">{link.trace_id || 'N/A'}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-gray-600">Span ID:</span>
-                <span className="font-mono text-gray-900">{link.span_id || 'N/A'}</span>
+                <span className="text-muted-foreground">Span ID:</span>
+                <span className="font-mono text-foreground">{link.span_id || 'N/A'}</span>
               </div>
             </div>
           </div>
         ))
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <Link2 className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-12 text-muted-foreground">
+          <Link2 className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>No linked traces</p>
         </div>
       )}
@@ -411,8 +411,8 @@ function StackTraceTab({ span, copyToClipboard, copiedSection }: { span: Span; c
   
   if (!error && !stackTrace && span.status !== 'error') {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <Check className="w-12 h-12 mx-auto mb-2 text-green-400" />
+      <div className="text-center py-12 text-muted-foreground">
+        <Check className="w-12 h-12 mx-auto mb-2 text-green-600 dark:text-green-400" />
         <p>No errors - span completed successfully</p>
       </div>
     );
@@ -440,7 +440,7 @@ function StackTraceTab({ span, copyToClipboard, copiedSection }: { span: Span; c
       {stackTrace && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-gray-900">Stack Trace</h4>
+            <h4 className="text-sm font-semibold text-foreground">Stack Trace</h4>
             <button
               onClick={() => copyToClipboard(
                 typeof stackTrace === 'string' ? stackTrace : JSON.stringify(stackTrace, null, 2),
@@ -448,18 +448,18 @@ function StackTraceTab({ span, copyToClipboard, copiedSection }: { span: Span; c
               )}
               className="p-2 hover:bg-gray-200 rounded"
             >
-              {copiedSection === 'stacktrace' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-600" />}
+              {copiedSection === 'stacktrace' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
             </button>
           </div>
-          <pre className="bg-gray-900 text-red-400 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-96">
+          <pre className="bg-gray-900 text-red-600 dark:text-red-400 p-4 rounded-lg text-xs overflow-x-auto font-mono max-h-96">
             {typeof stackTrace === 'string' ? stackTrace : JSON.stringify(stackTrace, null, 2)}
           </pre>
         </div>
       )}
 
       {!error && !stackTrace && span.status === 'error' && (
-        <div className="text-center py-8 text-gray-500">
-          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+        <div className="text-center py-8 text-muted-foreground">
+          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
           <p>Error occurred but no stack trace available</p>
         </div>
       )}
@@ -476,11 +476,11 @@ interface MetricRowProps {
 
 function MetricRow({ label, value, highlight }: MetricRowProps) {
   return (
-    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-      <span className="text-sm text-gray-600">{label}</span>
+    <div className="flex justify-between items-center py-2 border-b border-border last:border-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <span
         className={`text-sm font-medium ${
-          highlight ? 'text-blue-600 font-semibold' : 'text-gray-900'
+          highlight ? 'text-blue-600 font-semibold' : 'text-foreground'
         }`}
       >
         {value}

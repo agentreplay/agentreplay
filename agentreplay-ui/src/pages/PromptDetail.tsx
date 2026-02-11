@@ -43,7 +43,7 @@ interface ToolDraft {
 const parseContent = (content: any): string => {
   if (!content) return '';
   if (typeof content !== 'string') return String(content);
-  
+
   // Try to parse as JSON array
   try {
     if (content.startsWith('[')) {
@@ -65,11 +65,11 @@ const parseContent = (content: any): string => {
 const formatTemplateContent = (content: string): string => {
   // If already parsed, just clean up any remaining JSON artifacts
   let cleaned = parseContent(content);
-  
+
   // Parse [System] and [User] blocks and convert to Jinja-friendly format
   const systemMatch = cleaned.match(/\[System\]\n([\s\S]*?)(?=\n\n\[User\]|\n\[User\]|$)/);
   const userMatch = cleaned.match(/\[User\]\n([\s\S]*?)$/);
-  
+
   if (systemMatch || userMatch) {
     const parts: string[] = [];
     if (systemMatch && systemMatch[1]) {
@@ -80,7 +80,7 @@ const formatTemplateContent = (content: string): string => {
     }
     return parts.join('\n\n');
   }
-  
+
   return cleaned;
 };
 
@@ -104,7 +104,7 @@ export default function PromptDetail() {
       // Format the content for display
       const formattedContent = formatTemplateContent(found.content);
       setPrompt({ ...found, content: formattedContent });
-      
+
       // Load tools from metadata if available
       const meta = (found as any).metadata;
       if (meta?.tools && Array.isArray(meta.tools)) {
@@ -183,49 +183,49 @@ export default function PromptDetail() {
     setTesting(true);
     setMessage(null);
     setTestOutput('Running...');
-    
+
     try {
       // Get the provider config for the selected model
       const savedSettings = localStorage.getItem('agentreplay_settings');
       let provider: { baseUrl?: string; apiKey?: string; modelName?: string } | null = null;
-      
+
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         const providers = settings?.models?.providers || [];
         provider = providers.find((p: any) => p.modelName === testModel);
       }
-      
+
       if (!provider) {
         setTestOutput(`Error: No provider configured for model "${testModel}". Configure it in Settings.`);
         setTesting(false);
         return;
       }
-      
+
       // Apply variable bindings to content
       let processedContent = prompt.content;
       Object.entries(testBindings).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
         processedContent = processedContent.replace(regex, value);
       });
-      
+
       // Parse content into messages - look for Jinja-style comments
       const messages: Array<{ role: string; content: string }> = [];
       const systemMatch = processedContent.match(/\{#\s*SYSTEM PROMPT\s*#\}\n([\s\S]*?)(?=\{#|$)/);
       const userMatch = processedContent.match(/\{#\s*USER MESSAGE\s*#\}\n([\s\S]*?)$/);
-      
+
       if (systemMatch) {
         messages.push({ role: 'system', content: systemMatch[1].trim() });
       }
       if (userMatch) {
         messages.push({ role: 'user', content: userMatch[1].trim() });
       }
-      
+
       // Fallback: treat whole content as system prompt
       if (messages.length === 0) {
         messages.push({ role: 'system', content: processedContent });
         messages.push({ role: 'user', content: 'Test this prompt.' });
       }
-      
+
       // Make OpenAI-compatible API call
       const baseUrl = (provider.baseUrl || '').replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -241,7 +241,7 @@ export default function PromptDetail() {
           max_tokens: 1024,
         }),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         setTestOutput(`Error (${response.status}): ${errorText}`);
@@ -260,7 +260,7 @@ export default function PromptDetail() {
   if (!prompt) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-textSecondary">
-        <AlertCircle className="h-10 w-10 text-red-400" />
+        <AlertCircle className="h-10 w-10 text-red-600 dark:text-red-400" />
         Prompt not found.
       </div>
     );
@@ -286,7 +286,7 @@ export default function PromptDetail() {
         </div>
       </header>
 
-      {message && <p className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">{message}</p>}
+      {message && <p className="rounded-2xl border border-emerald-400 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 text-sm text-emerald-700 dark:text-emerald-200">{message}</p>}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-3xl border border-border/60 bg-background/90 p-4">
@@ -424,11 +424,11 @@ function ToolEditor({ tools, onAdd, onRemove, onChange }: {
         {tools.map((tool, index) => (
           <div key={`${tool.name}-${index}`} className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-3">
             <div className="flex items-center gap-2">
-              <span className="text-purple-400">🔧</span>
-              <Input 
-                value={tool.name} 
-                onChange={(event) => onChange(index, { name: event.target.value })} 
-                className="flex-1 font-mono text-purple-300" 
+              <span className="text-purple-600 dark:text-purple-400">🔧</span>
+              <Input
+                value={tool.name}
+                onChange={(event) => onChange(index, { name: event.target.value })}
+                className="flex-1 font-mono text-purple-700 dark:text-purple-300"
                 placeholder="function_name"
               />
               <Button variant="ghost" size="sm" onClick={() => onRemove(index)}>
@@ -477,13 +477,13 @@ function LiveTester({
         // First load user-configured models from localStorage (note: underscore, not hyphen)
         const savedSettings = localStorage.getItem('agentreplay_settings');
         const userModels: ModelInfo[] = [];
-        
+
         if (savedSettings) {
           const settings = JSON.parse(savedSettings);
           const providers = settings?.models?.providers || [];
-          
+
           console.log('[PromptDetail] Loaded providers from settings:', providers);
-          
+
           for (const provider of providers) {
             // Match Playground logic: check modelName && baseUrl
             if (provider.modelName && provider.baseUrl) {
@@ -494,7 +494,7 @@ function LiveTester({
               });
             }
           }
-          
+
           console.log('[PromptDetail] Configured models:', userModels);
         }
 
@@ -504,21 +504,21 @@ function LiveTester({
           if (response.ok) {
             const data = await response.json();
             const serverModels = (data.models || []) as ModelInfo[];
-            
+
             // Merge: user-configured models first, then server models (avoid duplicates)
             const userModelIds = new Set(userModels.map(m => m.id));
             const uniqueServerModels = serverModels.filter(m => !userModelIds.has(m.id));
-            
+
             const allModels = [...userModels, ...uniqueServerModels];
             setModels(allModels);
-            
+
             // Set default model - prefer user's default provider
             if (allModels.length > 0) {
               const defaultProviderId = JSON.parse(savedSettings || '{}')?.models?.defaultProviderId;
               const defaultProvider = JSON.parse(savedSettings || '{}')?.models?.providers?.find(
                 (p: any) => p.id === defaultProviderId
               );
-              
+
               if (defaultProvider?.modelName) {
                 setTestModel(defaultProvider.modelName);
               } else if (userModels.length > 0) {
@@ -575,9 +575,9 @@ function LiveTester({
       <div className="mt-3 space-y-3 text-sm">
         <label className="flex flex-col text-textSecondary">
           Model
-          <select 
-            className="mt-1 rounded-xl border border-border/50 bg-background px-3 py-2" 
-            value={testModel} 
+          <select
+            className="mt-1 rounded-xl border border-border/50 bg-background px-3 py-2"
+            value={testModel}
             onChange={(event) => setTestModel(event.target.value)}
             disabled={loadingModels}
           >

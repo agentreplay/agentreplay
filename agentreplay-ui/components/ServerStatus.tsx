@@ -153,7 +153,7 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
                     <strong className="text-textPrimary">Step 1:</strong> Navigate to the AgentReplay directory
                   </p>
                   <pre className="bg-background border border-border rounded p-3 text-xs overflow-x-auto">
-                    <code className="text-green-400">cd agentreplay</code>
+                    <code className="text-green-600 dark:text-green-400">cd agentreplay</code>
                   </pre>
                 </div>
 
@@ -162,7 +162,7 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
                     <strong className="text-textPrimary">Step 2:</strong> Start the server
                   </p>
                   <pre className="bg-background border border-border rounded p-3 text-xs overflow-x-auto">
-                    <code className="text-green-400">cargo run --bin agentreplay-server</code>
+                    <code className="text-green-600 dark:text-green-400">cargo run --bin agentreplay-server</code>
                   </pre>
                 </div>
 
@@ -171,7 +171,7 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
                     <strong className="text-textPrimary">Alternative:</strong> Use the pre-built binary (faster)
                   </p>
                   <pre className="bg-background border border-border rounded p-3 text-xs overflow-x-auto">
-                    <code className="text-green-400">./target/debug/agentreplay-server --config agentreplay-server-config.toml</code>
+                    <code className="text-green-600 dark:text-green-400">./target/debug/agentreplay-server --config agentreplay-server-config.toml</code>
                   </pre>
                 </div>
 
@@ -180,13 +180,13 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
                     <strong className="text-textPrimary">Verify server is running:</strong>
                   </p>
                   <pre className="bg-background border border-border rounded p-3 text-xs overflow-x-auto">
-                    <code className="text-green-400">curl http://127.0.0.1:47100/api/v1/health</code>
+                    <code className="text-green-600 dark:text-green-400">curl http://127.0.0.1:47100/api/v1/health</code>
                   </pre>
                 </div>
 
                 <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-blue-400">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
                     <strong>Tip:</strong> The server runs on port 47100 by default. 
                     Make sure nothing else is using this port. To check: 
                     <code className="ml-1 px-1 py-0.5 bg-background rounded">lsof -i :47100</code>
@@ -261,7 +261,7 @@ export default function ServerStatus({ compact = false, asTopBanner = false }: S
           </div>
         )}
         {status === 'offline' && (
-          <div className="text-xs text-red-400">
+          <div className="text-xs text-red-600 dark:text-red-400">
             Unable to reach AgentReplay backend
           </div>
         )}

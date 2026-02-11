@@ -28,6 +28,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { agentreplayClient, TraceMetadata } from '../lib/agentreplay-api';
 import { GoldenTestCaseEditor, GoldenTestCase } from '../components/GoldenTestCaseEditor';
+import { VideoHelpButton } from '../components/VideoHelpButton';
 import {
   Database,
   FileSearch,
@@ -1020,189 +1021,202 @@ export default function EvalPipelinePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-textPrimary mb-2">Evaluation Pipeline</h1>
-          <p className="text-textSecondary">
-            Build golden datasets from traces and run comprehensive evaluations
-          </p>
-        </div>
-
-        {/* Phase Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            {PHASES.map((p, index) => (
-              <div key={p.id} className="flex items-center">
-                <button
-                  onClick={() => p.id <= phase && setPhase(p.id as any)}
-                  disabled={p.id > phase}
-                  className={`flex flex-col items-center p-4 rounded-xl transition-all ${p.id === phase
-                      ? 'bg-primary text-white shadow-lg scale-105'
-                      : p.id < phase
-                        ? 'bg-success/20 text-success cursor-pointer hover:bg-success/30'
-                        : 'bg-surface text-textTertiary cursor-not-allowed'
-                    }`}
-                >
-                  <p.icon className="w-6 h-6 mb-1" />
-                  <span className="text-xs font-medium">{p.name}</span>
-                </button>
-                {index < PHASES.length - 1 && (
-                  <ArrowRight className={`w-5 h-5 mx-2 ${p.id < phase ? 'text-success' : 'text-textTertiary'
-                    }`} />
-                )}
-              </div>
-            ))}
+    <div className="flex flex-col h-full" style={{ paddingTop: '8px' }}>
+      {/* Header */}
+      <header className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: 'rgba(0,128,255,0.1)' }}
+          >
+            <Zap className="w-4 h-4" style={{ color: '#0080FF' }} />
           </div>
-          <div className="mt-4 text-center">
-            <p className="text-sm text-textSecondary">
-              {PHASES[phase - 1].description}
-            </p>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Evaluation Pipeline</h1>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Build golden datasets from traces · Run comprehensive evaluations</p>
           </div>
         </div>
+        <VideoHelpButton pageId="eval-pipeline" />
+      </header>
 
-        {/* Phase Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={phase}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {phase === 1 && (
-              <Phase1Collect
-                traces={traces}
-                selectedTraces={selectedTraces}
-                setSelectedTraces={setSelectedTraces}
-                loading={loading}
-                onRefresh={loadTraces}
-                filterStatus={filterStatus}
-                setFilterStatus={setFilterStatus}
-                filterDateRange={filterDateRange}
-                setFilterDateRange={setFilterDateRange}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-              />
-            )}
-
-            {phase === 2 && (
-              <Phase2Process
-                categorizedTraces={categorizedTraces}
-                sampledTraces={sampledTraces}
-                samplingConfig={samplingConfig}
-                setSamplingConfig={setSamplingConfig}
-                showConfig={showSamplingConfig}
-                setShowConfig={setShowSamplingConfig}
-                onResample={() => {
-                  const sampled = sampleTraces(categorizedTraces, samplingConfig);
-                  setSampledTraces(sampled);
-                }}
-              />
-            )}
-
-            {phase === 3 && (
-              <Phase3Annotate
-                sampledTraces={sampledTraces}
-                goldenDataset={goldenDataset}
-                onEditTrace={(trace) => setEditingTestCase(trace)}
-                onAutoAnnotate={() => {
-                  const autoAnnotated = sampledTraces.map(convertToTestCase);
-                  setGoldenDataset(autoAnnotated);
-                }}
-              />
-            )}
-
-            {phase === 4 && (
-              <Phase4Evaluate
-                goldenDataset={goldenDataset}
-                loading={loading}
-                onRunEvaluation={runEvaluation}
-                evalConfig={evalConfig}
-                setEvalConfig={setEvalConfig}
-                datasetName={datasetName}
-                setDatasetName={setDatasetName}
-              />
-            )}
-
-            {phase === 5 && (
-              <Phase5Iterate
-                evaluationResults={evaluationResults}
-                goldenDataset={goldenDataset}
-                evalConfig={evalConfig}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
-          <button
-            onClick={handlePreviousPhase}
-            disabled={phase === 1}
-            className="px-4 py-2 flex items-center gap-2 text-textSecondary hover:text-textPrimary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Previous
-          </button>
-
-          <div className="text-sm text-textTertiary">
-            Phase {phase} of 5
-          </div>
-
-          <button
-            onClick={handleNextPhase}
-            disabled={
-              (phase === 1 && selectedTraces.size === 0) ||
-              (phase === 3 && goldenDataset.length === 0) ||
-              phase === 5
-            }
-            className="px-6 py-2 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {phase === 4 ? 'Run Evaluation' : 'Next'}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Test Case Editor Modal */}
-        <AnimatePresence>
-          {editingTestCase && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-surface rounded-xl border border-border p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+      {/* Phase Progress — sleek horizontal stepper */}
+      <div className="mb-6 rounded-2xl p-4" style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center">
+          {PHASES.map((p, index) => (
+            <div key={p.id} className="flex items-center" style={{ flex: index < PHASES.length - 1 ? 1 : 'none' }}>
+              <button
+                onClick={() => p.id <= phase && setPhase(p.id as any)}
+                disabled={p.id > phase}
+                className="flex items-center gap-2.5 transition-all"
+                style={{ padding: '6px 12px', borderRadius: '10px', cursor: p.id <= phase ? 'pointer' : 'not-allowed', backgroundColor: p.id === phase ? 'rgba(0,128,255,0.06)' : 'transparent' }}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-textPrimary">Edit Test Case</h2>
-                    <p className="text-sm text-textSecondary">
-                      Trace: {editingTestCase.trace_id.substring(0, 8)}...
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setEditingTestCase(null)}
-                    className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-textSecondary" />
-                  </button>
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
+                  style={{
+                    backgroundColor: p.id === phase ? '#0080FF' : p.id < phase ? '#10b981' : 'hsl(var(--secondary))',
+                    boxShadow: p.id === phase ? '0 2px 8px rgba(0,128,255,0.25)' : 'none'
+                  }}
+                >
+                  {p.id < phase ? (
+                    <CheckCircle className="w-4 h-4" style={{ color: '#ffffff' }} />
+                  ) : (
+                    <p.icon className="w-3.5 h-3.5" style={{ color: p.id <= phase ? '#ffffff' : 'hsl(var(--muted-foreground))' }} />
+                  )}
                 </div>
-
-                <GoldenTestCaseEditor
-                  testCase={goldenDataset.find(tc => tc.metadata.source_trace_id === editingTestCase.trace_id)}
-                  sourceTraceId={editingTestCase.trace_id}
-                  initialSystemPrompt={editingTestCase.extracted.system_prompt}
-                  initialUserQuery={editingTestCase.extracted.user_query}
-                  onSave={handleSaveTestCase}
-                  onCancel={() => setEditingTestCase(null)}
-                />
-              </motion.div>
+                <div className="text-left hidden sm:block">
+                  <div className="text-[11px] font-bold" style={{ color: p.id === phase ? '#0080FF' : p.id < phase ? '#10b981' : 'hsl(var(--muted-foreground))' }}>{p.name}</div>
+                  <div className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{p.description}</div>
+                </div>
+              </button>
+              {index < PHASES.length - 1 && (
+                <div className="flex-1 mx-2" style={{ height: '2px', borderRadius: '1px', background: p.id < phase ? 'linear-gradient(90deg, #10b981, #10b981)' : p.id === phase ? 'linear-gradient(90deg, #0080FF 30%, hsl(var(--border)) 30%)' : 'hsl(var(--border))' }} />
+              )}
             </div>
-          )}
-        </AnimatePresence>
+          ))}
+        </div>
       </div>
+
+      {/* Phase Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={phase}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+        >
+          {phase === 1 && (
+            <Phase1Collect
+              traces={traces}
+              selectedTraces={selectedTraces}
+              setSelectedTraces={setSelectedTraces}
+              loading={loading}
+              onRefresh={loadTraces}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              filterDateRange={filterDateRange}
+              setFilterDateRange={setFilterDateRange}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+          )}
+
+          {phase === 2 && (
+            <Phase2Process
+              categorizedTraces={categorizedTraces}
+              sampledTraces={sampledTraces}
+              samplingConfig={samplingConfig}
+              setSamplingConfig={setSamplingConfig}
+              showConfig={showSamplingConfig}
+              setShowConfig={setShowSamplingConfig}
+              onResample={() => {
+                const sampled = sampleTraces(categorizedTraces, samplingConfig);
+                setSampledTraces(sampled);
+              }}
+            />
+          )}
+
+          {phase === 3 && (
+            <Phase3Annotate
+              sampledTraces={sampledTraces}
+              goldenDataset={goldenDataset}
+              onEditTrace={(trace) => setEditingTestCase(trace)}
+              onAutoAnnotate={() => {
+                const autoAnnotated = sampledTraces.map(convertToTestCase);
+                setGoldenDataset(autoAnnotated);
+              }}
+            />
+          )}
+
+          {phase === 4 && (
+            <Phase4Evaluate
+              goldenDataset={goldenDataset}
+              loading={loading}
+              onRunEvaluation={runEvaluation}
+              evalConfig={evalConfig}
+              setEvalConfig={setEvalConfig}
+              datasetName={datasetName}
+              setDatasetName={setDatasetName}
+            />
+          )}
+
+          {phase === 5 && (
+            <Phase5Iterate
+              evaluationResults={evaluationResults}
+              goldenDataset={goldenDataset}
+              evalConfig={evalConfig}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation */}
+      <div className="mt-6 flex items-center justify-between pt-5 border-t border-border">
+        <button
+          onClick={handlePreviousPhase}
+          disabled={phase === 1}
+          className="flex items-center gap-1.5 text-[13px] font-medium transition-all disabled:opacity-30 text-muted-foreground"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Previous
+        </button>
+
+        <span className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Phase {phase} of 5
+        </span>
+
+        <button
+          onClick={handleNextPhase}
+          disabled={
+            (phase === 1 && selectedTraces.size === 0) ||
+            (phase === 3 && goldenDataset.length === 0) ||
+            phase === 5
+          }
+          className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40"
+          style={{ backgroundColor: '#0080FF', color: '#ffffff' }}
+        >
+          {phase === 4 ? 'Run Evaluation' : 'Next'}
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Test Case Editor Modal */}
+      <AnimatePresence>
+        {editingTestCase && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface rounded-xl border border-border p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-textPrimary">Edit Test Case</h2>
+                  <p className="text-sm text-textSecondary">
+                    Trace: {editingTestCase.trace_id.substring(0, 8)}...
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditingTestCase(null)}
+                  className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-textSecondary" />
+                </button>
+              </div>
+
+              <GoldenTestCaseEditor
+                testCase={goldenDataset.find(tc => tc.metadata.source_trace_id === editingTestCase.trace_id)}
+                sourceTraceId={editingTestCase.trace_id}
+                initialSystemPrompt={editingTestCase.extracted.system_prompt}
+                initialUserQuery={editingTestCase.extracted.user_query}
+                onSave={handleSaveTestCase}
+                onCancel={() => setEditingTestCase(null)}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1454,137 +1468,220 @@ function Phase1Collect({
   };
 
   return (
-    <div className="bg-surface rounded-xl border border-border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-textPrimary">Select Traces</h2>
-          <p className="text-sm text-textSecondary">
-            Choose traces from production to build your evaluation dataset
+    <div className="space-y-4">
+      {/* Select Traces Card */}
+      <div className="rounded-2xl p-5" style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+              <FileSearch className="w-4 h-4" style={{ color: '#0080FF' }} />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-bold text-foreground">Select Traces</h2>
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Choose traces from production to build your evaluation dataset</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="p-1.5 rounded-lg transition-all"
+              style={{ color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={selectAll}
+              className="px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all"
+              style={{ color: '#0080FF', backgroundColor: 'rgba(0,128,255,0.06)', border: '1px solid rgba(0,128,255,0.15)' }}
+            >
+              Select All ({filteredTraces.length})
+            </button>
+            <button
+              onClick={clearAll}
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg transition-all"
+              style={{ color: 'hsl(var(--muted-foreground))', border: '1px solid hsl(var(--border))' }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-3 flex flex-wrap gap-2">
+          <div className="flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search traces..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 text-[13px] rounded-xl focus:outline-none transition-all"
+              style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 text-[13px] rounded-xl appearance-none cursor-pointer transition-all"
+            style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))', minWidth: '110px' }}
+          >
+            <option value="all">All Status</option>
+            <option value="success">Success</option>
+            <option value="error">Error</option>
+          </select>
+          <select
+            value={filterDateRange}
+            onChange={(e) => setFilterDateRange(e.target.value as any)}
+            className="px-3 py-2 text-[13px] rounded-xl appearance-none cursor-pointer transition-all"
+            style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))', minWidth: '120px' }}
+          >
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+
+        <div className="mb-3 px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(0,128,255,0.04)', border: '1px solid rgba(0,128,255,0.1)' }}>
+          <p className="text-[12px] text-muted-foreground">
+            <strong style={{ color: '#0080FF' }}>{selectedTraces.size}</strong> traces selected out of {filteredTraces.length} filtered ({traces.length} total)
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
-          >
-            <RefreshCw className={`w-5 h-5 text-textSecondary ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={selectAll}
-            className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
-          >
-            Select All ({filteredTraces.length})
-          </button>
-          <button
-            onClick={clearAll}
-            className="px-3 py-1.5 text-sm text-textSecondary hover:bg-surface-hover rounded-lg transition-colors"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div className="flex-1 min-w-[200px]">
-          <input
-            type="text"
-            placeholder="Search traces..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-        >
-          <option value="all">All Status</option>
-          <option value="success">Success</option>
-          <option value="error">Error</option>
-        </select>
-
-        <select
-          value={filterDateRange}
-          onChange={(e) => setFilterDateRange(e.target.value as any)}
-          className="px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-        >
-          <option value="24h">Last 24 hours</option>
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="all">All time</option>
-        </select>
-      </div>
-
-      <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-        <p className="text-sm text-textSecondary">
-          <strong className="text-primary">{selectedTraces.size}</strong> traces selected out of {filteredTraces.length} filtered ({traces.length} total)
-        </p>
-      </div>
-
-      <div className="max-h-96 overflow-y-auto space-y-2">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : filteredTraces.length === 0 ? (
-          <div className="text-center py-12 text-textSecondary">
-            {traces.length === 0 ? 'No traces found. Run some interactions first.' : 'No traces match your filters.'}
-          </div>
-        ) : (
-          filteredTraces.map(trace => (
-            <div
-              key={trace.trace_id}
-              onClick={() => toggleTrace(trace.trace_id)}
-              className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedTraces.has(trace.trace_id)
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50 hover:bg-surface-hover'
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedTraces.has(trace.trace_id)}
-                    onChange={() => { }}
-                    className="rounded text-primary"
-                  />
-                  <div>
-                    <div className="font-medium text-textPrimary">
-                      {trace.display_name || trace.operation_name || trace.trace_id.substring(0, 16)}...
-                    </div>
-                    <div className="text-xs text-textTertiary">
-                      {new Date(trace.timestamp_us / 1000).toLocaleString()} • {trace.duration_ms ?? Math.round(trace.duration_us / 1000)}ms
-                      {trace.model && ` • ${trace.model}`}
-                    </div>
-                    {trace.input_preview && (
-                      <div className="text-xs text-textSecondary mt-1 truncate max-w-md">
-                        {trace.input_preview.substring(0, 80)}...
+        <div className="max-h-96 overflow-y-auto space-y-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#0080FF' }} />
+            </div>
+          ) : filteredTraces.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.06)' }}>
+                <Database className="w-5 h-5" style={{ color: '#0080FF' }} />
+              </div>
+              <p className="text-[13px] font-semibold mb-1" style={{ color: 'hsl(var(--foreground))' }}>
+                {traces.length === 0 ? 'No traces found' : 'No traces match your filters'}
+              </p>
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                {traces.length === 0 ? 'Run some interactions in your agent first to generate traces' : 'Try adjusting your search or filter criteria'}
+              </p>
+            </div>
+          ) : (
+            filteredTraces.map(trace => (
+              <div
+                key={trace.trace_id}
+                onClick={() => toggleTrace(trace.trace_id)}
+                className="p-3 rounded-xl cursor-pointer transition-all"
+                style={{
+                  border: selectedTraces.has(trace.trace_id) ? '1px solid rgba(0,128,255,0.3)' : '1px solid hsl(var(--border))',
+                  backgroundColor: selectedTraces.has(trace.trace_id) ? 'rgba(0,128,255,0.04)' : '#fafbfc'
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedTraces.has(trace.trace_id)}
+                      onChange={() => { }}
+                      className="rounded"
+                      style={{ accentColor: '#0080FF' }}
+                    />
+                    <div>
+                      <div className="text-[13px] font-semibold text-foreground">
+                        {trace.display_name || trace.operation_name || trace.trace_id.substring(0, 16)}...
                       </div>
-                    )}
+                      <div className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {new Date(trace.timestamp_us / 1000).toLocaleString()} • {trace.duration_ms ?? Math.round(trace.duration_us / 1000)}ms
+                        {trace.model && ` • ${trace.model}`}
+                      </div>
+                      {trace.input_preview && (
+                        <div className="text-[11px] mt-0.5 truncate max-w-md text-muted-foreground">
+                          {trace.input_preview.substring(0, 80)}...
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {trace.tokens && (
-                    <span className="text-xs text-textTertiary">{trace.tokens} tokens</span>
-                  )}
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${trace.status === 'OK' || trace.status === 'success'
-                      ? 'bg-success/20 text-success'
-                      : trace.status === 'error'
-                        ? 'bg-error/20 text-error'
-                        : 'bg-warning/20 text-warning'
-                    }`}>
-                    {trace.status || 'unknown'}
+                  <div className="flex items-center gap-2">
+                    {trace.tokens && (
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{trace.tokens} tokens</span>
+                    )}
+                    <div
+                      className="px-2 py-0.5 rounded-md text-[11px] font-semibold"
+                      style={{
+                        backgroundColor: trace.status === 'OK' || trace.status === 'success' ? 'rgba(16,185,129,0.1)' : trace.status === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                        color: trace.status === 'OK' || trace.status === 'success' ? '#10b981' : trace.status === 'error' ? '#ef4444' : '#f59e0b'
+                      }}
+                    >
+                      {trace.status || 'unknown'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
+
+      {/* Pipeline Guide — shown when no traces are selected (like Evaluations page) */}
+      {traces.length === 0 && (
+        <div className="rounded-2xl bg-card border border-border">
+          <div className="px-6 pt-6 pb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(0,128,255,0.08)' }}>
+                <Zap className="w-5 h-5" style={{ color: '#0080FF' }} />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground">How the Evaluation Pipeline Works</h3>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>5 steps from production traces to actionable insights</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+              <div className="rounded-xl p-3.5" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>1</span>
+                  <span className="text-[12px] font-semibold text-foreground">Collect</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Select production traces that represent real user interactions with your agent.</p>
+              </div>
+              <div className="rounded-xl p-3.5" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>2</span>
+                  <span className="text-[12px] font-semibold text-foreground">Process</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Auto-categorize by intent, complexity, and outcome. Stratified sampling ensures coverage.</p>
+              </div>
+              <div className="rounded-xl p-3.5" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>3</span>
+                  <span className="text-[12px] font-semibold text-foreground">Annotate</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Add ground truth labels — expected outputs, tool calls, and evaluation criteria for each case.</p>
+              </div>
+              <div className="rounded-xl p-3.5" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>4</span>
+                  <span className="text-[12px] font-semibold text-foreground">Evaluate</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Run LLM-as-Judge scoring across 25+ metrics: correctness, safety, groundedness, and more.</p>
+              </div>
+              <div className="rounded-xl p-3.5" style={{ backgroundColor: 'hsl(var(--secondary))', border: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: '#0080FF', color: '#ffffff' }}>5</span>
+                  <span className="text-[12px] font-semibold text-foreground">Iterate</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">Review pass/fail dashboards, export reports, and track quality improvements over time.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-3.5 flex items-center justify-between" style={{ backgroundColor: 'hsl(var(--secondary))', borderTop: '1px solid hsl(var(--border))', borderRadius: '0 0 16px 16px' }}>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Start by running some agent interactions to generate traces</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] px-2 py-1 rounded-md font-medium" style={{ backgroundColor: 'rgba(0,128,255,0.06)', color: '#0080FF' }}>Pro tip: Sample across intents, complexities, and edge cases for comprehensive coverage</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1729,8 +1826,8 @@ function Phase2Process({
                 <div className="h-2 bg-background rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${outcome === 'success' ? 'bg-success' :
-                        outcome === 'error' ? 'bg-error' :
-                          outcome === 'escalated' ? 'bg-warning' : 'bg-textTertiary'
+                      outcome === 'error' ? 'bg-error' :
+                        outcome === 'escalated' ? 'bg-warning' : 'bg-textTertiary'
                       }`}
                     style={{ width: `${(count / sampledTraces.length) * 100}%` }}
                   />
@@ -1815,8 +1912,8 @@ function Phase3Annotate({
               onAutoAnnotate();
             }}
             className={`p-4 border-2 rounded-xl transition-colors text-left ${annotationMethod === 'auto'
-                ? 'border-primary bg-primary/5'
-                : 'border-dashed border-primary/50 hover:bg-primary/5'
+              ? 'border-primary bg-primary/5'
+              : 'border-dashed border-primary/50 hover:bg-primary/5'
               }`}
           >
             <Zap className="w-6 h-6 text-primary mb-2" />
@@ -1833,8 +1930,8 @@ function Phase3Annotate({
             }}
             disabled={llmAnnotating}
             className={`p-4 border-2 rounded-xl transition-colors text-left ${annotationMethod === 'llm'
-                ? 'border-success bg-success/5'
-                : 'border-dashed border-border hover:bg-surface-hover'
+              ? 'border-success bg-success/5'
+              : 'border-dashed border-border hover:bg-surface-hover'
               }`}
           >
             {llmAnnotating ? (
@@ -1851,8 +1948,8 @@ function Phase3Annotate({
           <button
             onClick={() => setAnnotationMethod('manual')}
             className={`p-4 border-2 rounded-xl transition-colors text-left ${annotationMethod === 'manual'
-                ? 'border-warning bg-warning/5'
-                : 'border-dashed border-border hover:bg-surface-hover'
+              ? 'border-warning bg-warning/5'
+              : 'border-dashed border-border hover:bg-surface-hover'
               }`}
           >
             <MessageSquare className="w-6 h-6 text-warning mb-2" />
@@ -1928,8 +2025,8 @@ function Phase3Annotate({
                     <div className="text-xs text-textTertiary flex items-center gap-2">
                       <span className="px-1.5 py-0.5 bg-surface rounded capitalize">{trace.categories.intent}</span>
                       <span className={`px-1.5 py-0.5 rounded ${trace.categories.complexity === 'simple' ? 'bg-success/20 text-success' :
-                          trace.categories.complexity === 'medium' ? 'bg-warning/20 text-warning' :
-                            'bg-error/20 text-error'
+                        trace.categories.complexity === 'medium' ? 'bg-warning/20 text-warning' :
+                          'bg-error/20 text-error'
                         }`}>{trace.categories.complexity}</span>
                       {trace.categories.risk_level === 'high' && (
                         <span className="px-1.5 py-0.5 bg-error/20 text-error rounded">High Risk</span>
@@ -1940,8 +2037,8 @@ function Phase3Annotate({
                 <button
                   onClick={() => onEditTrace(trace)}
                   className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${isAnnotated
-                      ? 'text-success hover:bg-success/10'
-                      : 'text-primary hover:bg-primary/10'
+                    ? 'text-success hover:bg-success/10'
+                    : 'text-primary hover:bg-primary/10'
                     }`}
                 >
                   {isAnnotated ? (
@@ -2090,8 +2187,8 @@ function Phase4Evaluate({
         <div className="flex gap-2 flex-wrap">
           {Object.entries(byComplexity).map(([level, count]) => (
             <span key={level} className={`px-2 py-1 rounded-full text-xs ${level === 'simple' ? 'bg-success/20 text-success' :
-                level === 'medium' ? 'bg-warning/20 text-warning' :
-                  'bg-error/20 text-error'
+              level === 'medium' ? 'bg-warning/20 text-warning' :
+                'bg-error/20 text-error'
               }`}>
               {level}: {count}
             </span>
@@ -2123,8 +2220,8 @@ function Phase4Evaluate({
               key={key}
               onClick={() => applyPreset(key)}
               className={`p-3 rounded-lg border-2 text-left transition-all ${evalConfig.preset === key
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/50'
                 }`}
             >
               <div className="font-medium text-textPrimary text-sm">{preset.name}</div>
@@ -2189,8 +2286,8 @@ function Phase4Evaluate({
           <button
             onClick={() => setActiveCategory('all')}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${activeCategory === 'all'
-                ? 'bg-primary text-white'
-                : 'bg-background text-textSecondary hover:bg-surface-hover'
+              ? 'bg-primary text-white'
+              : 'bg-background text-textSecondary hover:bg-surface-hover'
               }`}
           >
             All ({METRICS_CATALOG.length})
@@ -2203,8 +2300,8 @@ function Phase4Evaluate({
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-colors ${activeCategory === cat
-                    ? 'bg-primary text-white'
-                    : 'bg-background text-textSecondary hover:bg-surface-hover'
+                  ? 'bg-primary text-white'
+                  : 'bg-background text-textSecondary hover:bg-surface-hover'
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -2226,8 +2323,8 @@ function Phase4Evaluate({
               <div
                 key={metric.id}
                 className={`p-3 rounded-lg border-2 transition-all ${isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/30'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/30'
                   }`}
               >
                 <div className="flex items-start gap-3">
@@ -2660,8 +2757,8 @@ function Phase5Iterate({
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize whitespace-nowrap ${activeTab === tab
-                ? 'bg-primary text-white'
-                : 'text-textSecondary hover:text-textPrimary hover:bg-surface-hover'
+              ? 'bg-primary text-white'
+              : 'text-textSecondary hover:text-textPrimary hover:bg-surface-hover'
               }`}
           >
             {tab}
@@ -2850,8 +2947,8 @@ function Phase5Iterate({
             <div className="space-y-3">
               {alerts.map((alert, i) => (
                 <div key={i} className={`p-4 rounded-lg border-l-4 ${alert.severity === 'critical'
-                    ? 'bg-error/5 border-l-error'
-                    : 'bg-warning/5 border-l-warning'
+                  ? 'bg-error/5 border-l-error'
+                  : 'bg-warning/5 border-l-warning'
                   }`}>
                   <div className="flex items-center gap-2 mb-1">
                     {alert.severity === 'critical' ? (
@@ -2923,8 +3020,8 @@ function Phase5Iterate({
                 <div key={i} className="p-4 bg-background rounded-lg border-l-4 border-l-primary">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${rec.priority === 'high' ? 'bg-error/20 text-error' :
-                        rec.priority === 'medium' ? 'bg-warning/20 text-warning' :
-                          'bg-success/20 text-success'
+                      rec.priority === 'medium' ? 'bg-warning/20 text-warning' :
+                        'bg-success/20 text-success'
                       }`}>
                       {rec.priority.toUpperCase()}
                     </span>
