@@ -85,14 +85,14 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
     }
 
     // Extract output/completion
-    const completion = traceMetadata?.['gen_ai.completion.0.content'] || 
-                       traceMetadata?.output || 
-                       '';
+    const completion = traceMetadata?.['gen_ai.completion.0.content'] ||
+      traceMetadata?.output ||
+      '';
 
     // Build input JSON
     const userPrompts = prompts.filter(p => p.role === 'user');
     const systemPrompts = prompts.filter(p => p.role === 'system');
-    
+
     const input = JSON.stringify({
       query: userPrompts.length > 0 ? userPrompts[userPrompts.length - 1].content : '',
       system_prompt: systemPrompts.length > 0 ? systemPrompts[0].content : undefined,
@@ -132,7 +132,7 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
       const response = await agentreplayClient.getDataset(datasetId);
       const dataset = response as any;
       const testCases = dataset.test_cases || dataset.examples || [];
-      return testCases.some((tc: any) => 
+      return testCases.some((tc: any) =>
         tc.metadata?.source_trace_id === traceId
       );
     } catch {
@@ -153,7 +153,7 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
       }
 
       const testCase = extractTestCaseFromTrace();
-      
+
       await agentreplayClient.addExamples(datasetId, [{
         example_id: `ex_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         input: testCase.input,
@@ -177,7 +177,7 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
 
   const handleCreateAndAdd = async () => {
     if (!newDatasetName.trim()) return;
-    
+
     setAdding(true);
     setError(null);
     try {
@@ -186,9 +186,9 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
         newDatasetName.trim(),
         `Created from trace ${traceId}`
       );
-      
+
       const datasetId = response.dataset_id;
-      
+
       // Add the trace as a test case
       const testCase = extractTestCaseFromTrace();
       await agentreplayClient.addExamples(datasetId, [{
@@ -201,6 +201,10 @@ export function AddToDatasetButton({ traceId, traceMetadata, className = '' }: A
       setSuccess(`Created "${newDatasetName}" and added trace`);
       setNewDatasetName('');
       setShowNewDataset(false);
+
+      // Refresh list to show new dataset
+      fetchDatasets();
+
       setTimeout(() => {
         setSuccess(null);
         setIsOpen(false);

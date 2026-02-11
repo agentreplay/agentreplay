@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { useState } from 'react';
-import { Play, X, Youtube } from 'lucide-react';
-import { getVideoForPage, getYouTubeVideoId, VideoConfig } from '../config/videos';
+import React from 'react';
+import { Youtube } from 'lucide-react';
+
+const YOUTUBE_CHANNEL_URL = 'https://www.youtube.com/channel/UCooI5ooJQzRtrlZk0nRt-ow';
 
 interface VideoHelpButtonProps {
   pageId: string;
@@ -23,21 +24,9 @@ interface VideoHelpButtonProps {
 }
 
 // ============================================================================
-// Video Help Button - Shows play icon that opens YouTube video in modal
+// Video Help Button - Opens YouTube channel in a new tab
 // ============================================================================
 export function VideoHelpButton({ pageId, className = '', size = 'md' }: VideoHelpButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const video = getVideoForPage(pageId);
-
-  if (!video || !video.youtubeUrl) {
-    return null;
-  }
-
-  const videoId = getYouTubeVideoId(video.youtubeUrl);
-  if (!videoId) {
-    return null;
-  }
-
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-8 h-8',
@@ -51,112 +40,25 @@ export function VideoHelpButton({ pageId, className = '', size = 'md' }: VideoHe
   };
 
   return (
-    <>
-      {/* Help Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`
-          ${sizeClasses[size]} 
-          rounded-lg 
-          flex items-center justify-center 
-          transition-all duration-200
-          group
-          ${className}
-        `}
-        style={{ border: '1px solid rgba(239,68,68,0.25)', backgroundColor: 'rgba(239,68,68,0.06)' }}
-        title={`Watch: ${video.title}`}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.12)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.06)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}
-      >
-        <Youtube className={`${iconSizes[size]} group-hover:scale-110 transition-transform`} style={{ color: '#ef4444' }} />
-      </button>
-
-      {/* Video Modal */}
-      {isOpen && (
-        <VideoModal
-          video={video}
-          videoId={videoId}
-          onClose={() => setIsOpen(false)}
-        />
-      )}
-    </>
-  );
-}
-
-// ============================================================================
-// Video Modal - Fullscreen overlay with YouTube embed
-// ============================================================================
-interface VideoModalProps {
-  video: VideoConfig;
-  videoId: string;
-  onClose: () => void;
-}
-
-function VideoModal({ video, videoId, onClose }: VideoModalProps) {
-  // Close on escape key
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-      onClick={onClose}
+    <a
+      href={YOUTUBE_CHANNEL_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`
+        ${sizeClasses[size]} 
+        rounded-lg 
+        flex items-center justify-center 
+        transition-all duration-200
+        group
+        ${className}
+      `}
+      style={{ border: '1px solid rgba(239,68,68,0.25)', backgroundColor: 'rgba(239,68,68,0.06)' }}
+      title="Watch on YouTube"
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.12)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.06)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}
     >
-      <div
-        className="relative w-full max-w-4xl bg-surface border border-border rounded-xl overflow-hidden shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-background">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-              <Play className="w-5 h-5 text-red-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-textPrimary">{video.title}</h3>
-              <p className="text-sm text-textSecondary">{video.description}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-surface hover:bg-red-500/10 flex items-center justify-center transition-colors"
-          >
-            <X className="w-4 h-4 text-textSecondary hover:text-red-500" />
-          </button>
-        </div>
-
-        {/* YouTube Embed */}
-        <div className="relative pt-[56.25%] bg-black">
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
-            title={video.title}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="p-3 border-t border-border bg-background flex items-center justify-between">
-          <a
-            href={video.youtubeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-textSecondary hover:text-red-500 flex items-center gap-1"
-          >
-            <Youtube className="w-3 h-3" />
-            Open in YouTube
-          </a>
-          <span className="text-xs text-textTertiary">Press ESC to close</span>
-        </div>
-      </div>
-    </div>
+      <Youtube className={`${iconSizes[size]} group-hover:scale-110 transition-transform`} style={{ color: '#ef4444' }} />
+    </a>
   );
 }
 

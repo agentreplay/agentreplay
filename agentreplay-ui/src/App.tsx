@@ -47,6 +47,7 @@ import ToolsPage from './pages/ToolsPage';
 import EvalPipelinePage from './pages/EvalPipelinePage';
 import CostManagementPage from './pages/CostManagementPage';
 import CodingSessions from './pages/CodingSessions';
+import McpTesterPage from './pages/McpTesterPage';
 
 import ServerStatus from '../components/ServerStatus';
 
@@ -150,6 +151,7 @@ function AppContent() {
         <Route path="/projects/:projectId/storage" element={<Storage />} />
         <Route path="/projects/:projectId/settings" element={<Settings />} />
         <Route path="/projects/:projectId/costs" element={<CostManagementPage />} />
+        <Route path="/projects/:projectId/mcp-tester" element={<McpTesterPage />} />
         <Route path="/projects/:projectId/docs" element={<Docs />} />
         <Route path="/projects/:projectId" element={<Navigate to="traces" replace />} />
       </Route>

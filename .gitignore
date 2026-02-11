@@ -203,3 +203,4 @@ test_concurrency.py
 test_memory_prompts_360.py
 USAGE.md
 test_persistence.py
+.gemini/

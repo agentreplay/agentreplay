@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { BookOpen, Code, Database, Settings, Zap, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Code, Database, Settings, Zap, ExternalLink, Copy, CheckCircle2, HelpCircle, Eye, Activity, BarChart3 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useProjects } from '../context/project-context';
 import { useLocation } from 'react-router-dom';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 
-type Section = 'quick-start' | 'sdk' | 'api' | 'configuration';
+type Section = 'quick-start' | 'sdk' | 'api' | 'configuration' | 'ui-guide';
 
 export default function Docs() {
   const { currentProject } = useProjects();
@@ -30,7 +30,7 @@ export default function Docs() {
   // Handle hash navigation (e.g., #sdk, #api)
   useEffect(() => {
     const hash = location.hash.replace('#', '') as Section;
-    if (hash && ['quick-start', 'sdk', 'api', 'configuration'].includes(hash)) {
+    if (hash && ['quick-start', 'sdk', 'api', 'configuration', 'ui-guide'].includes(hash)) {
       handleScrollToSection(hash);
     }
   }, [location.hash]);
@@ -421,22 +421,235 @@ python your_app.py`}</code>
           </>
         ),
       },
+      {
+        id: 'ui-guide',
+        icon: <HelpCircle className="w-6 h-6 text-primary" />,
+        title: "UI Guide — Interactive Training",
+        content: (
+          <>
+            {/* Course Introduction */}
+            <div className="bg-gradient-to-r from-primary/10 to-blue-500/10 border border-primary/20 rounded-lg p-6 mb-8">
+              <h3 className="text-xl font-bold text-textPrimary mb-3">Master Agent Replay: Zero to Hero 🚀</h3>
+              <p className="text-textSecondary mb-6">
+                Whether you're just starting or managing production agents, we've structured this guide to match your journey.
+              </p>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="bg-surface-elevated/50 p-4 rounded-lg border border-border/50">
+                  <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-2">Level 1: Beginner</div>
+                  <div className="font-semibold text-textPrimary mb-1">The Observer 👁️</div>
+                  <p className="text-xs text-textSecondary">Learn to see what your AI is doing. Master the basics of <strong>Traces</strong> and <strong>Conversations</strong>.</p>
+                </div>
+                <div className="bg-surface-elevated/50 p-4 rounded-lg border border-border/50">
+                  <div className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-2">Level 2: Intermediate</div>
+                  <div className="font-semibold text-textPrimary mb-1">The Builder 🛠️</div>
+                  <p className="text-xs text-textSecondary">Learn to fix issues. Master <strong>Debugging</strong>, <strong>Prompts</strong>, and <strong>Graph View</strong>.</p>
+                </div>
+                <div className="bg-surface-elevated/50 p-4 rounded-lg border border-border/50">
+                  <div className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">Level 3: Advanced</div>
+                  <div className="font-semibold text-textPrimary mb-1">The Architect 🏛️</div>
+                  <p className="text-xs text-textSecondary">Learn to optimize systems. Master <strong>Evaluations</strong>, <strong>Costs</strong>, and <strong>Analytics</strong>.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* LEVEL 1: THE OBSERVER */}
+            <div className="mb-12 border-l-4 border-green-500 pl-6 py-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Level 1</div>
+                <h3 className="text-2xl font-bold text-textPrimary">The Observer: Seeing the Matrix</h3>
+              </div>
+
+              <p className="text-textSecondary mb-6">
+                <strong>The Problem:</strong> AI is a black box. You send a prompt, you get a response. But what happened in between?
+                <br /><strong>The Solution:</strong> Traces. A trace is simply a recording of everything that happened.
+              </p>
+
+              {/* Dashboard */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">1. The Dashboard (Your Command Center)</h4>
+                <img src="/screenshots/traces_dashboard.png" alt="Traces Dashboard" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <p className="text-sm text-textSecondary mb-2"><strong>How to read it:</strong></p>
+                  <ul className="text-sm text-textSecondary space-y-1 ml-4 list-disc">
+                    <li><strong>Duration:</strong> How long did it take? (If it's red/high, users are waiting).</li>
+                    <li><strong>Cost:</strong> How much $$$ was burned?</li>
+                    <li><strong>Status:</strong> Did it crash? (Look for red X's).</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Conversation View */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">2. Conversation View (The Chat Log)</h4>
+                <img src="/screenshots/level1_conversation_view_1770661724251.png" alt="Conversation View" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <p className="text-sm text-textSecondary mb-2">
+                  This is exactly what you expect: The chat history.
+                </p>
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <p className="text-sm text-textPrimary">
+                    <strong>💡 Beginner Tip:</strong> Always look at the <strong>System Prompt</strong> (the first message). This is the "hidden instruction" telling the AI how to behave. If the AI is acting weird, the issue is usually here.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* LEVEL 2: THE BUILDER */}
+            <div className="mb-12 border-l-4 border-blue-500 pl-6 py-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Level 2</div>
+                <h3 className="text-2xl font-bold text-textPrimary">The Builder: Fixing & Iterating</h3>
+              </div>
+
+              <p className="text-textSecondary mb-6">
+                <strong>The Problem:</strong> The AI is "working", but it's slow, or it's choosing the wrong tool.
+                <br /><strong>The Solution:</strong> Deep introspection tools (Graph & Flame Graph) and Prompt Management.
+              </p>
+
+              {/* Graph View */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">1. Graph View (The Logic Map)</h4>
+                <img src="/screenshots/level2_graph_view_1770661734961.png" alt="Graph View" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <p className="text-sm text-textSecondary mb-4">
+                  Agents aren't linear. They loop, they branch, they retry. The Graph View visualizes this logic.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-surface-elevated border border-border rounded-lg p-3">
+                    <div className="font-semibold text-textPrimary text-sm mb-1">Infinite Loops</div>
+                    <div className="text-xs text-textSecondary">See a cycle of identical nodes? Your agent is stuck.</div>
+                  </div>
+                  <div className="bg-surface-elevated border border-border rounded-lg p-3">
+                    <div className="font-semibold text-textPrimary text-sm mb-1">Tool Failures</div>
+                    <div className="text-xs text-textSecondary">Red nodes show exactly where an API call failed.</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Flame Graph */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">2. Flame Graph (The Speedometer)</h4>
+                <img src="/screenshots/level2_flame_graph_1770661745194.png" alt="Flame Graph" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <p className="text-sm text-textPrimary">
+                    <strong>⚡ Speed Tuning:</strong> Look for the <strong>widest bar</strong>. That is your bottleneck.
+                    <br /><span className="text-textSecondary text-xs">Common culprit: Waiting 3s for a Database tool when it should take 0.1s.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Prompts */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">3. Managing Prompts (The Instructions)</h4>
+                <img src="/screenshots/level2_prompts_page_1770661755307.png" alt="Prompts Page" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <p className="text-sm text-textSecondary mb-2">
+                  Don't hardcode prompts in your code. Use the Registry.
+                </p>
+                <ul className="list-disc ml-5 text-sm text-textSecondary space-y-1">
+                  <li><strong>Version Control:</strong> Rollback to v1 if v2 breaks.</li>
+                  <li><strong>Playground:</strong> Test changes immediately without redeploying code.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* LEVEL 3: THE ARCHITECT */}
+            <div className="mb-12 border-l-4 border-purple-500 pl-6 py-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Level 3</div>
+                <h3 className="text-2xl font-bold text-textPrimary">The Architect: Scaling & Optimizing</h3>
+              </div>
+
+              <p className="text-textSecondary mb-6">
+                <strong>The Problem:</strong> You have users. Costs are rising. Quality is inconsistent.
+                <br /><strong>The Solution:</strong> Data-driven engineering.
+              </p>
+
+              {/* Evaluations */}
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-textPrimary mb-3">1. Evaluations (Unit Tests)</h4>
+                <img src="/screenshots/level3_evaluations_page_1770661764516.png" alt="Evaluations Page" className="w-full rounded-lg border border-border mb-4 shadow-sm" />
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <h5 className="font-semibold text-textPrimary text-sm mb-2">The Golden Rule of AI Engineering:</h5>
+                  <p className="text-sm text-textSecondary italic mb-2">"You cannot improve what you do not measure."</p>
+                  <p className="text-sm text-textSecondary">
+                    Run <strong>Evaluations</strong> before every deployment. If your "Accuracy" score drops from 95% to 80%, <strong>do not deploy</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Costs & Analytics */}
+              <div className="grid md:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h4 className="text-lg font-semibold text-textPrimary mb-3">2. Cost Control</h4>
+                  <img src="/screenshots/level3_costs_page_1770661784485.png" alt="Costs Page" className="w-full rounded-lg border border-border mb-3 shadow-sm" />
+                  <p className="text-sm text-textSecondary">
+                    See exactly which team/project is spending money.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-textPrimary mb-3">3. Analytics</h4>
+                  <img src="/screenshots/level3_analytics_page_1770661775164.png" alt="Analytics Page" className="w-full rounded-lg border border-border mb-3 shadow-sm" />
+                  <p className="text-sm text-textSecondary">
+                    Monitor error rates and latency trends over time.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Final Certification */}
+            <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg p-8 text-center mb-8">
+              <div className="text-4xl mb-4">🙌</div>
+              <h3 className="text-2xl font-bold text-textPrimary mb-2">You Made It!</h3>
+              <p className="text-textSecondary mb-6 max-w-2xl mx-auto">
+                By mastering these 3 levels, you've moved from "guessing" to "engineering". You are now ready to build production-grade AI agents.
+              </p>
+              <button
+                onClick={() => onSectionClick('quick-start')}
+                className="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+              >
+                Start Building →
+              </button>
+            </div>
+
+            {/* Resources Footer */}
+            <div className="border-t border-border pt-8">
+              <h4 className="text-sm font-semibold text-textPrimary mb-4">📚 Additional Resources</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <a href="https://agentreplay.dev/docs" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-surface-hover transition-colors group">
+                  <BookOpen className="w-5 h-5 text-textSecondary group-hover:text-primary" />
+                  <div>
+                    <div className="text-sm font-medium text-textPrimary">Official Documentation</div>
+                    <div className="text-xs text-textSecondary">Deep detailed API references</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-textTertiary ml-auto" />
+                </a>
+                <a href="https://github.com/agentreplay/agentreplay" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-surface-hover transition-colors group">
+                  <Code className="w-5 h-5 text-textSecondary group-hover:text-primary" />
+                  <div>
+                    <div className="text-sm font-medium text-textPrimary">GitHub Repository</div>
+                    <div className="text-xs text-textSecondary">Star us and report issues!</div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-textTertiary ml-auto" />
+                </a>
+              </div>
+            </div>
+          </>
+        ),
+      },
     ];
 
   const resources = [
     {
       title: "API Reference",
-      href: "https://github.com/sushanthpy/agentreplay/blob/main/docs/API_REFERENCE.md",
+      href: "https://agentreplay.dev/docs/api-reference",
       external: true,
     },
     {
       title: "GitHub",
-      href: "https://github.com/sushanthpy/agentreplay",
+      href: "https://github.com/agentreplay/agentreplay",
       external: true,
     },
     {
       title: "Architecture",
-      href: "https://github.com/sushanthpy/agentreplay/blob/main/docs/ARCHITECTURE.md",
+      href: "https://agentreplay.dev/docs/architecture",
       external: true,
     },
   ];

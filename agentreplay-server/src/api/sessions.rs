@@ -227,32 +227,31 @@ pub async fn get_session(
 ) -> Result<Json<SessionDetailResponse>, ApiError> {
     debug!("Getting session details for session_id: {}", session_id);
 
-    // Query all traces with this session_id
-    // For now, query last 30 days
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_micros() as u64;
 
-    let start_ts = now - 30 * 86_400_000_000; // 30 days ago
-    let end_ts = now;
-
-    // Query traces
-    let edges = if let Some(ref pm) = state.project_manager {
-        pm.query_all_projects(auth.tenant_id, start_ts, end_ts)
-            .map_err(|e| ApiError::Internal(e.to_string()))?
-    } else {
+    // Use session index for O(log N + K_session) lookup instead of scanning 30 days
+    let mut session_traces: Vec<AgentFlowEdge> = if let Some(ref _pm) = state.project_manager {
+        // With project manager, use session index on the main DB
         state
             .db
-            .query_temporal_range_for_tenant(start_ts, end_ts, auth.tenant_id)
+            .get_session_edges_full(session_id)
             .map_err(|e| ApiError::Internal(e.to_string()))?
+            .into_iter()
+            .filter(|e| e.tenant_id == auth.tenant_id)
+            .collect()
+    } else {
+        // Direct session index lookup — O(log N + K) instead of O(N_30days)
+        state
+            .db
+            .get_session_edges_full(session_id)
+            .map_err(|e| ApiError::Internal(e.to_string()))?
+            .into_iter()
+            .filter(|e| e.tenant_id == auth.tenant_id)
+            .collect()
     };
-
-    // Filter to this session only
-    let mut session_traces: Vec<AgentFlowEdge> = edges
-        .into_iter()
-        .filter(|e| e.session_id == session_id)
-        .collect();
 
     if session_traces.is_empty() {
         return Err(ApiError::NotFound(format!(

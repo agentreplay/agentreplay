@@ -34,6 +34,7 @@ import {
   Keyboard,
   DollarSign,
   Bug,
+  Braces,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
@@ -52,6 +53,7 @@ const navItems = [
   { id: 'plugins', label: 'Plugins', icon: Puzzle, segment: 'plugins', tier: 'pro' as const },
   { id: 'analytics', label: 'Analytics', icon: BarChart2, segment: 'analytics', shortcut: '7', tier: 'basic' as const },
   { id: 'costs', label: 'Costs', icon: DollarSign, segment: 'costs', tier: 'pro' as const },
+  { id: 'mcp-tester', label: 'MCP Tester', icon: Braces, segment: 'mcp-tester', tier: 'basic' as const },
   { id: 'storage', label: 'Storage', icon: HardDrive, segment: 'storage', tier: 'pro' as const },
   { id: 'docs', label: 'Docs', icon: BookOpen, segment: 'docs', tier: 'basic' as const },
   { id: 'settings', label: 'Settings', icon: Settings, segment: 'settings', shortcut: ',', tier: 'basic' as const },
@@ -175,7 +177,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'group relative flex flex-col border-r border-border/60 bg-card pt-14 pb-2 transition-all duration-300 ease-in-out',
+        'group relative flex flex-col border-r border-border/60 bg-card pb-2 transition-all duration-300 ease-in-out',
         collapsed ? 'w-[56px]' : 'w-[208px]'
       )}
     >
@@ -183,7 +185,7 @@ export default function Sidebar() {
       <button
         type="button"
         className={cn(
-          "absolute -right-2.5 top-[22px] flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground shadow-sm transition-all hover:bg-secondary hover:text-foreground z-20",
+          "absolute -right-2.5 top-[66px] flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground shadow-sm transition-all hover:bg-secondary hover:text-foreground z-20",
           "opacity-0 group-hover:opacity-100 focus:opacity-100"
         )}
         onClick={toggleCollapsed}
@@ -193,29 +195,40 @@ export default function Sidebar() {
         <ChevronLeft className={cn('h-2.5 w-2.5 transition-transform duration-300', collapsed && 'rotate-180')} />
       </button>
 
-      {/* Drag region for macOS traffic lights area */}
+      {/* Top drag region — clears macOS traffic lights, doubles as drag handle */}
       <div
-        className="absolute top-0 left-0 right-0 h-14 z-10"
+        className={cn(
+          'h-[72px] flex-shrink-0 flex items-end pb-1',
+          collapsed ? 'justify-center' : ''
+        )}
         data-tauri-drag-region
         style={{ WebkitAppRegion: 'drag' } as any}
-      />
-
-      {/* Logo */}
-      <div className={cn(
-        'mb-4 flex items-center transition-all duration-200',
-        collapsed ? 'justify-center px-0' : 'px-4 gap-2'
-      )}>
-        <img
-          src="/logo.svg"
-          alt="Agentreplay"
-          className="w-8 h-8 rounded-lg shadow-md flex-shrink-0"
-        />
-        {!collapsed && (
-          <span className="inline-flex h-[18px] items-center rounded-full bg-orange-500/90 px-1.5 text-[9px] font-bold uppercase tracking-wider text-white">
-            Alpha
-          </span>
-        )}
+      >
+        <div
+          className={cn(
+            'flex flex-col items-center',
+            collapsed ? 'justify-center' : 'ml-[78px]'
+          )}
+          style={{ WebkitAppRegion: 'no-drag' } as any}
+        >
+          <img
+            src="/logo.svg"
+            alt="Agentreplay"
+            className={cn(
+              'rounded-lg shadow-md flex-shrink-0',
+              collapsed ? 'w-8 h-8' : 'w-9 h-9'
+            )}
+          />
+          {!collapsed && (
+            <span className="inline-flex h-[14px] items-center rounded-full bg-orange-500/90 px-1.5 text-[8px] font-bold uppercase tracking-wider text-white -mt-1.5">
+              Alpha
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Spacer between logo and nav */}
+      <div className="h-3 flex-shrink-0" />
 
       {/* Navigation */}
       <nav className={cn('flex flex-1 flex-col gap-0.5', collapsed ? 'px-1.5' : 'px-2')}>

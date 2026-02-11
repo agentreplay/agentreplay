@@ -132,6 +132,15 @@ tempfile = "3.0"
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 
+# Dev profile: opt-level=1 gives basic optimizations (inlining, dead code removal)
+# without the full compile time of release. Reduces debug memory ~3-5x by enabling
+# the same layout optimizations that release uses for enums, Vec, HashMap internals.
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 2  # Optimize dependencies even in dev mode
+
 [profile.release]
 panic = "abort"
 codegen-units = 1
@@ -139,3 +148,5 @@ lto = true
 opt-level = "z"  # Optimize for size (more aggressive than "s")
 strip = true
 incremental = false
+
+# Local development overrides for SochDB (comment out for CI/publish)

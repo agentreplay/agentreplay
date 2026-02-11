@@ -149,6 +149,12 @@ pub struct TraceQueryParams {
     // SORTING
     pub sort_by: Option<String>, // "timestamp", "duration", "cost", "tokens"
     pub sort_order: Option<String>, // "asc", "desc"
+
+    /// Cursor for cursor-based pagination (Task 3).
+    /// Opaque string from a previous response's `next_cursor` field.
+    /// When provided, `offset` is ignored and pagination uses the cursor
+    /// for O(log N + page_size) per page instead of O(N).
+    pub cursor: Option<String>,
 }
 
 fn default_limit() -> usize {
@@ -426,6 +432,11 @@ pub struct TracesResponse {
     pub total: usize,
     pub limit: usize,
     pub offset: usize,
+    /// Cursor for next page (Task 3: cursor-based pagination).
+    /// None if no more pages. Pass this as `cursor` query parameter
+    /// for the next page request for O(log N + page_size) pagination.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
 }
 
 /// Database statistics
@@ -470,6 +481,9 @@ pub async fn list_traces(
         let end_ts = params.end_ts.unwrap_or(now);
 
         // Query traces - use ProjectManager if available and project_id specified
+        let mut cursor_from_storage: Option<String> = None;
+        let using_cursor = params.cursor.is_some() && state.project_manager.is_none();
+
         let mut edges = if let Some(ref pm) = state.project_manager {
             if let Some(project_id) = params.project_id {
                 // Query specific project
@@ -480,8 +494,29 @@ pub async fn list_traces(
                 pm.query_all_projects(auth.tenant_id, start_ts, end_ts)
                     .map_err(|e| ApiError::Internal(e.to_string()))?
             }
+        } else if using_cursor {
+            // Task 3: Cursor-based pagination — O(log N + page_size) per page.
+            // Only used for the single-DB path (non-ProjectManager).
+            // We over-fetch by 4x the limit to account for post-filters,
+            // then paginate in-memory. The storage-level cursor ensures we
+            // skip efficiently to the right position.
+            let descending = params.sort_order.as_deref().unwrap_or("desc") != "asc";
+            let fetch_limit = params.limit * 4; // Over-fetch for filtering headroom
+            let (fetched, next) = state
+                .db
+                .query_temporal_range_for_tenant_paginated(
+                    start_ts,
+                    end_ts,
+                    auth.tenant_id,
+                    fetch_limit,
+                    params.cursor.as_deref(),
+                    descending,
+                )
+                .map_err(|e| ApiError::Internal(e.to_string()))?;
+            cursor_from_storage = next;
+            fetched
         } else {
-            // Fallback to single database
+            // Fallback to single database (offset-based)
             let mut all_edges = state
                 .db
                 .query_temporal_range_for_tenant(start_ts, end_ts, auth.tenant_id)
@@ -626,38 +661,57 @@ pub async fn list_traces(
                 }
             }
 
-            // Provider and Model filters (require payload fetch)
+            // Provider and Model filters
+            // Task 4: Try denormalized attrs first (O(1) per edge) before payload I/O
             if params.providers.is_some() || params.models.is_some() {
-                if e.has_payload == 0 {
-                    return false; // Can't filter without payload
-                }
+                // Try lightweight attrs index first
+                let attrs_result = state.db.get_edge_attrs(e.edge_id);
+                let (attr_provider, attr_model, _) = attrs_result.unwrap_or_default();
 
-                let payload_opt = fetch_payload(e);
-                if let Some(payload) = payload_opt {
-                    // Provider filter
+                let has_attrs = !attr_provider.is_empty() || !attr_model.is_empty();
+
+                if has_attrs {
+                    // Use denormalized attrs — no payload I/O needed
                     if let Some(ref providers) = params.providers {
-                        let provider = payload.system.as_deref().unwrap_or("openai");
-                        if !providers.iter().any(|p| provider.contains(p)) {
+                        if !providers.iter().any(|p| attr_provider.contains(p)) {
                             return false;
                         }
                     }
-
-                    // Model filter
                     if let Some(ref models) = params.models {
-                        let model = payload
-                            .request_model
-                            .as_ref()
-                            .or(payload.response_model.as_ref());
-                        if let Some(m) = model {
-                            if !models.iter().any(|model_filter| m.contains(model_filter)) {
-                                return false;
-                            }
-                        } else {
-                            return false; // No model to compare
+                        if !models.iter().any(|model_filter| attr_model.contains(model_filter)) {
+                            return false;
                         }
                     }
                 } else {
-                    return false; // Failed to load payload
+                    // Fallback: fetch full payload (legacy edges without attrs)
+                    if e.has_payload == 0 {
+                        return false;
+                    }
+
+                    let payload_opt = fetch_payload(e);
+                    if let Some(payload) = payload_opt {
+                        if let Some(ref providers) = params.providers {
+                            let provider = payload.system.as_deref().unwrap_or("openai");
+                            if !providers.iter().any(|p| provider.contains(p)) {
+                                return false;
+                            }
+                        }
+                        if let Some(ref models) = params.models {
+                            let model = payload
+                                .request_model
+                                .as_ref()
+                                .or(payload.response_model.as_ref());
+                            if let Some(m) = model {
+                                if !models.iter().any(|model_filter| m.contains(model_filter)) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
+                        }
+                    } else {
+                        return false;
+                    }
                 }
             }
 
@@ -742,22 +796,33 @@ pub async fn list_traces(
             }
 
             // Route filter
+            // Task 4: Try denormalized attrs first before payload I/O
             if let Some(ref routes) = params.routes {
-                if e.has_payload == 0 {
-                    return false; // Can't filter without payload
-                }
+                let attrs_result = state.db.get_edge_attrs(e.edge_id);
+                let (_, _, attr_operation) = attrs_result.unwrap_or_default();
 
-                let payload_opt = fetch_payload(e);
-                if let Some(payload) = payload_opt {
-                    if let Some(ref operation_name) = payload.operation_name {
-                        if !routes.iter().any(|r| operation_name.contains(r)) {
+                if !attr_operation.is_empty() {
+                    // Use denormalized operation_name — no payload I/O
+                    if !routes.iter().any(|r| attr_operation.contains(r)) {
+                        return false;
+                    }
+                } else {
+                    // Fallback: fetch full payload
+                    if e.has_payload == 0 {
+                        return false;
+                    }
+                    let payload_opt = fetch_payload(e);
+                    if let Some(payload) = payload_opt {
+                        if let Some(ref operation_name) = payload.operation_name {
+                            if !routes.iter().any(|r| operation_name.contains(r)) {
+                                return false;
+                            }
+                        } else {
                             return false;
                         }
                     } else {
-                        return false; // No route name
+                        return false;
                     }
-                } else {
-                    return false; // Failed to load payload
                 }
             }
 
@@ -802,11 +867,16 @@ pub async fn list_traces(
         // Apply pagination and enrich with agent names AND payloads
         let registry = &state.agent_registry;
 
+        // When using cursor-based pagination, skip()/take() starts from 0
+        // because the cursor already positions us at the right offset.
+        // For offset-based, use the offset parameter.
+        let skip_count = if using_cursor { 0 } else { params.offset };
+
         // Helper to fetch payload for pagination (reuse the earlier helper)
         // Apply pagination and enrich with agent names AND payloads
         let paginated: Vec<TraceView> = edges
             .into_iter()
-            .skip(params.offset)
+            .skip(skip_count)
             .take(params.limit)
             .map(|edge| {
                 let mut view = TraceView::from(edge);
@@ -912,11 +982,41 @@ pub async fn list_traces(
             })
             .collect();
 
+        // Compute next_cursor for cursor-based pagination (Task 3).
+        // When using cursor mode: if we got a full page AND storage says more exist,
+        // encode the last edge's timestamp/id as the cursor for the next page.
+        let next_cursor = if using_cursor {
+            if paginated.len() >= params.limit {
+                // If storage reported a cursor, use it. Otherwise derive from last edge.
+                cursor_from_storage.or_else(|| {
+                    paginated.last().map(|last| {
+                        // Parse edge_id back from hex span_id (removing 0x prefix)
+                        let eid_hex = last.span_id.trim_start_matches("0x");
+                        format!("{:020}/{}", last.timestamp_us, eid_hex)
+                    })
+                })
+            } else {
+                None // Last page
+            }
+        } else {
+            // Offset-based mode: provide a cursor hint for clients that want to switch
+            // to cursor-based pagination. Only if there are more items.
+            if params.offset + paginated.len() < total {
+                paginated.last().map(|last| {
+                    let eid_hex = last.span_id.trim_start_matches("0x");
+                    format!("{:020}/{}", last.timestamp_us, eid_hex)
+                })
+            } else {
+                None
+            }
+        };
+
         Ok::<_, ApiError>(TracesResponse {
             traces: paginated,
             total,
             limit: params.limit,
             offset: params.offset,
+            next_cursor,
         })
     };
 
@@ -1673,6 +1773,30 @@ pub async fn get_stats(
         immutable_memtables: stats.storage.immutable_memtables,
         wal_sequence: stats.storage.wal_sequence,
     }))
+}
+
+/// GET /api/v1/dashboard/summary
+///
+/// Pre-computed dashboard summary — O(1) instead of full-scan aggregation.
+/// Returns total traces, tokens, unique models, unique sessions, and time range.
+/// Updated incrementally on every edge insertion (Task 9).
+pub async fn get_dashboard_summary(
+    State(state): State<AppState>,
+    _auth: axum::Extension<AuthContext>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let summary = state.db.get_dashboard_summary();
+
+    Ok(Json(serde_json::json!({
+        "total_traces": summary.total_traces,
+        "total_sessions": summary.total_sessions,
+        "total_tokens": summary.total_tokens,
+        "total_cost_micros": summary.total_cost_micros,
+        "total_duration_us": summary.total_duration_us,
+        "error_count": summary.error_count,
+        "last_edge_ts": summary.last_edge_ts,
+        "top_models": summary.top_models,
+        "top_providers": summary.top_providers,
+    })))
 }
 
 /// Batch fetch span details by IDs

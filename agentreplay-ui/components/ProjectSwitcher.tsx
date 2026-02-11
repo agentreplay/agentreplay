@@ -99,7 +99,7 @@ export function ProjectSwitcher() {
           </div>
           <ChevronsUpDown className="ml-2 h-3.5 w-3.5 text-textTertiary" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-72">
+        <DropdownMenuContent className="w-72" align="start" sideOffset={4}>
           <DropdownMenuLabel className="flex items-center justify-between text-xs uppercase tracking-widest text-textTertiary">
             <span>Select project</span>
             <button

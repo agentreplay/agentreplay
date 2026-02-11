@@ -283,11 +283,64 @@ async fn ingest_document(
 ) -> impl IntoResponse {
     info!("Ingest document request: {} bytes", request.content.len());
 
-    // 1. Generate embedding
+    // 1. Get MCP Database via Context
+    let (project_manager, project_registry) = match (
+        state.project_manager.as_ref(),
+        state.project_registry.as_ref(),
+    ) {
+        (Some(pm), Some(pr)) => (pm.clone(), pr.clone()),
+        _ => {
+            error!("Project manager not available");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(IngestResponse {
+                    success: false,
+                    document_id: "".to_string(),
+                    chunks_created: 0,
+                    vectors_stored: 0,
+                }),
+            );
+        }
+    };
+
+    let ctx = match MCPContext::new(project_manager, project_registry) {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("Failed to create MCP context: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(IngestResponse {
+                    success: false,
+                    document_id: "".to_string(),
+                    chunks_created: 0,
+                    vectors_stored: 0,
+                }),
+            );
+        }
+    };
+
+    let db = match ctx.db() {
+        Some(db) => db,
+        None => {
+            error!("Failed to open MCP database");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(IngestResponse {
+                    success: false,
+                    document_id: "".to_string(),
+                    chunks_created: 0,
+                    vectors_stored: 0,
+                }),
+            );
+        }
+    };
+
+    // 2. Generate embedding
     // In production, this should be done in a background task or batched
     let provider = match LocalEmbeddingProvider::default_provider() {
         Ok(p) => p,
         Err(e) => {
+            error!("Failed to initialize embedding provider: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(IngestResponse {
@@ -349,13 +402,13 @@ async fn ingest_document(
     };
 
     // 4. Insert into DB with vector
-    if let Err(e) = state.db.insert_with_vector(edge.clone(), embedding).await {
+    if let Err(e) = db.insert_with_vector(edge.clone(), embedding).await {
         error!("DB insert failed: {}", e);
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(IngestResponse { success: false, document_id: "".to_string(), chunks_created: 0, vectors_stored: 0 }));
     }
     
     // 5. Store full payload
-    if let Err(e) = state.db.put_payload(edge.edge_id, &payload_bytes) {
+    if let Err(e) = db.put_payload(edge.edge_id, &payload_bytes) {
          error!("Payload storage failed: {}", e);
          // Try to cleanup? For now just log
     }
@@ -379,7 +432,26 @@ async fn retrieve_documents(
 ) -> impl IntoResponse {
     info!("Retrieve request: {}", request.query);
 
-    // 1. Generate query embedding
+    // 1. Get MCP Database via Context
+    let (project_manager, project_registry) = match (
+        state.project_manager.as_ref(),
+        state.project_registry.as_ref(),
+    ) {
+        (Some(pm), Some(pr)) => (pm.clone(), pr.clone()),
+        _ => return (StatusCode::INTERNAL_SERVER_ERROR, Json(RetrieveResponse { results: vec![], query: request.query, collection: "".to_string(), total_results: 0 })),
+    };
+
+    let ctx = match MCPContext::new(project_manager, project_registry) {
+        Ok(ctx) => ctx,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(RetrieveResponse { results: vec![], query: request.query, collection: "".to_string(), total_results: 0 })),
+    };
+
+    let db = match ctx.db() {
+        Some(db) => db,
+        None => return (StatusCode::INTERNAL_SERVER_ERROR, Json(RetrieveResponse { results: vec![], query: request.query, collection: "".to_string(), total_results: 0 })),
+    };
+
+    // 2. Generate query embedding
     let provider = match LocalEmbeddingProvider::default_provider() {
         Ok(p) => p,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(RetrieveResponse { results: vec![], query: request.query, collection: "".to_string(), total_results: 0 })),
@@ -397,7 +469,7 @@ async fn retrieve_documents(
     let k = request.limit.unwrap_or(10);
 
     // 2. Perform semantic search
-    let edges = match state.db.semantic_search(&query_embedding, k) {
+    let edges = match db.semantic_search(&query_embedding, k) {
         Ok(e) => e,
         Err(e) => {
             error!("Semantic search failed: {}", e);
@@ -410,7 +482,7 @@ async fn retrieve_documents(
     let target_collection = request.collection.clone().unwrap_or_else(|| "default".to_string());
 
     for edge in edges {
-        if let Ok(Some(payload_bytes)) = state.db.get_payload(edge.edge_id) {
+        if let Ok(Some(payload_bytes)) = db.get_payload(edge.edge_id) {
             if let Ok(payload) = serde_json::from_slice::<serde_json::Value>(&payload_bytes) {
                 // Filter by collection if specified and if payload has collection field
                 if let Some(col) = payload.get("collection").and_then(|c| c.as_str()) {

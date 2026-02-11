@@ -49,7 +49,7 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use api::{
-    add_trace_to_dataset, get_detailed_trace, get_provider_costs, get_stats,
+    add_trace_to_dataset, get_dashboard_summary, get_detailed_trace, get_provider_costs, get_stats,
     get_timeseries_metrics, get_trace, get_trace_attributes, get_trace_children, get_trace_graph,
     get_trace_observations, health_check, health_check_detailed, ingest_otel_spans, ingest_traces,
     list_traces, semantic_search, submit_trace_feedback, ws_traces, AppState,
@@ -425,6 +425,7 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         .route("/api/v1/admin/reset", delete(api::admin::reset_all_data))
         .route("/api/v1/health", get(health_check_detailed))
         .route("/api/v1/stats", get(get_stats))
+        .route("/api/v1/dashboard/summary", get(get_dashboard_summary))
         .route("/api/v1/metrics/timeseries", get(get_timeseries_metrics))
         .route("/api/v1/search", post(semantic_search))
         // Sessions routes

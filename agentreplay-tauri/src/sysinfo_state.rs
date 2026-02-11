@@ -31,9 +31,11 @@ pub struct SysInfoState {
 impl SysInfoState {
     /// Create a new SysInfoState with initial system data
     pub fn new() -> Self {
-        let mut sys = System::new_all();
-        // Initial refresh to populate data
-        sys.refresh_all();
+        // Use new() instead of new_all() to avoid loading ALL process/disk/network info
+        // at startup. new_all() enumerates every process on the system (~30-100MB).
+        // Individual refresh_memory()/refresh_cpu() calls load only what's needed.
+        let mut sys = System::new();
+        sys.refresh_memory();
         
         Self {
             system: Mutex::new(sys),
@@ -123,8 +125,9 @@ pub fn get_all_system_info(state: tauri::State<SysInfoState>) -> AllSystemInfo {
     // Lock the mutex to get exclusive access
     let mut sys = state.system.lock();
     
-    // Refresh all data to get current values
-    sys.refresh_all();
+    // Refresh only memory and CPU (not refresh_all which enumerates ALL processes)
+    sys.refresh_memory();
+    sys.refresh_cpu_usage();
     
     // Small delay for CPU usage calculation accuracy
     std::thread::sleep(std::time::Duration::from_millis(100));

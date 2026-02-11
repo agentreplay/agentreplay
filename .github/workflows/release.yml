@@ -115,8 +115,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-macos-aarch64
-          path: agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: error
+          path: |
+            agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz
+            agentreplay-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz.sig
+          if-no-files-found: warn
 
   # ============================================
   # macOS Intel (x64)
@@ -196,8 +199,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-macos-x64
-          path: agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: error
+          path: |
+            agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz
+            agentreplay-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz.sig
+          if-no-files-found: warn
 
   # ============================================
   # Linux Build (AppImage, .deb)
@@ -301,8 +307,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-linux-appimage
-          path: agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-          if-no-files-found: error
+          path: |
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
+          if-no-files-found: warn
 
       - name: Upload Linux Deb
         uses: actions/upload-artifact@v4
@@ -401,15 +409,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-windows-exe
-          path: agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-          if-no-files-found: error
+          path: |
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.nsis.zip
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.nsis.zip.sig
+          if-no-files-found: warn
 
       - name: Upload Windows MSI
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-windows-msi
-          path: agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-          if-no-files-found: error
+          path: |
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi.zip
+            agentreplay-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi.zip.sig
+          if-no-files-found: warn
 
   # ============================================
   # Create Release with All Artifacts
@@ -422,6 +436,9 @@ jobs:
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -432,6 +449,69 @@ jobs:
           echo "=== Downloaded Artifacts ==="
           find artifacts -type f
           echo "==========================="
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=v${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate Tauri updater latest.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          REPO="agentreplay/agentreplay"
+          BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
+
+          # Read signatures from .sig files if they exist
+          MAC_AARCH64_SIG=""
+          MAC_X64_SIG=""
+          LINUX_SIG=""
+          WINDOWS_SIG=""
+
+          # Look for .sig files produced by Tauri signing
+          for sig in $(find artifacts -name "*.sig" -type f); do
+            content=$(cat "$sig")
+            case "$sig" in
+              *aarch64*) MAC_AARCH64_SIG="$content" ;;
+              *x64*.dmg*|*x86_64*apple*) MAC_X64_SIG="$content" ;;
+              *linux*|*AppImage*) LINUX_SIG="$content" ;;
+              *windows*|*setup.exe*|*.msi*) WINDOWS_SIG="$content" ;;
+            esac
+          done
+
+          cat > latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See release notes at https://github.com/${REPO}/releases/tag/${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${MAC_AARCH64_SIG}",
+                "url": "${BASE_URL}/Agentreplay_aarch64.dmg"
+              },
+              "darwin-x86_64": {
+                "signature": "${MAC_X64_SIG}",
+                "url": "${BASE_URL}/Agentreplay_x64.dmg"
+              },
+              "linux-x86_64": {
+                "signature": "${LINUX_SIG}",
+                "url": "${BASE_URL}/Agentreplay_x86_64.AppImage"
+              },
+              "windows-x86_64": {
+                "signature": "${WINDOWS_SIG}",
+                "url": "${BASE_URL}/Agentreplay_x64-setup.exe"
+              }
+            }
+          }
+          EOF
+
+          echo "=== Generated latest.json ==="
+          cat latest.json
+          echo "=============================="
 
       - name: Upload to existing Release (release trigger)
         if: github.event_name == 'release'
@@ -444,6 +524,7 @@ jobs:
             artifacts/Agentreplay-linux-deb/*.deb
             artifacts/Agentreplay-windows-exe/*.exe
             artifacts/Agentreplay-windows-msi/*.msi
+            latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -462,5 +543,6 @@ jobs:
             artifacts/Agentreplay-linux-deb/*.deb
             artifacts/Agentreplay-windows-exe/*.exe
             artifacts/Agentreplay-windows-msi/*.msi
+            latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -451,6 +451,40 @@ impl MCPHandler {
                 }
             }
 
+            "save_memory" => {
+                let content = match call_params
+                    .arguments
+                    .get("content")
+                    .and_then(|v| v.as_str()) {
+                        Some(c) => c.to_string(),
+                        None => {
+                            return JsonRpcResponse::error(
+                                id,
+                                JsonRpcError::invalid_params("Missing content parameter"),
+                            );
+                        }
+                    };
+                
+                let collection = call_params
+                    .arguments
+                    .get("collection")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("default")
+                    .to_string();
+                    
+                let tags = call_params
+                    .arguments
+                    .get("tags")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                            .collect()
+                    });
+
+                execute_save_memory(&self.state, content, collection, tags).await
+            }
+
             _ => {
                 return JsonRpcResponse::error(
                     id,

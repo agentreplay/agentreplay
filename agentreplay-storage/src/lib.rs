@@ -60,7 +60,7 @@ pub mod sketches;
 // Re-export core types from sochdb_unified
 pub use sochdb_unified::{
     AgentReplayStorage, AgentReplayStorageConfig, MetricsBucket, StorageStats, SyncMode,
-    CacheStats, LevelStats, HealthCheckResult, CleanupStats,
+    CacheStats, LevelStats, HealthCheckResult, CleanupStats, DashboardSummary,
     decode_trace_key, deserialize_edge, encode_metrics_key, encode_payload_key,
     encode_trace_key, serialize_edge,
 };

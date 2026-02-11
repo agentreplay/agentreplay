@@ -118,18 +118,52 @@ pub struct ConnectionStats {
     pub ingestion_rate_per_min: f64,
 }
 
+/// Item queued for ingestion — edge plus optional payload bytes.
+/// Bundling payloads with edges allows the background worker to batch-write both
+/// in a single transaction, eliminating write-lock contention from concurrent
+/// per-span payload writes.
+pub struct IngestionItem {
+    pub edge: AgentFlowEdge,
+    /// Optional payload (serialized attributes JSON). When present, the worker
+    /// writes it alongside the edge in the same batch transaction.
+    pub payload: Option<Vec<u8>>,
+}
+
 /// Ingestion queue for async buffering with graceful shutdown
 pub struct IngestionQueue {
-    tx: tokio::sync::mpsc::Sender<AgentFlowEdge>, // Bounded for backpressure
+    tx: tokio::sync::mpsc::Sender<IngestionItem>, // Bounded for backpressure
     shutdown_tx: Arc<tokio::sync::Notify>,
     /// Signals when the worker has completed flushing and shutdown
     worker_done_rx: Arc<tokio::sync::RwLock<Option<tokio::sync::oneshot::Receiver<()>>>>,
+    /// Throttle counter for queue-full log messages (avoid log storm)
+    drop_count: std::sync::atomic::AtomicU64,
 }
 
 impl IngestionQueue {
+    /// Queue an edge without payload data (used by REST API which writes payloads separately)
     pub fn send(&self, edge: AgentFlowEdge) -> Result<(), String> {
-        self.tx.try_send(edge).map_err(|e| match e {
+        self.send_item(IngestionItem { edge, payload: None })
+    }
+
+    /// Queue an edge together with its serialized payload bytes.
+    /// This is the preferred path for OTLP ingestion — it avoids spawning
+    /// per-span payload writes that contend with the batch writer.
+    pub fn send_with_payload(&self, edge: AgentFlowEdge, payload: Vec<u8>) -> Result<(), String> {
+        self.send_item(IngestionItem { edge, payload: Some(payload) })
+    }
+
+    fn send_item(&self, item: IngestionItem) -> Result<(), String> {
+        self.tx.try_send(item).map_err(|e| match e {
             tokio::sync::mpsc::error::TrySendError::Full(_) => {
+                // Throttle: only log every 1000th drop to avoid log storm
+                let count = self.drop_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if count % 1000 == 0 {
+                    tracing::error!(
+                        dropped = count + 1,
+                        "Ingestion queue full - {} items dropped so far",
+                        count + 1
+                    );
+                }
                 "Ingestion queue full - system under heavy load".to_string()
             }
             tokio::sync::mpsc::error::TrySendError::Closed(_) => {
@@ -178,6 +212,7 @@ impl Clone for IngestionQueue {
             tx: self.tx.clone(),
             shutdown_tx: Arc::clone(&self.shutdown_tx),
             worker_done_rx: Arc::clone(&self.worker_done_rx),
+            drop_count: std::sync::atomic::AtomicU64::new(0),
         }
     }
 }
@@ -472,15 +507,16 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
     }
 
     // Create ingestion queue with bounded channel
-    // PERFORMANCE: Increased from 1000 to 10000 to handle burst traffic
-    // At 10K spans/sec target, this provides ~1 second of buffering
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<AgentFlowEdge>(10_000);
+    // PERFORMANCE: 100K buffer provides ~10s of burst absorption at 10K spans/sec
+    // This prevents queue-full errors during transient write stalls (fsync, compaction)
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<IngestionItem>(50_000);
     let shutdown_notify = Arc::new(tokio::sync::Notify::new());
     let (worker_done_tx, worker_done_rx) = tokio::sync::oneshot::channel::<()>();
     let ingestion_queue = Arc::new(IngestionQueue {
         tx,
         shutdown_tx: Arc::clone(&shutdown_notify),
         worker_done_rx: Arc::new(tokio::sync::RwLock::new(Some(worker_done_rx))),
+        drop_count: std::sync::atomic::AtomicU64::new(0),
     });
 
     // Create broadcast channel for real-time trace streaming (SSE) - must come BEFORE worker spawn
@@ -495,54 +531,91 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
     let broadcaster_for_worker = trace_tx.clone();
 
     tauri::async_runtime::spawn(async move {
-        let mut batch = Vec::new();
-        // PERFORMANCE: Increased batch_size from 50 to 500 for better I/O amortization
-        // With group commit WAL, larger batches reduce fsync frequency significantly
-        // Expected improvement: ~10x throughput (500 spans/sec → 5000+ spans/sec)
-        let batch_size = 500;
-        // PERFORMANCE: Increased flush_interval from 100ms to 200ms
-        // This allows more writes to accumulate, reducing fsync overhead
-        // Trade-off: slightly higher latency (acceptable for observability workloads)
-        let flush_interval = std::time::Duration::from_millis(200);
+        let mut batch: Vec<IngestionItem> = Vec::with_capacity(2000);
+        // PERFORMANCE: batch_size=2000 amortizes fsync cost over more edges
+        // With 1 commit per 2000 edges instead of 1 per 500, fsync overhead drops 4×
+        let batch_size = 2000;
+        // PERFORMANCE: Flush interval at 100ms for low-latency partial flushes
+        let flush_interval = std::time::Duration::from_millis(100);
 
-        tracing::info!("Background ingestion worker started");
+        // WAL-size and batch-count checkpoint triggers.
+        // The time-based checkpoint (5 min) in the maintenance worker is too slow
+        // for burst ingestion (2.5M spans in 70s → 3.7 GB WAL → 15 GB on restart).
+        // These triggers cap the WAL at ~256 MB regardless of ingestion rate.
+        const WAL_CHECKPOINT_THRESHOLD: u64 = 256 * 1024 * 1024; // 256 MB
+        const BATCH_CHECKPOINT_INTERVAL: u64 = 50; // checkpoint every 50 batches (~100K spans)
+        let mut batches_since_checkpoint: u64 = 0;
+
+        tracing::info!("Background ingestion worker started (queue: 50K, batch: 2000, WAL checkpoint: 256MB)");
 
         loop {
             tokio::select! {
-                // Receive new edges
-                Some(edge) = rx.recv() => {
-                    batch.push(edge);
+                // Receive new items
+                Some(item) = rx.recv() => {
+                    batch.push(item);
+
+                    // Greedy drain: pull all ready items without blocking.
+                    // This fills the batch much faster when the queue has items,
+                    // reducing loop overhead from tokio::select! rebuilding futures.
+                    while batch.len() < batch_size {
+                        match rx.try_recv() {
+                            Ok(more) => batch.push(more),
+                            Err(_) => break,
+                        }
+                    }
 
                     // Flush if batch is full
                     if batch.len() >= batch_size {
                         flush_batch(&db_for_worker, &mut batch, &app_handle_for_worker, &stats_for_worker, broadcaster_for_worker.clone()).await;
+                        batches_since_checkpoint += 1;
+
+                        // Check if we need a checkpoint (WAL size OR batch count)
+                        let needs_checkpoint = batches_since_checkpoint >= BATCH_CHECKPOINT_INTERVAL
+                            || db_for_worker.wal_size_bytes() >= WAL_CHECKPOINT_THRESHOLD;
+
+                        if needs_checkpoint {
+                            let db = db_for_worker.clone();
+                            let wal_mb = db.wal_size_bytes() / (1024 * 1024);
+                            tracing::info!(
+                                batches = batches_since_checkpoint,
+                                wal_mb = wal_mb,
+                                "Triggering WAL checkpoint (ingestion-driven)"
+                            );
+                            let _ = tokio::task::spawn_blocking(move || {
+                                if let Err(e) = db.checkpoint() {
+                                    tracing::error!("Ingestion checkpoint failed: {}", e);
+                                }
+                            }).await;
+                            batches_since_checkpoint = 0;
+                        }
                     }
                 }
                 // Periodic flush
                 _ = tokio::time::sleep(flush_interval) => {
                     if !batch.is_empty() {
                         flush_batch(&db_for_worker, &mut batch, &app_handle_for_worker, &stats_for_worker, broadcaster_for_worker.clone()).await;
+                        batches_since_checkpoint += 1;
                     }
                 }
                 // Shutdown signal
                 _ = shutdown_notify_worker.notified() => {
-                    let batch_size = batch.len();
+                    let remaining = batch.len();
                     tracing::info!(
-                        batch_size = batch_size,
+                        batch_size = remaining,
                         "SHUTDOWN: Ingestion worker received shutdown signal"
                     );
 
                     if !batch.is_empty() {
-                        tracing::info!("SHUTDOWN: Flushing final batch of {} edges...", batch_size);
+                        tracing::info!("SHUTDOWN: Flushing final batch of {} items...", remaining);
                         let start = std::time::Instant::now();
                         flush_batch(&db_for_worker, &mut batch, &app_handle_for_worker, &stats_for_worker, broadcaster_for_worker.clone()).await;
                         tracing::info!(
-                            batch_size = batch_size,
+                            batch_size = remaining,
                             flush_duration_ms = start.elapsed().as_millis(),
                             "SHUTDOWN: Final batch flushed successfully"
                         );
                     } else {
-                        tracing::info!("SHUTDOWN: No pending edges to flush");
+                        tracing::info!("SHUTDOWN: No pending items to flush");
                     }
                     tracing::info!("Background ingestion worker stopped gracefully");
                     
@@ -554,29 +627,48 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
         }
     });
 
-    // Spawn background worker for metrics persistence
+    // Spawn background worker for metrics persistence AND periodic checkpointing
     let db_for_metrics = Arc::clone(&db);
     let shutdown_notify_metrics = Arc::clone(&shutdown_notify);
     
     tauri::async_runtime::spawn(async move {
-        // flush metrics every 10 seconds
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+        // Flush metrics every 10 seconds
+        let mut metrics_interval = tokio::time::interval(std::time::Duration::from_secs(10));
+        // Checkpoint every 5 minutes to prevent unbounded WAL growth.
+        // Without this the WAL grows forever and on restart the entire WAL
+        // is replayed into an in-memory memtable (observed: 1.2GB WAL → 10.9GB RAM → OOM).
+        let mut checkpoint_interval = tokio::time::interval(std::time::Duration::from_secs(300));
+        // Skip the first immediate tick so we don't checkpoint right at startup
+        checkpoint_interval.tick().await;
         
-        tracing::info!("Background metrics persistence worker started");
+        tracing::info!("Background maintenance worker started (metrics: 10s, checkpoint: 5min)");
         
         loop {
             tokio::select! {
-                _ = interval.tick() => {
+                _ = metrics_interval.tick() => {
                     if let Err(e) = db_for_metrics.flush_metrics() {
                         tracing::error!("Failed to flush metrics: {}", e);
                     }
+                }
+                _ = checkpoint_interval.tick() => {
+                    // Run checkpoint on blocking thread pool — it acquires write_lock + does I/O
+                    let db = db_for_metrics.clone();
+                    let _ = tokio::task::spawn_blocking(move || {
+                        if let Err(e) = db.checkpoint() {
+                            tracing::error!("Checkpoint failed: {}", e);
+                        }
+                    }).await;
                 }
                 _ = shutdown_notify_metrics.notified() => {
                     tracing::info!("SHUTDOWN: Flushing final metrics...");
                     if let Err(e) = db_for_metrics.flush_metrics() {
                          tracing::error!("Failed to flush final metrics: {}", e);
                     }
-                    tracing::info!("Background metrics persistence worker stopped");
+                    // Final checkpoint before exit
+                    if let Err(e) = db_for_metrics.checkpoint() {
+                        tracing::error!("Final checkpoint failed: {}", e);
+                    }
+                    tracing::info!("Background maintenance worker stopped");
                     break;
                 }
             }
@@ -636,7 +728,7 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
 /// Flush batch of edges to database with proper error handling
 async fn flush_batch(
     db: &Arc<Agentreplay>,
-    batch: &mut Vec<AgentFlowEdge>,
+    batch: &mut Vec<IngestionItem>,
     app_handle: &tauri::AppHandle,
     stats: &Arc<RwLock<ConnectionStats>>,
     broadcaster: tokio::sync::broadcast::Sender<AgentFlowEdge>,
@@ -646,36 +738,39 @@ async fn flush_batch(
     }
 
     let count = batch.len();
-    tracing::debug!("Flushing batch of {} edges", count);
+    tracing::debug!(batch_size = count, "Flushing batch");
 
-    // Perform batch insert (blocking operation in thread pool)
     let db_clone = Arc::clone(db);
-    let batch_to_insert = std::mem::take(batch);
+    let items = std::mem::take(batch);
     let app_handle_clone = app_handle.clone();
     let stats_clone = Arc::clone(stats);
 
-    let result = tokio::spawn(async move {
-        // Attempt database write
-        if let Err(e) = db_clone.insert_batch(&batch_to_insert).await {
-            tracing::error!(
-                "Failed to insert batch of {} edges: {}",
-                batch_to_insert.len(),
-                e
-            );
-            return Err(e);
-        }
+    // Use spawn_blocking: the write path acquires parking_lot locks, does
+    // SochDB puts, and commits (fsync). Running this on the async runtime
+    // would block executor threads and starve other tasks.
+    let result = tokio::task::spawn_blocking(move || {
+        // Separate edges and payloads (payloads borrow from items which is owned)
+        let edges: Vec<AgentFlowEdge> = items.iter().map(|item| item.edge).collect();
+        let payloads: Vec<(u128, &[u8])> = items.iter()
+            .filter_map(|item| {
+                item.payload.as_ref().map(|p| (item.edge.edge_id, p.as_slice()))
+            })
+            .collect();
 
-        // **DURABILITY FIX**: Sync to disk after batch write
-        // This ensures the payload index is persisted, preventing data loss on crash
-        if let Err(e) = db_clone.sync() {
-            tracing::warn!("Failed to sync after batch write: {}", e);
-            // Non-fatal: data is in WAL, can be recovered
-        }
+        // Combined write: payloads + edges under ONE lock + ONE commit.
+        // This halves fsync overhead vs separate put_payloads_batch + put_batch.
+        let n = match db_clone.insert_batch_with_payloads(&edges, &payloads) {
+            Ok(n) => n,
+            Err(e) => {
+                tracing::error!(batch_size = edges.len(), "Batch write failed: {}", e);
+                return Err(e);
+            }
+        };
 
-        // Update stats AFTER successful write (prevents inflated stats on crash)
+        // Update stats AFTER successful write
         {
             let mut stats = stats_clone.write();
-            stats.total_traces_received += batch_to_insert.len() as u64;
+            stats.total_traces_received += n as u64;
             stats.last_trace_time = Some(
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -684,41 +779,28 @@ async fn flush_batch(
             );
         }
 
-        // Emit events for UI updates AFTER successful write
-        for edge in &batch_to_insert {
-            let event_payload = serde_json::json!({
-                "edge_id": format!("{:#x}", edge.edge_id),
-                "timestamp_us": edge.timestamp_us,
-                "agent_id": edge.agent_id,
-                "span_type": edge.get_span_type() as u32,
-            });
-
-            if let Err(e) = app_handle_clone.emit("trace_ingested", event_payload) {
-                tracing::warn!("Failed to emit trace_ingested event: {}", e);
-            }
+        // Emit ONE summary event per batch
+        let batch_event = serde_json::json!({
+            "count": n,
+            "timestamp_us": edges.last().map(|e| e.timestamp_us).unwrap_or(0),
+        });
+        if let Err(e) = app_handle_clone.emit("traces_batch_ingested", batch_event) {
+            tracing::warn!("Failed to emit batch event: {}", e);
         }
 
         // Broadcast traces for SSE clients
-        for edge in &batch_to_insert {
-            // Ignore send errors (no subscribers is fine)
+        for edge in &edges {
             let _ = broadcaster.send(*edge);
         }
 
-        Ok(batch_to_insert.len())
+        Ok(n)
     })
     .await;
 
     match result {
-        Ok(Ok(flushed_count)) => {
-            tracing::debug!("Successfully flushed {} edges", flushed_count);
-        }
-        Ok(Err(e)) => {
-            tracing::error!("Database write failed: {}", e);
-            // TODO: Could implement retry logic here
-        }
-        Err(e) => {
-            tracing::error!("Flush task panicked: {}", e);
-        }
+        Ok(Ok(n)) => tracing::debug!(count = n, "Batch flushed"),
+        Ok(Err(e)) => tracing::error!("Database write failed: {}", e),
+        Err(e) => tracing::error!("Flush task panicked: {}", e),
     }
 }
 

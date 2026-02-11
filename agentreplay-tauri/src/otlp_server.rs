@@ -84,29 +84,25 @@ impl TraceService for OtlpTraceService {
                 for span in &scope_span.spans {
                     match convert_otel_span_to_edge(span, &resource_attrs) {
                         Ok(edge) => {
-                            // Queue edge for ingestion
-                            if let Err(e) = self.tauri_state.ingestion_queue.send(edge) {
+                            // Serialize payload (if any) to bundle with the queue item
+                            let attributes = extract_span_attributes(span, &resource_attrs);
+                            let send_result = if !attributes.is_empty() {
+                                // Bundle payload with edge in the queue — the background
+                                // worker will batch-write both in a single transaction,
+                                // avoiding per-span write-lock contention.
+                                match serde_json::to_vec(&attributes) {
+                                    Ok(json_bytes) => self.tauri_state.ingestion_queue.send_with_payload(edge, json_bytes),
+                                    Err(_) => self.tauri_state.ingestion_queue.send(edge),
+                                }
+                            } else {
+                                self.tauri_state.ingestion_queue.send(edge)
+                            };
+
+                            if let Err(e) = send_result {
                                 error!("Failed to queue edge: {}", e);
                                 rejected += 1;
                             } else {
                                 accepted += 1;
-
-                                // Store span attributes as payload
-                                let attributes = extract_span_attributes(span, &resource_attrs);
-                                if !attributes.is_empty() {
-                                    let db = Arc::clone(&self.tauri_state.db);
-                                    let edge_id = edge.edge_id;
-                                    tokio::spawn(async move {
-                                        if let Ok(json_bytes) = serde_json::to_vec(&attributes) {
-                                            if let Err(e) = db.put_payload(edge_id, &json_bytes) {
-                                                warn!(
-                                                    "Failed to store payload for {:#x}: {}",
-                                                    edge_id, e
-                                                );
-                                            }
-                                        }
-                                    });
-                                }
                             }
                         }
                         Err(e) => {
@@ -266,28 +262,22 @@ async fn handle_otlp_http(
             for span in &scope_span.spans {
                 match convert_otel_span_to_edge(span, &resource_attrs) {
                     Ok(edge) => {
-                        if let Err(e) = state.tauri_state.ingestion_queue.send(edge) {
+                        // Serialize payload (if any) to bundle with the queue item
+                        let attributes = extract_span_attributes(span, &resource_attrs);
+                        let send_result = if !attributes.is_empty() {
+                            match serde_json::to_vec(&attributes) {
+                                Ok(json_bytes) => state.tauri_state.ingestion_queue.send_with_payload(edge, json_bytes),
+                                Err(_) => state.tauri_state.ingestion_queue.send(edge),
+                            }
+                        } else {
+                            state.tauri_state.ingestion_queue.send(edge)
+                        };
+
+                        if let Err(e) = send_result {
                             error!("Failed to queue edge: {}", e);
                             rejected += 1;
                         } else {
                             accepted += 1;
-
-                            // Store attributes as payload
-                            let attributes = extract_span_attributes(span, &resource_attrs);
-                            if !attributes.is_empty() {
-                                let db = state.tauri_state.db.clone();
-                                let edge_id = edge.edge_id;
-                                tokio::spawn(async move {
-                                    if let Ok(json_bytes) = serde_json::to_vec(&attributes) {
-                                        if let Err(e) = db.put_payload(edge_id, &json_bytes) {
-                                            warn!(
-                                                "Failed to store payload for {:#x}: {}",
-                                                edge_id, e
-                                            );
-                                        }
-                                    }
-                                });
-                            }
                         }
                     }
                     Err(e) => {

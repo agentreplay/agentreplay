@@ -189,6 +189,34 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                 }
             }),
         },
+        Tool {
+            name: "save_memory".to_string(),
+            description: Some(
+                "Save a manual memory/observation into AgentReplay's vector store for future recall. \
+                 Use this to remember important information, decisions, or user preferences."
+                    .to_string(),
+            ),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "The content to remember (required)"
+                    },
+                    "collection": {
+                        "type": "string",
+                        "description": "Collection name (optional, default: 'default')",
+                        "default": "default"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Optional tags for categorization"
+                    }
+                },
+                "required": ["content"]
+            }),
+        },
     ]
 }
 
@@ -555,4 +583,90 @@ pub async fn execute_get_related_traces(
 fn estimate_cost(tokens: u32) -> f64 {
     const PRICE_PER_1K_TOKENS: f64 = 0.002; // ~$0.002 per 1K tokens average
     (tokens as f64 / 1000.0) * PRICE_PER_1K_TOKENS
+}
+
+/// Execute the save_memory tool
+pub async fn execute_save_memory(
+    state: &AppState,
+    content: String,
+    collection: String,
+    tags: Option<Vec<String>>,
+) -> Result<CallToolResult, String> {
+    // Get the MCP-specific database (Project 1000)
+    // We need ProjectManager to get the correct DB handle
+    let (project_manager, project_registry) = match (
+        state.project_manager.as_ref(),
+        state.project_registry.as_ref(),
+    ) {
+        (Some(pm), Some(pr)) => (pm.clone(), pr.clone()),
+        _ => return Err("Project manager not available - cannot access MCP memory".to_string()),
+    };
+
+    let ctx = crate::mcp::MCPContext::new(project_manager, project_registry)
+        .map_err(|e| format!("Failed to initialize MCP context: {}", e))?;
+        
+    let db = ctx.db()
+        .ok_or_else(|| "Failed to open MCP database".to_string())?;
+
+    // 1. Generate embedding
+    let provider = LocalEmbeddingProvider::default_provider()
+        .map_err(|e| format!("Failed to initialize embedding provider: {}", e))?;
+        
+    let embedding_vec = provider
+        .embed(&content)
+        .map_err(|e| format!("Embedding generation failed: {}", e))?;
+        
+    let embedding = Embedding::from_vec(embedding_vec);
+    
+    // 2. Create AgentFlowEdge for the memory
+    // Use Tenant 2 (MCP_TENANT_ID) and Project 1000 (MCP_DEFAULT_PROJECT_ID)
+    let edge = agentreplay_core::AgentFlowEdge::new(
+        MCP_TENANT_ID, 
+        MCP_DEFAULT_PROJECT_ID as u16, 
+        0, // agent_id
+        0, // session_id
+        agentreplay_core::SpanType::ToolCall, // Convention for memories
+        0
+    );
+    
+    // 3. Prepare payload
+    let mut metadata = serde_json::Map::new();
+    metadata.insert("source".to_string(), json!("mcp_tool"));
+    if let Some(t) = tags {
+        metadata.insert("tags".to_string(), json!(t));
+    }
+    
+    let payload = json!({
+        "content": content,
+        "collection": collection,
+        "metadata": metadata
+    });
+    
+    let payload_bytes = serde_json::to_vec(&payload)
+        .map_err(|e| format!("Payload serialization failed: {}", e))?;
+        
+    // 4. Insert into DB with vector
+    db
+        .insert_with_vector(edge.clone(), embedding)
+        .await
+        .map_err(|e| format!("DB insert failed: {}", e))?;
+        
+    // 5. Store full payload
+    db
+        .put_payload(edge.edge_id, &payload_bytes)
+        .map_err(|e| format!("Payload storage failed: {}", e))?;
+        
+    let result = json!({
+        "success": true,
+        "memory_id": format!("{:#x}", edge.edge_id),
+        "message": "Memory saved successfully",
+        "collection": collection
+    });
+    
+    Ok(CallToolResult {
+        content: vec![ToolContent::Text {
+            text: result.to_string(),
+        }],
+        is_error: None,
+    })
 }

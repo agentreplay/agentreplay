@@ -15,7 +15,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Titlebar from './Titlebar';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -58,53 +57,52 @@ export function Layout() {
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden flex-col">
 
-
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
         {/* Main content with safe area padding */}
-        <main className={`flex-1 flex flex-col min-w-0 overflow-hidden relative`}>
-          {/* Header */}
-          <header className={`flex h-12 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-sm px-5 flex-shrink-0 relative z-10 ${isTauri ? 'pt-0' : ''}`}>
-            {/* Drag region for main content area */}
-            {isTauri && (
-              <div
-                className="absolute inset-0 z-[-1]"
-                data-tauri-drag-region
-                style={{ WebkitAppRegion: 'drag' } as any}
-              />
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          {/* Header — acts as drag region in Tauri; interactive children opt out */}
+          <header
+            className={cn(
+              'flex items-center justify-between border-b border-border/40 bg-card/80 backdrop-blur-sm px-4 flex-shrink-0 relative',
+              isTauri ? 'h-[54px]' : 'h-11'
             )}
-            <div className="flex items-center gap-2.5">
+            data-tauri-drag-region
+            style={isTauri ? { WebkitAppRegion: 'drag' } as any : undefined}
+          >
+            <div className="flex items-center gap-3 h-full" style={isTauri ? { WebkitAppRegion: 'no-drag' } as any : undefined}>
               <ProjectSwitcher />
               {!isDetailPage && (
                 <>
+                  <div className="w-px h-5 bg-border/40" />
                   <ProjectSetupInfo
                     projectId={currentProject?.project_id}
                     projectName={currentProject?.name}
                   />
                   {currentProject && (
-                    <div className="hidden lg:flex items-center gap-2.5">
-                      <div className="w-px h-5 bg-border/60" />
-                      <div className="flex flex-col leading-tight">
-                        <span className="uppercase tracking-widest text-[10px] text-muted-foreground">Scope</span>
+                    <div className="hidden lg:flex items-center gap-3">
+                      <div className="w-px h-5 bg-border/40" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="uppercase tracking-widest text-[9px] text-muted-foreground/70 font-medium">Scope</span>
                         <span className="text-[12px] font-semibold text-foreground">
                           {currentProject.name}
-                          <span className="text-muted-foreground font-normal ml-1">#{currentProject.project_id}</span>
+                          <span className="text-muted-foreground/60 font-normal ml-1 text-[11px]">#{currentProject.project_id}</span>
                         </span>
                       </div>
                     </div>
                   )}
-                  {/* Basic / Pro Toggle — right next to scope */}
-                  <div className="hidden sm:flex items-center gap-2.5 ml-1">
-                    <div className="w-px h-5 bg-border/60" />
+                  {/* Basic / Pro Toggle */}
+                  <div className="hidden sm:flex items-center gap-3">
+                    <div className="w-px h-5 bg-border/40" />
                     <div
-                      className="flex items-center rounded-full p-0.5 bg-secondary/80 border border-border/50"
+                      className="flex items-center rounded-full p-0.5 bg-secondary/60 border border-border/40"
                     >
                       <button
                         onClick={() => setAppMode('basic')}
                         className={cn(
-                          'px-3 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
+                          'px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
                           appMode === 'basic'
                             ? 'bg-primary text-primary-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -115,7 +113,7 @@ export function Layout() {
                       <button
                         onClick={() => setAppMode('pro')}
                         className={cn(
-                          'px-3 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
+                          'px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200',
                           appMode === 'pro'
                             ? 'bg-primary text-primary-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -131,7 +129,7 @@ export function Layout() {
                 <Breadcrumbs className="hidden sm:flex" />
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={isTauri ? { WebkitAppRegion: 'no-drag' } as any : undefined}>
               <CommandPalette />
             </div>
           </header>

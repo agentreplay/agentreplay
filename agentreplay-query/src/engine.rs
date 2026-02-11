@@ -212,7 +212,7 @@ impl Agentreplay {
             // Prevents OOM in long-running services evaluating millions of traces
             eval_metrics: Arc::new(
                 Cache::builder()
-                    .max_capacity(100_000) // Limit to 100K edges (configurable)
+                    .max_capacity(10_000) // 10K entries — desktop-grade
                     .time_to_live(Duration::from_secs(86400)) // 24 hour TTL
                     .build(),
             ),
@@ -314,6 +314,69 @@ impl Agentreplay {
         Ok(())
     }
 
+    /// Synchronous batch insert with payloads — single lock + single commit.
+    ///
+    /// Combines causal index fixup, payload writes, and edge writes into
+    /// one atomic operation. Designed for `spawn_blocking` so blocking I/O
+    /// (parking_lot locks, SochDB writes, fsync) runs on the blocking
+    /// thread pool instead of the async runtime.
+    ///
+    /// **Task 4 (Predicate Pushdown):** Also extracts and stores denormalized
+    /// filter attributes (provider, model, operation_name) from payloads to
+    /// eliminate per-edge payload I/O during filtering.
+    pub fn insert_batch_with_payloads(&self, edges: &[AgentFlowEdge], payloads: &[(u128, &[u8])]) -> Result<usize> {
+        // Fix parent_count for all edges before writing
+        let fixed_edges: Vec<AgentFlowEdge> = edges
+            .iter()
+            .map(|edge| {
+                let mut edge = *edge;
+                let parent_ids = self.causal_index.get_parents(edge.edge_id);
+                edge.parent_count = parent_ids.len().min(255) as u8;
+                edge.checksum = edge.compute_checksum();
+                edge
+            })
+            .collect();
+
+        // Single combined write: payloads + edges under one lock + one commit
+        self.storage.put_batch_with_payloads(&fixed_edges, payloads)?;
+
+        // Task 4: Extract denormalized filter attributes from payloads
+        // This enables O(1) provider/model/route filtering without payload I/O
+        for (edge_id, payload_bytes) in payloads {
+            if let Ok(attrs) = serde_json::from_slice::<serde_json::Value>(payload_bytes) {
+                let provider = attrs.get("gen_ai.system")
+                    .or(attrs.get("system"))
+                    .and_then(|v| v.as_str());
+                let model = attrs.get("gen_ai.request.model")
+                    .or(attrs.get("gen_ai.response.model"))
+                    .or(attrs.get("llm.model_name"))
+                    .or(attrs.get("model"))
+                    .or(attrs.get("request_model"))
+                    .and_then(|v| v.as_str());
+                let operation = attrs.get("operation_name")
+                    .or(attrs.get("gen_ai.operation.name"))
+                    .and_then(|v| v.as_str());
+
+                if provider.is_some() || model.is_some() || operation.is_some() {
+                    // Best-effort: don't fail the batch if attrs storage fails
+                    let _ = self.storage.put_edge_attrs(
+                        *edge_id,
+                        provider,
+                        model,
+                        operation,
+                    );
+                }
+            }
+        }
+
+        // Update causal index for all edges
+        for edge in &fixed_edges {
+            self.causal_index.index(edge);
+        }
+
+        Ok(fixed_edges.len())
+    }
+
     /// Delete an edge by ID
     ///
     /// This writes a tombstone marker that will cause the edge to be
@@ -357,15 +420,17 @@ impl Agentreplay {
     /// Query pre-aggregated metrics with time buckets for time series charts
     ///
     /// Returns a vector of (timestamp, bucket) pairs for rendering time series.
+    /// Uses the in-memory minute_buckets for O(B) performance where B = number
+    /// of minute buckets in range, instead of O(N) edge scanning.
     pub fn query_metrics_timeseries(
         &self,
-        _project_id: u64,
+        project_id: u64,
         start_ts: u64,
         end_ts: u64,
     ) -> Vec<(u64, agentreplay_storage::MetricsBucket)> {
-        // Simple implementation - return single bucket for now
-        let bucket = self.storage.query_metrics(0, 0, start_ts, end_ts);
-        vec![(start_ts, bucket)]
+        // tenant_id=0 means all tenants. project_id is passed from the analytics UI.
+        // project_id=0 means "all projects" (wildcard).
+        self.storage.query_metrics_timeseries(0, project_id as u16, start_ts, end_ts)
     }
 
     /// Query sharded metrics with DDSketch percentiles and HyperLogLog cardinality
@@ -503,6 +568,14 @@ impl Agentreplay {
         self.storage.put_payload(edge_id, data)
     }
 
+    /// Batch-write multiple payloads in a single transaction.
+    ///
+    /// Dramatically more efficient than calling `put_payload` in a loop because
+    /// it amortizes write-lock acquisition and fsync cost across the entire batch.
+    pub fn put_payloads_batch(&self, payloads: &[(u128, &[u8])]) -> Result<()> {
+        self.storage.put_payloads_batch(payloads)
+    }
+
     /// Retrieve attributes/metadata for an edge
     ///
     /// Returns the raw payload bytes, or None if no payload exists.
@@ -519,6 +592,37 @@ impl Agentreplay {
         self.storage.get_payload(edge_id)
     }
 
+    /// Batch-fetch multiple payloads (Task 10)
+    ///
+    /// **Performance:** Amortizes LSM lookup overhead across N payloads.
+    pub fn get_payloads_batch(&self, edge_ids: &[u128]) -> Result<Vec<(u128, Option<Vec<u8>>)>> {
+        self.storage.get_payloads_batch(edge_ids)
+    }
+
+    /// Get denormalized filter attributes for an edge (Task 4)
+    ///
+    /// Returns `(provider, model, operation_name)` without payload I/O.
+    pub fn get_edge_attrs(&self, edge_id: u128) -> Result<(String, String, String)> {
+        self.storage.get_edge_attrs(edge_id)
+    }
+
+    /// Get denormalized filter attributes for multiple edges (Task 4)
+    pub fn get_edge_attrs_batch(&self, edge_ids: &[u128]) -> Result<std::collections::HashMap<u128, (String, String, String)>> {
+        self.storage.get_edge_attrs_batch(edge_ids)
+    }
+
+    /// Get session edges using the session index (Task 5)
+    ///
+    /// **Performance:** O(log N + K_session) instead of full scan.
+    pub fn get_session_edges_full(&self, session_id: u64) -> Result<Vec<AgentFlowEdge>> {
+        self.storage.get_session_edges(session_id)
+    }
+
+    /// Get the pre-computed dashboard summary (Task 9)
+    pub fn get_dashboard_summary(&self) -> agentreplay_storage::DashboardSummary {
+        self.storage.get_dashboard_summary()
+    }
+
     /// Maximum number of edges to return without pagination
     const MAX_UNPAGINATED_RESULTS: usize = 10_000;
 
@@ -533,7 +637,10 @@ impl Agentreplay {
     /// Query edges in a temporal range with pagination
     ///
     /// Returns up to `limit` edges starting from `offset`.
-    /// Use this for large time ranges to prevent OOM.
+    /// 
+    /// **Note:** For true cursor-based pagination with O(log N + limit) per page,
+    /// use `AgentReplayStorage::query_temporal_range_for_tenant_paginated()` directly.
+    /// This method still uses offset-based pagination for backward compatibility.
     ///
     /// # Arguments
     /// * `start_ts` - Start timestamp in microseconds
@@ -553,7 +660,7 @@ impl Agentreplay {
         // Cap limit to prevent abuse
         let limit = limit.min(Self::MAX_UNPAGINATED_RESULTS);
 
-        // Use iterator for efficiency - don't load all into memory
+        // Materialize only the time-bounded results (Task 2 optimization)
         let mut edges: Vec<AgentFlowEdge> = self
             .storage
             .range_scan(start_ts, end_ts)?
@@ -581,6 +688,23 @@ impl Agentreplay {
     ) -> Result<Vec<AgentFlowEdge>> {
         self.storage
             .range_scan_filtered(start_ts, end_ts, Some(tenant_id), None)
+    }
+
+    /// Cursor-based paginated query for a tenant's traces.
+    ///
+    /// **Performance:** O(log N + page_size) per page vs O(N) for offset-based.
+    /// Returns `(edges, next_cursor)` where `next_cursor` is `None` if no more pages.
+    pub fn query_temporal_range_for_tenant_paginated(
+        &self,
+        start_ts: u64,
+        end_ts: u64,
+        tenant_id: u64,
+        limit: usize,
+        cursor: Option<&str>,
+        descending: bool,
+    ) -> Result<(Vec<AgentFlowEdge>, Option<String>)> {
+        self.storage
+            .query_temporal_range_for_tenant_paginated(start_ts, end_ts, tenant_id, limit, cursor, descending)
     }
 
     /// Query edges with optional tenant and project filtering
@@ -640,6 +764,10 @@ impl Agentreplay {
     ///
     /// **Performance:** Returns edges lazily without materializing all results in memory.
     /// Ideal for large result sets, streaming processing, or memory-constrained environments.
+    ///
+    /// **Note:** True streaming iteration requires changes to the underlying storage engine.
+    /// Currently this still materializes the scan result, but the bounded range scan
+    /// (Tasks 2/3) means we only materialize the matching time window, not the full DB.
     ///
     /// # Example
     /// ```ignore
@@ -1408,6 +1536,20 @@ impl Agentreplay {
     /// ```
     pub fn sync(&self) -> Result<()> {
         self.storage.sync()
+    }
+
+    /// Checkpoint: flush memtable to persistent storage and truncate WAL.
+    ///
+    /// Prevents unbounded WAL growth that causes multi-GB memory usage on
+    /// startup (WAL replay rebuilds the entire memtable in memory).
+    /// Should be called periodically (e.g. every 5 minutes or when WAL exceeds threshold).
+    pub fn checkpoint(&self) -> Result<()> {
+        self.storage.checkpoint()
+    }
+
+    /// Get the current WAL file size in bytes.
+    pub fn wal_size_bytes(&self) -> u64 {
+        self.storage.wal_size_bytes()
     }
 
 

@@ -354,6 +354,7 @@ dependencies = [
  "tracing",
  "twox-hash 1.6.3",
  "uuid",
+ "zstd",
 ]
 
 [[package]]
@@ -6278,9 +6279,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddacf731740a5fb5c2daf8957d47d197eb1203691f2f931bfbdb77066c173748"
+checksum = "e410fb8d16df47ad1ab0cdf900f045b6a184969da233c0f87e3d729f63046399"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6301,9 +6302,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-core"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb9516956a6753fee166a9eba25d9fb0bd3caf41cfbb32788f2d8806532fe7d2"
+checksum = "f23b66a125bddbe048cb3a3fcd3e8027f17a508ec12243692fc5c81868330607"
 dependencies = [
  "bincode",
  "byteorder",
@@ -6324,9 +6325,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-index"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "790a1bbfd2f570d737db48185de4ff638d2f71ecb2dcbf80e8895c2fe8fcc1b0"
+checksum = "7bfada561c14398b9d9aad9c247b8b2bcd898f2303e8ce3ebb7d7f7021f238ea"
 dependencies = [
  "array-init",
  "arrayvec",
@@ -6360,9 +6361,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-query"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e83ee0e368639ac445811189316d34d09cd548c49bfb471aad847d4b9504a5ed"
+checksum = "fb3bfd99cf778179da53c3a6e479c6d8b5309acfd7a881a482a85d79eb2f5258"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6385,9 +6386,9 @@ dependencies = [
 
 [[package]]
 name = "sochdb-storage"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a01d76cd4a4c08a70511e58ccb99b40bbf4f1ac12300b51aacda742b8cadbd7"
+checksum = "443d8aeb3f3ad8cfdde84674a1fc38ad58e43c933cac3d434dbad52c0d61ce43"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",

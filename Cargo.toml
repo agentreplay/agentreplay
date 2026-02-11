@@ -102,19 +102,11 @@ moka = "0.12"
 clap = { version = "4.4", features = ["derive"] }
 
 # SochDB integration (storage backend migration)
-sochdb-core = { version = "0.4.7" }
-sochdb-storage = { version = "0.4.7" }
-sochdb-index = { version = "0.4.7" }
-sochdb-query = { version = "0.4.7" }
-sochdb = { version = "0.4.7", features = ["embedded"] }
-
-# Local development overrides (comment out for CI/publish)
-# [patch.crates-io]
-# sochdb-core = { path = "../sochdb/sochdb-core" }
-# sochdb-storage = { path = "../sochdb/sochdb-storage" }
-# sochdb-index = { path = "../sochdb/sochdb-index" }
-# sochdb-query = { path = "../sochdb/sochdb-query" }
-# sochdb = { path = "../sochdb/sochdb-client" }
+sochdb-core = { version = "0.4.8" }
+sochdb-storage = { version = "0.4.8" }
+sochdb-index = { version = "0.4.8" }
+sochdb-query = { version = "0.4.8" }
+sochdb = { version = "0.4.8", features = ["embedded"] }
 
 [profile.release]
 opt-level = 3
