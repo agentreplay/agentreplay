@@ -233,26 +233,27 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="max-w-4xl w-full">
+    <div className="h-screen max-h-screen overflow-hidden bg-background flex flex-col items-center justify-center px-4 py-6 sm:py-8">
+      <div className="max-w-4xl w-full flex-1 flex flex-col min-h-0">
         {/* Progress Steps */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between">
+        <div className="flex-shrink-0 mb-4 sm:mb-6">
+          <div className="flex items-start justify-between gap-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = index === currentStep;
               const isCompleted = index < currentStep;
 
               return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
+                <div key={step.id} className="flex items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 gap-2">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${isCompleted
-                        ? 'bg-green-500 text-white'
-                        : isActive
-                          ? 'bg-primary text-white'
-                          : 'bg-surface border-2 border-border text-textTertiary'
-                        }`}
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                        isCompleted
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : isActive
+                            ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
+                            : "bg-surface border border-border text-textTertiary"
+                      }`}
                     >
                       {isCompleted ? (
                         <Check className="w-6 h-6" />
@@ -261,8 +262,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       )}
                     </div>
                     <span
-                      className={`text-sm font-medium ${isActive ? 'text-textPrimary' : 'text-textTertiary'
-                        }`}
+                      className={`text-xs sm:text-sm font-medium text-center truncate w-full px-0.5 ${
+                        isActive ? "text-textPrimary" : "text-textTertiary"
+                      }`}
                     >
                       {step.title}
                     </span>
@@ -279,136 +281,96 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
         </div>
 
-        {/* Step Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="bg-surface rounded-xl border border-border p-8"
-          >
+        {/* Step Content – scrolls inside card when needed, page never scrolls */}
+        <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-border shadow-lg shadow-black/5 dark:shadow-black/25 bg-surface">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="h-full overflow-y-auto p-6 sm:p-8"
+            >
             {/* Step 0: Welcome */}
             {currentStep === 0 && (
-              <div className="text-center">
+              <div className="text-center relative">
+                {/* Modern GitHub Star CTA – floating badge top-right */}
+                <a
+                  href="https://github.com/agentreplay/agentreplay"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-0 right-0 group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 hover:from-amber-500/20 hover:via-orange-500/20 hover:to-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 rounded-xl text-sm font-medium text-textPrimary hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-200 shadow-sm hover:shadow-md backdrop-blur-sm"
+                >
+                  <Star className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline">Star us</span>
+                  <span className="sm:hidden">⭐</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </a>
+
+                {/* Logo */}
                 <div className="flex justify-center mb-6">
                   <div className="relative">
                     <img
                       src="/logo.svg"
                       alt="AgentReplay"
-                      className="w-24 h-24 rounded-2xl shadow-xl"
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-xl"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
-                      <Check className="w-4 h-4 text-white" />
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                     </div>
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-textPrimary mb-2">
-                  Welcome to AgentReplay
-                </h2>
-                <p className="text-base font-medium text-primary mb-1">
-                  Local-First Desktop Observability & AI Memory for Your Agents and Coding Tools
-                </p>
-                <p className="text-sm text-textSecondary mb-8 max-w-2xl mx-auto">
-                  The open-source desktop app purpose-built for AI agents & Claude Code. Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
-                </p>
-
-                {/* Privacy banner */}
-                <div className="bg-gradient-to-r from-green-500/5 via-emerald-500/10 to-green-500/5 border border-green-500/20 rounded-xl p-4 mb-6">
-                  <div className="flex items-center justify-center gap-3">
-                    <Lock className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                      Your data never leaves your laptop. Zero cloud dependencies. Fully optimized for desktops & laptops.
-                    </p>
+                {/* Modern welcome section with enhanced typography */}
+                <div className="mb-8">
+                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-textPrimary mb-4 tracking-tight">
+                    <span className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
+                      Welcome to AgentReplay
+                    </span>
+                  </h2>
+                  
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-4">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs sm:text-sm font-semibold border border-primary/20">
+                      <Zap className="w-3.5 h-3.5" />
+                      Local-First
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs sm:text-sm font-semibold border border-emerald-500/20">
+                      <Brain className="w-3.5 h-3.5" />
+                      AI Memory
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-xs sm:text-sm font-semibold border border-purple-500/20">
+                      <Activity className="w-3.5 h-3.5" />
+                      Observability
+                    </span>
                   </div>
+
+                  <p className="text-base sm:text-lg font-medium text-textPrimary mb-3 max-w-2xl mx-auto leading-relaxed">
+                    Desktop observability & AI memory for your agents and coding tools
+                  </p>
+                  
+                  <p className="text-sm sm:text-base text-textSecondary mb-4 max-w-2xl mx-auto leading-relaxed">
+                    The open-source desktop app purpose-built for <span className="font-semibold text-textPrimary">AI agents</span> & <span className="font-semibold text-textPrimary">Claude Code</span>. Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
+                  </p>
                 </div>
 
-                {/* Feature highlights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-blue-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
-                      <Activity className="w-5 h-5 text-blue-500" />
+                {/* Privacy banner – modern, highlighted, positioned after welcome section */}
+                <div className="bg-gradient-to-br from-emerald-500/15 via-green-500/20 to-emerald-500/15 border-2 border-emerald-500/40 rounded-2xl p-4 sm:p-5 mb-6 shadow-lg shadow-emerald-500/10 backdrop-blur-sm">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
+                        <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400 hidden sm:block" />
                     </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">Full-Stack Tracing</h3>
-                    <p className="text-sm text-textSecondary">
-                      Capture every LLM call, tool use, and agent step with zero-config auto-instrumentation. See what your AI is really doing.
-                    </p>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-purple-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
-                      <Brain className="w-5 h-5 text-purple-500" />
-                    </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">Persistent Memory</h3>
-                    <p className="text-sm text-textSecondary">
-                      Built-in vector search so your agents remember context across sessions. No external database required.
-                    </p>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-5 text-left hover:border-green-500/30 transition-colors">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
-                      <Shield className="w-5 h-5 text-green-500" />
-                    </div>
-                    <h3 className="font-semibold text-textPrimary mb-1">100% Local & Private</h3>
-                    <p className="text-sm text-textSecondary">
-                      Everything runs on your machine — your traces, memories, and data stay on your device. No sign-ups, no telemetry.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secondary feature row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Laptop className="w-4 h-4 text-orange-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Desktop Native</h3>
-                      <p className="text-xs text-textSecondary">
-                        Optimized for macOS, Windows & Linux. Runs as a native app, not a browser tab.
+                    <div className="text-center sm:text-left">
+                      <p className="text-sm sm:text-base font-bold text-emerald-800 dark:text-emerald-300 mb-1">
+                        100% Local & Private
+                      </p>
+                      <p className="text-xs sm:text-sm font-medium text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                        Your data never leaves your laptop. Zero cloud dependencies. Fully optimized for desktops & laptops.
                       </p>
                     </div>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Zap className="w-4 h-4 text-cyan-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Blazing Fast</h3>
-                      <p className="text-xs text-textSecondary">
-                        Built with Rust. Sub-millisecond trace ingestion with embedded storage.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-surface-elevated rounded-xl border border-border p-4 text-left flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Eye className="w-4 h-4 text-indigo-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-textPrimary text-sm mb-0.5">Open Source</h3>
-                      <p className="text-xs text-textSecondary">
-                        Fully transparent. Inspect, extend, and contribute to the codebase.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* GitHub Star CTA */}
-                <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-500/20 rounded-xl p-5 mb-8">
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <Star className="w-5 h-5 text-amber-500" />
-                    <p className="text-sm text-textSecondary">
-                      Love AgentReplay? Help us grow — give us a star on GitHub!
-                    </p>
-                    <a
-                      href="https://github.com/agentreplay/agentreplay"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-                    >
-                      <Star className="w-4 h-4" />
-                      Star on GitHub
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
                   </div>
                 </div>
 
@@ -667,8 +629,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
