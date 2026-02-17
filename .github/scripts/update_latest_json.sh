@@ -40,25 +40,25 @@ asset_sig() {
 }
 
 # macOS updater artifacts (prefer arch-specific names)
-mac_aarch64_asset=$(asset_name 'aarch64.*\\.app\\.tar\\.gz$')
-mac_x64_asset=$(asset_name '(x64|x86_64).*\\.app\\.tar\\.gz$')
+mac_aarch64_asset=$(asset_name 'aarch64.*\.app\.tar\.gz$')
+mac_x64_asset=$(asset_name '(x64|x86_64).*\.app\.tar\.gz$')
 
 # fallback for legacy generic naming
 if [[ -z "$mac_aarch64_asset" ]]; then
-  mac_aarch64_asset=$(asset_name '\\.app\\.tar\\.gz$')
+  mac_aarch64_asset=$(asset_name '\.app\.tar\.gz$')
 fi
 if [[ -z "$mac_x64_asset" ]]; then
-  mac_x64_asset=$(asset_name '\\.app\\.tar\\.gz$')
+  mac_x64_asset=$(asset_name '\.app\.tar\.gz$')
 fi
 
 # Linux updater artifact
-linux_asset=$(asset_name '\\.AppImage\\.tar\\.gz$')
+linux_asset=$(asset_name '\.AppImage\.tar\.gz$')
 if [[ -z "$linux_asset" ]]; then
-  linux_asset=$(asset_name '\\.AppImage$')
+  linux_asset=$(asset_name '\.AppImage$')
 fi
 
 # Windows updater artifact
-windows_asset=$(asset_name '\\.nsis\\.zip$')
+windows_asset=$(asset_name '\.nsis\.zip$')
 
 mac_aarch64_sig=$(asset_sig "$mac_aarch64_asset")
 mac_x64_sig=$(asset_sig "$mac_x64_asset")
