@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 0.2.1)'
+        description: 'Version (e.g., 0.2.2)'
         required: true
-        default: '0.2.1'
+        default: '0.2.2'
 
 permissions:
   contents: write
@@ -81,16 +81,44 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
+      - name: Normalize Linux artifact names
+        run: |
+          APP_DIR="agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
+          DEB_DIR="agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb"
+
+          APPIMAGE=$(ls -1 "$APP_DIR"/*.AppImage 2>/dev/null | head -1 || true)
+          if [[ -n "$APPIMAGE" ]]; then
+            mv "$APPIMAGE" "$APP_DIR/Agent.Replay.Alpha_amd64.AppImage"
+          fi
+
+          APPIMAGE_TGZ=$(ls -1 "$APP_DIR"/*.AppImage.tar.gz 2>/dev/null | head -1 || true)
+          if [[ -n "$APPIMAGE_TGZ" ]]; then
+            mv "$APPIMAGE_TGZ" "$APP_DIR/Agent.Replay.Alpha_amd64.AppImage.tar.gz"
+            if [[ -f "${APPIMAGE_TGZ}.sig" ]]; then
+              mv "${APPIMAGE_TGZ}.sig" "$APP_DIR/Agent.Replay.Alpha_amd64.AppImage.tar.gz.sig"
+            fi
+          fi
+
+          APPIMAGE_SIG=$(ls -1 "$APP_DIR"/*.AppImage.sig 2>/dev/null | head -1 || true)
+          if [[ -n "$APPIMAGE_SIG" ]]; then
+            mv "$APPIMAGE_SIG" "$APP_DIR/Agent.Replay.Alpha_amd64.AppImage.sig"
+          fi
+
+          DEB=$(ls -1 "$DEB_DIR"/*.deb 2>/dev/null | head -1 || true)
+          if [[ -n "$DEB" ]]; then
+            mv "$DEB" "$DEB_DIR/Agent.Replay.Alpha_amd64.deb"
+          fi
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Agentreplay-x86_64-unknown-linux-gnu
           path: |
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz.sig
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.tar.gz
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.tar.gz.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/Agent.Replay.Alpha_amd64.deb
           if-no-files-found: error
 
       - name: Create Release & Upload
@@ -100,12 +128,13 @@ jobs:
           name: Agent Replay Alpha ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name || github.event.inputs.version, 'alpha') || contains(github.ref_name || github.event.inputs.version, 'beta') }}
+          overwrite_files: true
           generate_release_notes: true
           files: |
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz.sig
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
-            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.tar.gz
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.tar.gz.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/Agent.Replay.Alpha_amd64.AppImage.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/Agent.Replay.Alpha_amd64.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

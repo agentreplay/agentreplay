@@ -503,17 +503,17 @@ export default function Sidebar() {
             />
             <div className="flex flex-col min-w-0">
               <span className="text-[11px] font-medium text-foreground/80">Agentreplay</span>
-              <span className="text-[9px] text-muted-foreground/50">v0.2.1</span>
+              <span className="text-[9px] text-muted-foreground/50">v0.2.2</span>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center" title="Agentreplay v0.2.1">
+          <div className="flex flex-col items-center" title="Agentreplay v0.2.2">
             <img
               src="/icons/32x32.png"
               alt="Agentreplay"
               className="w-5 h-5 rounded"
             />
-            <span className="mt-0.5 text-[7px] leading-none text-muted-foreground/60">v0.2.1</span>
+            <span className="mt-0.5 text-[7px] leading-none text-muted-foreground/60">v0.2.2</span>
           </div>
         )}
       </div>

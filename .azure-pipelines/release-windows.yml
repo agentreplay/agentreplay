@@ -21,9 +21,9 @@ pr: none
 
 parameters:
   - name: version
-    displayName: 'Version (e.g., 0.2.1)'
+    displayName: 'Version (e.g., 0.2.2)'
     type: string
-    default: '0.2.1'
+    default: '0.2.2'
 
 variables:
   CARGO_TERM_COLOR: always

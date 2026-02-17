@@ -11,7 +11,7 @@ if [[ -z "$TOKEN" ]]; then
 fi
 
 if [[ -z "$TAG" ]]; then
-  echo "ERROR: tag argument is required (e.g. v0.2.1 or main)"
+  echo "ERROR: tag argument is required (e.g. v0.2.2 or main)"
   exit 1
 fi
 
@@ -87,7 +87,7 @@ if [[ "$platform_count" -eq 0 ]]; then
   echo "  - macOS: *.app.tar.gz + *.app.tar.gz.sig"
   echo "  - Linux: *.AppImage.tar.gz + *.AppImage.tar.gz.sig (or .AppImage + .AppImage.sig)"
   echo "  - Windows: *.nsis.zip + *.nsis.zip.sig"
-  echo "Tip: run per-platform release workflows for the same version tag (e.g., v0.2.1), then run update-latest-json workflow." 
+  echo "Tip: run per-platform release workflows for the same version tag (e.g., v0.2.2), then run update-latest-json workflow." 
   exit 1
 fi
 

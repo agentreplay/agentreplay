@@ -23,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version for manual release (e.g., 0.2.1). Creates a draft release with this tag.'
+        description: 'Version for manual release (e.g., 0.2.2). Creates a draft release with this tag.'
         required: true
-        default: '0.2.1'
+        default: '0.2.2'
       create_release:
         description: 'Create a draft release with artifacts'
         type: boolean
