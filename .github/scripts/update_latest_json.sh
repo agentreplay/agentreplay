@@ -81,6 +81,13 @@ platforms_json=$(jq -n \
 platform_count=$(echo "$platforms_json" | jq 'keys | length')
 if [[ "$platform_count" -eq 0 ]]; then
   echo "ERROR: No valid updater platform artifacts with signatures found in release ${TAG}"
+  echo "Detected assets in release ${TAG}:"
+  echo "$release_json" | jq -r '.assets[].name' | sed 's/^/  - /'
+  echo "Expected updater artifacts:"
+  echo "  - macOS: *.app.tar.gz + *.app.tar.gz.sig"
+  echo "  - Linux: *.AppImage.tar.gz + *.AppImage.tar.gz.sig (or .AppImage + .AppImage.sig)"
+  echo "  - Windows: *.nsis.zip + *.nsis.zip.sig"
+  echo "Tip: run per-platform release workflows for the same version tag (e.g., v0.2.1), then run update-latest-json workflow." 
   exit 1
 fi
 

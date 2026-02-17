@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to use (e.g., v0.2.1 or main)'
+        description: 'Release tag to use (recommended: v0.2.1). Avoid main for production releases.'
         required: true
-        default: 'main'
+        default: 'v0.2.1'
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
           TAG="${{ github.event.inputs.tag }}"
           if [[ ! "$TAG" =~ ^(main|v?[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9]+)?)$ ]]; then
             echo "Invalid tag: $TAG"
-            echo "Use main or semantic version like v0.2.1"
+            echo "Use semantic version tag like v0.2.1"
             exit 1
           fi
 
