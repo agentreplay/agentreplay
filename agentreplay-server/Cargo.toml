@@ -26,6 +26,7 @@ agentreplay-core = { path = "../agentreplay-core" }
 agentreplay-storage = { path = "../agentreplay-storage" }
 agentreplay-query = { path = "../agentreplay-query" }
 agentreplay-index = { path = "../agentreplay-index" }
+agentreplay-skill-tester = { path = "../agentreplay-skill-tester" }
 sochdb-index = { workspace = true } # For direct access to HNSW types
 
 # Web framework
@@ -51,6 +52,7 @@ bytes = "1.6"
 # Serialization
 serde = { workspace = true }
 serde_json = "1.0"
+serde_yaml = "0.9"
 toml = "0.8"
 
 # LLM Integration
@@ -90,6 +92,7 @@ dirs = "5.0"
 
 # MCP & Knowledge Graph
 uuid = { version = "1.6", features = ["v4"] }
+chrono = { workspace = true }
 
 # Metrics (optional)
 prometheus = { version = "0.13", optional = true }

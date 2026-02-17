@@ -165,6 +165,23 @@ impl ProjectManager {
         db.query_temporal_range_for_tenant(start_ts, end_ts, tenant_id)
     }
 
+    /// Paginated query for a specific project — O(log N + limit) per page
+    pub fn query_project_paginated(
+        &self,
+        project_id: u16,
+        tenant_id: u64,
+        start_ts: u64,
+        end_ts: u64,
+        limit: usize,
+        cursor: Option<&str>,
+        descending: bool,
+    ) -> Result<(Vec<AgentFlowEdge>, Option<String>)> {
+        let db = self.get_or_open_project(project_id)?;
+        db.query_temporal_range_for_tenant_paginated(
+            start_ts, end_ts, tenant_id, limit, cursor, descending,
+        )
+    }
+
     /// Query edges across all projects for a tenant
     pub fn query_all_projects(
         &self,

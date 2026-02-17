@@ -427,8 +427,8 @@ impl Agentreplay {
         agent_id: Option<u64>,
         _model: Option<&str>, // Model filtering requires payload lookup, not implemented yet
     ) -> Result<Vec<DataPoint>> {
-        // Get all traces in the time range
-        let edges = self.storage.range_scan(start_time, end_time)?;
+        // Use bounded scan with tenant/project filtering — O(K) instead of O(N)
+        let edges = self.storage.range_scan_filtered(start_time, end_time, None, project_id)?;
 
         // Filter edges based on criteria
         let filtered_edges: Vec<_> = edges
@@ -521,8 +521,15 @@ impl Agentreplay {
     }
 
     /// Get a single aggregated metric value for a time range
-    pub fn get_metric_value(&self, metric: &str, start_time: u64, end_time: u64) -> Result<f64> {
-        let edges = self.storage.range_scan(start_time, end_time)?;
+    pub fn get_metric_value(
+        &self,
+        metric: &str,
+        start_time: u64,
+        end_time: u64,
+        project_id: Option<u16>,
+    ) -> Result<f64> {
+        // Use bounded scan with project filtering — O(K) instead of O(N)
+        let edges = self.storage.range_scan_filtered(start_time, end_time, None, project_id)?;
 
         if edges.is_empty() {
             return Ok(0.0);
@@ -607,8 +614,10 @@ impl Agentreplay {
         start_time: u64,
         end_time: u64,
         group_by: &str,
+        project_id: Option<u16>,
     ) -> Result<HashMap<String, (f64, usize)>> {
-        let edges = self.storage.range_scan(start_time, end_time)?;
+        // Use bounded scan with project filtering — O(K) instead of O(N)
+        let edges = self.storage.range_scan_filtered(start_time, end_time, None, project_id)?;
 
         // Group edges by the specified dimension
         let mut groups: HashMap<String, Vec<&AgentFlowEdge>> = HashMap::new();
@@ -659,8 +668,10 @@ impl Agentreplay {
         metric: &str,
         start_time: u64,
         end_time: u64,
+        project_id: Option<u16>,
     ) -> Result<Vec<f64>> {
-        let edges = self.storage.range_scan(start_time, end_time)?;
+        // Use bounded scan with project filtering — O(K) instead of O(N)
+        let edges = self.storage.range_scan_filtered(start_time, end_time, None, project_id)?;
 
         let values: Vec<f64> = match metric {
             "latency" | "duration" => edges

@@ -27,17 +27,17 @@
 export function getApiBaseUrl(): string {
   // In Tauri, window.__TAURI__ is defined
   const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
-  
+
   if (isTauri) {
     // Tauri app: connect directly to embedded server
     return 'http://127.0.0.1:47100';
   }
-  
-  // Development with Vite proxy (port 5173)
-  if (typeof window !== 'undefined' && window.location.port === '5173') {
+
+  // Development with Vite proxy (port 5173 or 47173)
+  if (typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '47173')) {
     return ''; // Use Vite proxy
   }
-  
+
   // Fallback: direct connection to server
   return 'http://127.0.0.1:47100';
 }

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { BookOpen, Code, Database, Settings, Zap, ExternalLink, Copy, CheckCircle2, HelpCircle, Eye, Activity, BarChart3 } from 'lucide-react';
+import { BookOpen, Brain, Code, Database, Settings, Zap, ExternalLink, Copy, CheckCircle2, HelpCircle, Eye, Activity, BarChart3, Server } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useProjects } from '../context/project-context';
 import { useLocation } from 'react-router-dom';
 import { VideoHelpButton } from '../components/VideoHelpButton';
 
-type Section = 'quick-start' | 'sdk' | 'api' | 'configuration' | 'ui-guide';
+type Section = 'quick-start' | 'sdk' | 'api' | 'configuration' | 'ui-guide' | 'skill-memory';
 
 export default function Docs() {
   const { currentProject } = useProjects();
@@ -30,7 +30,7 @@ export default function Docs() {
   // Handle hash navigation (e.g., #sdk, #api)
   useEffect(() => {
     const hash = location.hash.replace('#', '') as Section;
-    if (hash && ['quick-start', 'sdk', 'api', 'configuration', 'ui-guide'].includes(hash)) {
+    if (hash && ['quick-start', 'sdk', 'api', 'configuration', 'ui-guide', 'skill-memory'].includes(hash)) {
       handleScrollToSection(hash);
     }
   }, [location.hash]);
@@ -629,6 +629,99 @@ python your_app.py`}</code>
                   </div>
                   <ExternalLink className="w-4 h-4 text-textTertiary ml-auto" />
                 </a>
+              </div>
+            </div>
+          </>
+        ),
+      },
+      // OpenClaw docs section hidden — not yet tested for release
+      {
+        id: 'skill-memory',
+        icon: <Brain className="w-6 h-6 text-primary" />,
+        title: "Skill Memory",
+        content: (
+          <>
+            <p className="text-textSecondary mb-4">
+              The <strong className="text-textPrimary">Skill Memory</strong> page is your central hub for managing learned AI capabilities. It is backed by SochDB and uses hierarchical memory with semantic search (HNSW 384-dim) for discovery.
+            </p>
+
+            {/* Overview Tab */}
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-textPrimary mb-3">Overview Tab</h4>
+              <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                <ul className="list-disc ml-5 text-sm text-textSecondary space-y-2">
+                  <li><strong>Stats Cards</strong> — Total skills, invocations, evolutions, and overall success rate at a glance.</li>
+                  <li><strong>Skills by Source</strong> — Cards showing how many skills each source/agent has learned.</li>
+                  <li><strong>Skills by Category</strong> — Tag cloud of categories (e.g. code-generation, debugging, summarization).</li>
+                  <li><strong>Recent Invocations</strong> — A live feed of the most recent skill executions with success/failure, duration, and token counts.</li>
+                  <li><strong>Architecture</strong> — Technical details: SochDB MemoryStore schema, HNSW index dimensions, and hierarchical memory levels.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Skills Tab */}
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-textPrimary mb-3">Skills Tab</h4>
+              <p className="text-sm text-textSecondary mb-3">
+                Browse, search, and filter all registered skills. The left panel lists skills; clicking one opens a detail view on the right.
+              </p>
+              <div className="bg-surface-elevated border border-border rounded-lg p-4 space-y-3">
+                <div>
+                  <h5 className="font-semibold text-textPrimary text-sm">Searching &amp; Filtering</h5>
+                  <p className="text-xs text-textSecondary">Use the search bar to find skills by name. Filter by source (type an agent name) or by status (Draft, Active, Deprecated, Archived).</p>
+                </div>
+                <div>
+                  <h5 className="font-semibold text-textPrimary text-sm">Skill Detail Panel</h5>
+                  <p className="text-xs text-textSecondary">Shows description, source, category, version, creation date, tags, shared agents, and the full definition/procedure. Separate sub-tabs display invocation history and evolution log.</p>
+                </div>
+                <div>
+                  <h5 className="font-semibold text-textPrimary text-sm">Creating a Skill</h5>
+                  <p className="text-xs text-textSecondary">Click <strong>+ New Skill</strong> in the header. Provide a name, description, source/agent name, category, tags (comma-separated), and the skill definition or prompt template.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Activity Tab */}
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-textPrimary mb-3">Activity Tab</h4>
+              <p className="text-sm text-textSecondary mb-3">
+                A timeline of recent skill invocations across all agents. Each entry shows success/failure status, source, skill ID, latency, and token usage.
+              </p>
+            </div>
+
+            {/* Key Concepts */}
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-textPrimary mb-3">Key Concepts</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <div className="font-semibold text-textPrimary text-sm mb-1">Skill</div>
+                  <p className="text-xs text-textSecondary">A reusable AI capability — a procedure, prompt template, or tool-use pattern that has been registered and versioned.</p>
+                </div>
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <div className="font-semibold text-textPrimary text-sm mb-1">Invocation</div>
+                  <p className="text-xs text-textSecondary">A record of a skill being executed — captures input, output, duration, tokens used, and success/failure.</p>
+                </div>
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <div className="font-semibold text-textPrimary text-sm mb-1">Evolution</div>
+                  <p className="text-xs text-textSecondary">A version upgrade of a skill — tracks which agent updated it, the reason, and what changed between versions.</p>
+                </div>
+                <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                  <div className="font-semibold text-textPrimary text-sm mb-1">Skill Sharing</div>
+                  <p className="text-xs text-textSecondary">Skills can be shared across agents via the shared memory store, enabling cross-agent knowledge transfer.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* API Endpoints */}
+            <div>
+              <h4 className="text-lg font-semibold text-textPrimary mb-3">API Endpoints</h4>
+              <div className="bg-surface-elevated border border-border rounded-lg p-4">
+                <pre className="text-xs text-textSecondary whitespace-pre-wrap font-mono">{`GET  /api/v1/skill-memory/stats          — Aggregate stats
+GET  /api/v1/skill-memory/skills         — List skills (search, bot, status params)
+POST /api/v1/skill-memory/skills         — Create a new skill
+GET  /api/v1/skill-memory/skills/:id     — Get skill detail
+GET  /api/v1/skill-memory/skills/:id/invocations  — Invocation history
+GET  /api/v1/skill-memory/skills/:id/evolutions   — Evolution log`}</pre>
               </div>
             </div>
           </>

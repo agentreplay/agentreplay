@@ -41,6 +41,65 @@ use tauri_nspanel::tauri_panel;
 use agentreplay_core::{AgentFlowEdge, SavedViewRegistry};
 use agentreplay_query::Agentreplay;
 
+/// Lazy-initialized database wrapper for background startup.
+///
+/// Allows the Tauri window to appear immediately while the database
+/// opens in a background thread (~60s for large datasets).
+/// All access via `Deref<Target=Agentreplay>` blocks until ready,
+/// ensuring handlers never see a partially-initialized database.
+pub struct LazyDb {
+    inner: std::sync::OnceLock<Arc<Agentreplay>>,
+    ready: std::sync::Condvar,
+    mtx: std::sync::Mutex<()>,
+}
+
+impl LazyDb {
+    pub fn new() -> Self {
+        Self {
+            inner: std::sync::OnceLock::new(),
+            ready: std::sync::Condvar::new(),
+            mtx: std::sync::Mutex::new(()),
+        }
+    }
+
+    /// Set the database once initialized. Wakes all waiting threads.
+    pub fn set(&self, db: Agentreplay) {
+        let _ = self.inner.set(Arc::new(db));
+        self.ready.notify_all();
+    }
+
+    /// Non-blocking readiness check for health/status endpoints.
+    pub fn is_ready(&self) -> bool {
+        self.inner.get().is_some()
+    }
+
+    /// Get an `Arc<Agentreplay>` (blocks until DB is ready).
+    /// Use this when external crate interfaces require `Arc<Agentreplay>`.
+    pub fn arc(&self) -> Arc<Agentreplay> {
+        if let Some(db) = self.inner.get() {
+            return Arc::clone(db);
+        }
+        let guard = self.mtx.lock().unwrap();
+        let _guard = self.ready.wait_while(guard, |_| self.inner.get().is_none()).unwrap();
+        Arc::clone(self.inner.get().unwrap())
+    }
+}
+
+impl std::ops::Deref for LazyDb {
+    type Target = Agentreplay;
+
+    fn deref(&self) -> &Agentreplay {
+        // Fast path: already initialized
+        if let Some(db) = self.inner.get() {
+            return db;
+        }
+        // Slow path: wait for background init to complete
+        let guard = self.mtx.lock().unwrap();
+        let _guard = self.ready.wait_while(guard, |_| self.inner.get().is_none()).unwrap();
+        self.inner.get().expect("DB not initialized after ready signal")
+    }
+}
+
 mod windows;
 mod commands;
 mod error;
@@ -220,7 +279,7 @@ impl Clone for IngestionQueue {
 /// Application state shared across all Tauri commands
 #[derive(Clone)]
 pub struct AppState {
-    pub db: Arc<Agentreplay>,
+    pub db: Arc<LazyDb>,
     pub db_path: PathBuf,
     pub config: Arc<RwLock<AppConfig>>,
     pub agent_registry: Arc<RwLock<Vec<String>>>, // Simplified for now
@@ -446,14 +505,45 @@ fn get_db_path(app_handle: &tauri::AppHandle) -> Result<PathBuf> {
 }
 
 /// Initialize application state
+///
+/// Returns immediately with a LazyDb placeholder. The actual database
+/// is opened in a background thread (~60s for large datasets) so the
+/// Tauri window can appear instantly. All handlers that access the DB
+/// will transparently block until it's ready.
 fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
     // Get database path
     let db_path = get_db_path(app_handle)?;
 
-    // Open Agentreplay database with high-performance WAL mode
-    tracing::info!("Opening Agentreplay database at: {:?}", db_path);
-    tracing::info!("Using high-performance WAL mode (Group Commit)");
-    let db = Arc::new(Agentreplay::open_high_performance(&db_path)?);
+    // Create lazy DB — will be initialized in background
+    let lazy_db = Arc::new(LazyDb::new());
+
+    // Spawn background thread to open the database (this is the slow part: ~60s for 2.5M edges)
+    {
+        let db_path_clone = db_path.clone();
+        let lazy_db_clone = Arc::clone(&lazy_db);
+        std::thread::Builder::new()
+            .name("db-init".into())
+            .spawn(move || {
+                tracing::info!("Background DB init started: opening Agentreplay database at {:?}", db_path_clone);
+                tracing::info!("Using high-performance WAL mode (Group Commit)");
+                let start = std::time::Instant::now();
+                match Agentreplay::open_high_performance(&db_path_clone) {
+                    Ok(db) => {
+                        let elapsed = start.elapsed();
+                        tracing::info!("Background DB init complete in {:.2}s — database ready", elapsed.as_secs_f64());
+                        lazy_db_clone.set(db);
+                    }
+                    Err(e) => {
+                        tracing::error!("FATAL: Failed to open database: {} — app will not function", e);
+                        // The LazyDb will never become ready; handlers will block forever.
+                        // In a future version, we could propagate this to the UI.
+                    }
+                }
+            })
+            .expect("Failed to spawn db-init thread");
+    }
+
+    let db = lazy_db;
 
     // Load configuration
     let config = Arc::new(RwLock::new(AppConfig::load(app_handle)?));
@@ -649,6 +739,10 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
                     if let Err(e) = db_for_metrics.flush_metrics() {
                         tracing::error!("Failed to flush metrics: {}", e);
                     }
+                    // Persist dashboard summary so totals survive restarts
+                    if let Err(e) = db_for_metrics.persist_dashboard_summary() {
+                        tracing::error!("Failed to persist dashboard summary: {}", e);
+                    }
                 }
                 _ = checkpoint_interval.tick() => {
                     // Run checkpoint on blocking thread pool — it acquires write_lock + does I/O
@@ -663,6 +757,9 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
                     tracing::info!("SHUTDOWN: Flushing final metrics...");
                     if let Err(e) = db_for_metrics.flush_metrics() {
                          tracing::error!("Failed to flush final metrics: {}", e);
+                    }
+                    if let Err(e) = db_for_metrics.persist_dashboard_summary() {
+                        tracing::error!("Failed to persist final dashboard summary: {}", e);
                     }
                     // Final checkpoint before exit
                     if let Err(e) = db_for_metrics.checkpoint() {
@@ -727,7 +824,7 @@ fn initialize_app_state(app_handle: &tauri::AppHandle) -> Result<AppState> {
 
 /// Flush batch of edges to database with proper error handling
 async fn flush_batch(
-    db: &Arc<Agentreplay>,
+    db: &Arc<LazyDb>,
     batch: &mut Vec<IngestionItem>,
     app_handle: &tauri::AppHandle,
     stats: &Arc<RwLock<ConnectionStats>>,
@@ -1162,6 +1259,11 @@ fn main() {
                         // Spawn async cleanup task
                         tauri::async_runtime::spawn(async move {
                             tracing::info!("Starting async cleanup...");
+
+                            // Emit shutdown event to frontend so it can show a closing overlay
+                            if let Err(e) = app_handle_clone.emit("app-shutting-down", ()) {
+                                tracing::warn!("Failed to emit shutdown event to frontend: {}", e);
+                            }
 
                             // 1. Signal all servers to shutdown gracefully
                             cleanup_state_clone.shutdown_token.cancel();

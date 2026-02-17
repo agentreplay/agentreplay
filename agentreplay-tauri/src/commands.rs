@@ -2180,7 +2180,7 @@ pub async fn run_evaluation(
 
 /// Extract input, output, and context from trace edges and their payloads
 fn extract_trace_io(
-    db: &Arc<agentreplay_query::Agentreplay>,
+    db: &agentreplay_query::Agentreplay,
     edges: &[agentreplay_core::AgentFlowEdge],
 ) -> (Option<String>, Option<String>, Option<Vec<String>>) {
     let mut input = None;

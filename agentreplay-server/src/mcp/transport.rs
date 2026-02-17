@@ -14,13 +14,15 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! MCP transport abstraction (stdio/SSE/WebSocket).
+//!
+//! Stdio uses newline-delimited JSON per MCP specification (T1).
 
 use crate::mcp::handler::{McpRequest, McpResponse};
 use bytes::BytesMut;
 use std::io;
 use std::sync::Arc;
 use thiserror::Error;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::sync::{broadcast, mpsc, Mutex};
 
 /// Transport-level errors.
@@ -45,7 +47,10 @@ pub trait McpTransport: Send + Sync {
     async fn send(&mut self, response: McpResponse) -> Result<(), TransportError>;
 }
 
-/// Stdio transport with length-prefixed framing (4-byte big-endian length).
+/// Stdio transport with newline-delimited JSON framing per MCP specification.
+///
+/// Each message is a single JSON object terminated by a newline character.
+/// This replaces the previous 4-byte big-endian length-prefix framing.
 pub struct StdioTransport {
     reader: BufReader<tokio::io::Stdin>,
     writer: BufWriter<tokio::io::Stdout>,
@@ -60,26 +65,30 @@ impl StdioTransport {
         }
     }
 
-    async fn read_frame(&mut self) -> Result<Vec<u8>, TransportError> {
-        let mut len_buf = [0u8; 4];
-        self.reader.read_exact(&mut len_buf).await?;
-        let len = u32::from_be_bytes(len_buf) as usize;
-        if len == 0 {
-            return Err(TransportError::InvalidFrameLength(len));
+    /// Read a newline-delimited JSON message from stdin
+    async fn read_line_json(&mut self) -> Result<Vec<u8>, TransportError> {
+        let mut line = String::new();
+        loop {
+            line.clear();
+            let bytes_read = self.reader.read_line(&mut line).await?;
+            if bytes_read == 0 {
+                return Err(TransportError::Io(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "stdin closed",
+                )));
+            }
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                return Ok(trimmed.as_bytes().to_vec());
+            }
+            // Skip empty lines
         }
-        let mut payload = vec![0u8; len];
-        self.reader.read_exact(&mut payload).await?;
-        Ok(payload)
     }
 
-    async fn write_frame(&mut self, payload: &[u8]) -> Result<(), TransportError> {
-        let len = payload.len();
-        if len == 0 {
-            return Err(TransportError::InvalidFrameLength(len));
-        }
-        let len_buf = (len as u32).to_be_bytes();
-        self.writer.write_all(&len_buf).await?;
+    /// Write a newline-delimited JSON message to stdout
+    async fn write_line_json(&mut self, payload: &[u8]) -> Result<(), TransportError> {
         self.writer.write_all(payload).await?;
+        self.writer.write_all(b"\n").await?;
         self.writer.flush().await?;
         Ok(())
     }
@@ -88,14 +97,14 @@ impl StdioTransport {
 #[async_trait::async_trait]
 impl McpTransport for StdioTransport {
     async fn recv(&mut self) -> Result<McpRequest, TransportError> {
-        let payload = self.read_frame().await?;
+        let payload = self.read_line_json().await?;
         let request = serde_json::from_slice(&payload)?;
         Ok(request)
     }
 
     async fn send(&mut self, response: McpResponse) -> Result<(), TransportError> {
         let payload = serde_json::to_vec(&response)?;
-        self.write_frame(&payload).await
+        self.write_line_json(&payload).await
     }
 }
 
@@ -180,16 +189,14 @@ impl McpTransport for BufferTransport {
     }
 }
 
-/// Utility for decoding a length-prefixed buffer into a request.
-pub fn decode_length_prefixed_request(mut buf: BytesMut) -> Result<McpRequest, TransportError> {
-    if buf.len() < 4 {
-        return Err(TransportError::InvalidFrameLength(buf.len()));
-    }
-    let len = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]) as usize;
-    if buf.len() < 4 + len {
-        return Err(TransportError::InvalidFrameLength(buf.len()));
-    }
-    let payload = buf.split_off(4).split_to(len);
-    let request = serde_json::from_slice(&payload)?;
+/// Utility for decoding a newline-delimited JSON request from a buffer.
+/// Searches for the first newline and parses the JSON before it.
+pub fn decode_newline_delimited_request(buf: &BytesMut) -> Result<McpRequest, TransportError> {
+    let data = buf.as_ref();
+    let newline_pos = data
+        .iter()
+        .position(|&b| b == b'\n')
+        .ok_or_else(|| TransportError::InvalidFrameLength(data.len()))?;
+    let request = serde_json::from_slice(&data[..newline_pos])?;
     Ok(request)
 }

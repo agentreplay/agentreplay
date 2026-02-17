@@ -2228,6 +2228,137 @@ class AgentreplayClient {
 }
 
 // ============================================================================
+// Skill Memory & Bots Types
+// ============================================================================
+
+export type BotKind = 'moltbot' | 'clawdbot' | 'openclaw';
+export type SkillStatus = 'draft' | 'active' | 'deprecated' | 'archived';
+export type BotStatus = 'online' | 'busy' | 'offline' | 'error' | 'maintenance';
+
+export interface Skill {
+  skill_id: string;
+  name: string;
+  description: string;
+  origin_bot: BotKind;
+  category: string;
+  tags: string[];
+  definition: Record<string, any>;
+  version: number;
+  invocation_count: number;
+  success_rate: number;
+  avg_duration_ms: number;
+  avg_tokens: number;
+  embedding: number[] | null;
+  shared_with: BotKind[];
+  status: SkillStatus;
+  episode_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSkillRequest {
+  name: string;
+  description: string;
+  origin_bot: BotKind;
+  category: string;
+  tags?: string[];
+  definition?: Record<string, any>;
+  shared_with?: BotKind[];
+}
+
+export interface SkillInvocation {
+  invocation_id: string;
+  skill_id: string;
+  bot_kind: BotKind;
+  success: boolean;
+  duration_ms: number;
+  tokens_used: number;
+  error_message: string | null;
+  context: Record<string, any>;
+  timestamp: string;
+}
+
+export interface SkillEvolution {
+  evolution_id: string;
+  skill_id: string;
+  from_version: number;
+  to_version: number;
+  change_description: string;
+  evolved_by: BotKind;
+  timestamp: string;
+}
+
+export interface SkillMemoryStats {
+  total_skills: number;
+  active_skills: number;
+  total_invocations: number;
+  total_evolutions: number;
+  avg_success_rate: number;
+  skills_by_bot: Record<BotKind, number>;
+  skills_by_category: Record<string, number>;
+  skills_by_status: Record<SkillStatus, number>;
+}
+
+export interface BotTool {
+  name: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface BotConfig {
+  max_concurrent_sessions: number;
+  token_budget: number;
+  task_timeout_secs: number;
+  skill_sharing_enabled: boolean;
+  accept_skills_from: BotKind[];
+  system_prompt: string | null;
+  temperature: number;
+  tools: BotTool[];
+}
+
+export interface BotStats {
+  tasks_completed: number;
+  tasks_failed: number;
+  total_tokens_used: number;
+  uptime_seconds: number;
+  skills_created: number;
+  skills_shared: number;
+}
+
+export interface BotInstance {
+  bot_id: string;
+  kind: BotKind;
+  name: string;
+  description: string;
+  version: string;
+  model: string;
+  status: BotStatus;
+  config: BotConfig;
+  skill_ids: string[];
+  stats: BotStats;
+  memory_namespace: string;
+  registered_at: string;
+  last_active: string;
+}
+
+export interface BotActivityEvent {
+  event_id: string;
+  bot_id: string;
+  event_type: string;
+  description: string;
+  metadata: Record<string, any>;
+  timestamp: string;
+}
+
+export interface BotRegistryStats {
+  total_bots: number;
+  online_bots: number;
+  total_tasks_completed: number;
+  total_tokens_used: number;
+  bots_by_kind: Record<BotKind, number>;
+}
+
+// ============================================================================
 // Export singleton instance
 // ============================================================================
 
@@ -2253,3 +2384,95 @@ export const fetcher = async (url: string) => {
 };
 
 // Types are already exported above with 'export interface'
+
+// ============================================================================
+// OpenClaw Observability Types
+// ============================================================================
+
+export interface OpenclawTokenBreakdown {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_write: number;
+  total: number;
+}
+
+export interface OpenclawModelUsage {
+  provider: string;
+  model: string;
+  request_count: number;
+  tokens: OpenclawTokenBreakdown;
+  cost_usd: number;
+  avg_duration_ms: number;
+  error_count: number;
+}
+
+export interface OpenclawChannelMetrics {
+  channel: string;
+  messages_processed: number;
+  messages_queued: number;
+  webhooks_received: number;
+  webhook_errors: number;
+  avg_message_duration_ms: number;
+  avg_webhook_duration_ms: number;
+}
+
+export interface OpenclawSessionStateMetrics {
+  idle: number;
+  processing: number;
+  waiting: number;
+  stuck: number;
+  total_transitions: number;
+}
+
+export interface OpenclawLaneMetrics {
+  enqueue_count: number;
+  dequeue_count: number;
+  current_size: number;
+}
+
+export interface OpenclawQueueMetrics {
+  current_depth: number;
+  total_enqueued: number;
+  total_dequeued: number;
+  avg_wait_ms: number;
+  max_wait_ms: number;
+  lanes: Record<string, OpenclawLaneMetrics>;
+}
+
+export interface OpenclawWebhookMetrics {
+  received: number;
+  processed: number;
+  errors: number;
+  avg_duration_ms: number;
+}
+
+export interface OpenclawMessageMetrics {
+  queued: number;
+  completed: number;
+  skipped: number;
+  errors: number;
+  avg_duration_ms: number;
+}
+
+export interface OpenclawEvent {
+  event_id: string;
+  event_type: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface OpenclawMetrics {
+  tokens: OpenclawTokenBreakdown;
+  cost_usd: number;
+  model_usage: Record<string, OpenclawModelUsage>;
+  channel_metrics: Record<string, OpenclawChannelMetrics>;
+  session_states: OpenclawSessionStateMetrics;
+  queue_metrics: OpenclawQueueMetrics;
+  webhook_metrics: OpenclawWebhookMetrics;
+  message_metrics: OpenclawMessageMetrics;
+  total_runs: number;
+  recent_events: OpenclawEvent[];
+  last_updated: string;
+}

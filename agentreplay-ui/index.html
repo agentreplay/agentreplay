@@ -36,6 +36,23 @@ limitations under the License. -->
 
 <body>
   <div id="root"></div>
+  <script>
+    // WebKit/Safari rate-limits history.replaceState to 100 calls per 10s.
+    // React Router + StrictMode can exceed this during init. Deduplicate
+    // identical consecutive replaceState calls to stay under the limit.
+    (function() {
+      var orig = History.prototype.replaceState;
+      var lastUrl = null;
+      var lastState = null;
+      History.prototype.replaceState = function(state, title, url) {
+        var u = url ? String(url) : null;
+        if (u === lastUrl) return; // skip identical consecutive calls
+        lastUrl = u;
+        lastState = state;
+        return orig.call(this, state, title, url);
+      };
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

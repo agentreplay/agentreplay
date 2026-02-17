@@ -365,6 +365,17 @@ impl Agentreplay {
                         model,
                         operation,
                     );
+                    
+                    // Record model/provider in dashboard summary for cost analytics
+                    let edge_tokens = edges.iter()
+                        .find(|e| e.edge_id == *edge_id)
+                        .map(|e| e.token_count as u64)
+                        .unwrap_or(0);
+                    self.storage.record_model_metrics(
+                        model.unwrap_or(""),
+                        provider.unwrap_or(""),
+                        edge_tokens,
+                    );
                 }
             }
         }
@@ -618,6 +629,17 @@ impl Agentreplay {
         self.storage.get_session_edges(session_id)
     }
 
+    /// Get session edges using the persisted session index (fast O(K) lookup)
+    pub fn get_session_edges_indexed(&self, session_id: u64) -> Result<Vec<AgentFlowEdge>> {
+        self.storage.get_session_edges_indexed(session_id)
+    }
+
+    /// Get all descendant edges of a parent edge using the children index.
+    /// Returns only actual children/grandchildren — O(K) where K = descendant count.
+    pub fn get_descendant_edges(&self, parent_edge_id: u128) -> Result<Vec<AgentFlowEdge>> {
+        self.storage.get_descendant_edges(parent_edge_id)
+    }
+
     /// Get the pre-computed dashboard summary (Task 9)
     pub fn get_dashboard_summary(&self) -> agentreplay_storage::DashboardSummary {
         self.storage.get_dashboard_summary()
@@ -721,6 +743,21 @@ impl Agentreplay {
     ) -> Result<Vec<AgentFlowEdge>> {
         self.storage
             .range_scan_filtered(start_ts, end_ts, tenant_id, project_id)
+    }
+
+    /// Fast paginated query for root traces (causal_parent == 0).
+    /// Returns (root_edges_for_page, estimated_total_roots).
+    pub fn query_root_traces_page(
+        &self,
+        start_ts: u64,
+        end_ts: u64,
+        tenant_id: u64,
+        project_id: Option<u16>,
+        limit: usize,
+        offset: usize,
+    ) -> Result<(Vec<AgentFlowEdge>, u64)> {
+        self.storage
+            .query_root_traces_page(start_ts, end_ts, tenant_id, project_id, limit, offset)
     }
 
     /// Query edges with PII filtering (Task 10)
@@ -1562,6 +1599,11 @@ impl Agentreplay {
         self.storage.flush_metrics()
     }
 
+    /// Persist the DashboardSummary to disk so totals survive restarts
+    pub fn persist_dashboard_summary(&self) -> Result<()> {
+        self.storage.persist_dashboard_summary()
+    }
+
     /// Sync only the vector index to disk
     ///
     /// **Memory Persistence**: Call this after memory/embedding operations to ensure
@@ -1614,14 +1656,14 @@ impl Agentreplay {
         let mut causal_ok = false;
         let mut vector_ok = false;
 
-        // Step 1: Sync storage (WAL durability) - CRITICAL for data integrity
-        match self.storage.sync() {
+        // Step 1: Shutdown storage (flush + fsync WAL for durability) - CRITICAL for data integrity
+        match self.storage.shutdown() {
             Ok(()) => {
                 sync_ok = true;
-                info!("Storage synced successfully");
+                info!("Storage shutdown successfully (WAL fsynced)");
             }
             Err(e) => {
-                let msg = format!("Failed to sync storage: {}", e);
+                let msg = format!("Failed to shutdown storage: {}", e);
                 warn!("{}", msg);
                 errors.push(msg);
             }

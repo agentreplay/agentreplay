@@ -18,6 +18,7 @@ import App from './App';
 import './index.css';
 import { ProjectProvider } from './context/project-context';
 import { ToastProvider } from './context/toast-context';
+import ShutdownOverlay from '../components/ShutdownOverlay';
 
 // Initialize PostHog analytics (must be imported early)
 import './lib/posthog';
@@ -44,6 +45,7 @@ function Root() {
     <ToastProvider>
       <ProjectProvider>
         <App />
+        <ShutdownOverlay />
       </ProjectProvider>
     </ToastProvider>
   );

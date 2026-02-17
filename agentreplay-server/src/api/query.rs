@@ -90,6 +90,12 @@ pub struct AppState {
     /// High-performance ingestion actor for batched, deduplicated trace ingestion
     /// Routes traces through: Validation → Batching → Deduplication → Storage
     pub ingestion_actor: Option<crate::ingestion::IngestionActorHandle>,
+    /// Skill Memory Store — persistent skill memory for cross-task reuse (AI Memory OS)
+    pub skill_memory_store: Option<Arc<crate::api::skill_memory::SkillMemoryStore>>,
+    /// Bot Registry v2 — managed registry for moltbot, clawdbot, openclaw
+    pub bot_registry_v2: Option<Arc<crate::bot_registry::BotRegistry>>,
+    /// OpenClaw enrichment engine — processes openclaw OTLP data
+    pub openclaw_enricher: Option<Arc<crate::openclaw_enrichment::OpenclawEnricher>>,
 }
 
 /// Query parameters for listing traces
@@ -482,13 +488,24 @@ pub async fn list_traces(
 
         // Query traces - use ProjectManager if available and project_id specified
         let mut cursor_from_storage: Option<String> = None;
-        let using_cursor = params.cursor.is_some() && state.project_manager.is_none();
+        let using_cursor = params.cursor.is_some();
+        let descending = params.sort_by.is_none() || params.sort_order.as_deref().unwrap_or("desc") != "asc";
 
         let mut edges = if let Some(ref pm) = state.project_manager {
             if let Some(project_id) = params.project_id {
-                // Query specific project
-                pm.query_project(project_id, auth.tenant_id, start_ts, end_ts)
-                    .map_err(|e| ApiError::Internal(e.to_string()))?
+                // Use cursor-based pagination — O(log N + limit) per page
+                let fetch_limit = params.limit * 4; // Over-fetch for post-filter headroom
+                let (fetched, next) = pm.query_project_paginated(
+                    project_id,
+                    auth.tenant_id,
+                    start_ts,
+                    end_ts,
+                    fetch_limit,
+                    params.cursor.as_deref(),
+                    descending,
+                ).map_err(|e| ApiError::Internal(e.to_string()))?;
+                cursor_from_storage = next;
+                fetched
             } else {
                 // Query all projects for this tenant
                 pm.query_all_projects(auth.tenant_id, start_ts, end_ts)

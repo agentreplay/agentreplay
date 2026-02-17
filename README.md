@@ -55,8 +55,11 @@
 
 | Platform | Download | Architecture |
 |----------|----------|--------------|
-| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_aarch64.dmg) | Apple Silicon (M1/M2/M3/M4) |
-| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/download/main/Agent.Replay.Alpha_0.1.1-alpha_x64.dmg) | Intel |
+| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/latest/download/Agent.Replay.Alpha_0.2.1_aarch64.dmg) | Apple Silicon (M1/M2/M3/M4) |
+| **macOS** | [Agent Replay.dmg](https://github.com/agentreplay/agentreplay/releases/latest/download/Agent.Replay.Alpha_0.2.1_x64.dmg) | Intel |
+| **Linux** | [Agent Replay.AppImage](https://github.com/agentreplay/agentreplay/releases/latest/download/Agent.Replay.Alpha_0.2.1_amd64.AppImage) | x86_64 |
+| **Linux** | [Agent Replay.deb](https://github.com/agentreplay/agentreplay/releases/latest/download/Agent.Replay.Alpha_0.2.1_amd64.deb) | x86_64 (Debian/Ubuntu) |
+| **Windows** | [Agent Replay Setup.exe](https://github.com/agentreplay/agentreplay/releases/latest/download/Agent.Replay.Alpha_0.2.1_x64-setup.exe) | x86_64 |
 
 
 ### Or Build from Source

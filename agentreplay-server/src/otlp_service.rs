@@ -28,16 +28,26 @@ use opentelemetry_proto::tonic::collector::trace::v1::{
 };
 use opentelemetry_proto::tonic::common::v1::any_value;
 
+use crate::openclaw_enrichment::OpenclawEnricher;
 use crate::project_manager::ProjectManager;
 
 /// OTLP trace service implementation
 pub struct OtlpTraceService {
     project_manager: Arc<ProjectManager>,
+    openclaw_enricher: Option<Arc<OpenclawEnricher>>,
 }
 
 impl OtlpTraceService {
     pub fn new(project_manager: Arc<ProjectManager>) -> Self {
-        Self { project_manager }
+        Self {
+            project_manager,
+            openclaw_enricher: None,
+        }
+    }
+
+    pub fn with_openclaw_enricher(mut self, enricher: Option<Arc<OpenclawEnricher>>) -> Self {
+        self.openclaw_enricher = enricher;
+        self
     }
 
     /// Extract tenant_id and project_id from resource attributes
@@ -259,10 +269,30 @@ impl TraceService for OtlpTraceService {
         use crate::api::converters::convert_otel_span_to_edge;
 
         let mut entries = Vec::new();
+        let mut openclaw_spans: Vec<(String, std::collections::HashMap<String, serde_json::Value>)> = Vec::new();
+        let mut resource_attrs_str: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
         for span_json in spans {
             // Parse as OtelSpan
             match serde_json::from_value::<crate::api::converters::OtelSpan>(span_json.clone()) {
                 Ok(otel_span) => {
+                    // Collect resource attributes as strings for openclaw detection
+                    if resource_attrs_str.is_empty() {
+                        for (k, v) in &otel_span.attributes {
+                            if k.starts_with("service.") || k.starts_with("service_")
+                                || k.starts_with("openclaw.")
+                                || k.starts_with("agent.")
+                            {
+                                if let Some(s) = v.as_str() {
+                                    resource_attrs_str.insert(k.clone(), s.to_string());
+                                }
+                            }
+                        }
+                    }
+
+                    // Collect span data for openclaw enrichment
+                    openclaw_spans.push((otel_span.name.clone(), otel_span.attributes.clone()));
+
                     match convert_otel_span_to_edge(&otel_span, tenant_id, project_id as u16) {
                         Ok(edge) => {
                             // Construct payload from attributes and events
@@ -314,6 +344,23 @@ impl TraceService for OtlpTraceService {
             info!("OTLP: Successfully stored {} spans", span_count);
         }
 
+        // OpenClaw enrichment: detect openclaw-sourced spans and process metrics
+        if let Some(ref enricher) = self.openclaw_enricher {
+            // Check the first span's attributes for openclaw detection
+            let first_span_attrs = openclaw_spans.first()
+                .map(|(_, attrs)| attrs.clone())
+                .unwrap_or_default();
+
+            if let Some(source) = crate::openclaw_enrichment::detect_openclaw_source(
+                &resource_attrs_str,
+                &first_span_attrs,
+            ) {
+                debug!("OTLP: Detected openclaw source (bot={:?}), enriching {} spans",
+                    source.bot_kind, openclaw_spans.len());
+                enricher.enrich_spans(&source, &openclaw_spans).await;
+            }
+        }
+
         // Return success response
         Ok(Response::new(ExportTraceServiceResponse {
             partial_success: None,
@@ -322,11 +369,15 @@ impl TraceService for OtlpTraceService {
 }
 
 /// Start OTLP gRPC server on port 47117
-pub async fn start_otlp_server(project_manager: Arc<ProjectManager>) -> Result<()> {
+pub async fn start_otlp_server(
+    project_manager: Arc<ProjectManager>,
+    openclaw_enricher: Option<Arc<OpenclawEnricher>>,
+) -> Result<()> {
     use opentelemetry_proto::tonic::collector::trace::v1::trace_service_server::TraceServiceServer;
 
     let addr = "0.0.0.0:47117".parse()?;
-    let service = OtlpTraceService::new(project_manager);
+    let service = OtlpTraceService::new(project_manager)
+        .with_openclaw_enricher(openclaw_enricher);
 
     info!("🚀 OTLP gRPC server starting on {}", addr);
 

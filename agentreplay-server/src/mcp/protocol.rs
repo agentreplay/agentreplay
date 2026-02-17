@@ -24,8 +24,16 @@ use std::collections::HashMap;
 /// JSON-RPC 2.0 protocol version
 pub const JSONRPC_VERSION: &str = "2.0";
 
-/// MCP protocol version
-pub const MCP_PROTOCOL_VERSION: &str = "2024-11-05";
+/// MCP protocol version (2025-11-25 — latest spec)
+pub const MCP_PROTOCOL_VERSION: &str = "2025-11-25";
+
+/// Supported protocol versions for negotiation (newest first)
+pub const MCP_SUPPORTED_VERSIONS: &[&str] = &[
+    "2025-11-25",
+    "2025-06-18",
+    "2025-03-26",
+    "2024-11-05",
+];
 
 // =============================================================================
 // Core JSON-RPC 2.0 Types
@@ -299,12 +307,40 @@ pub struct ReadResourceResult {
 pub struct Tool {
     /// Unique name for the tool
     pub name: String,
+    /// Human-readable title for display (MCP 2025-11-25)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
     /// Human-readable description
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// JSON Schema for tool parameters
     #[serde(rename = "inputSchema")]
     pub input_schema: serde_json::Value,
+    /// JSON Schema for tool output (MCP 2025-06-18)
+    #[serde(rename = "outputSchema", skip_serializing_if = "Option::is_none")]
+    pub output_schema: Option<serde_json::Value>,
+    /// Behavioral annotations (MCP 2025-03-26)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<ToolAnnotations>,
+}
+
+/// Tool behavioral annotations (MCP 2025-03-26)
+///
+/// Describes tool behavior so clients can make informed UI/safety decisions.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ToolAnnotations {
+    /// Tool does not modify any state
+    #[serde(rename = "readOnlyHint", skip_serializing_if = "Option::is_none")]
+    pub read_only_hint: Option<bool>,
+    /// Tool performs irreversible operations
+    #[serde(rename = "destructiveHint", skip_serializing_if = "Option::is_none")]
+    pub destructive_hint: Option<bool>,
+    /// Tool can safely be called multiple times with same params
+    #[serde(rename = "idempotentHint", skip_serializing_if = "Option::is_none")]
+    pub idempotent_hint: Option<bool>,
+    /// Tool interacts with external services
+    #[serde(rename = "openWorldHint", skip_serializing_if = "Option::is_none")]
+    pub open_world_hint: Option<bool>,
 }
 
 /// List tools result
@@ -339,6 +375,9 @@ pub enum ToolContent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallToolResult {
     pub content: Vec<ToolContent>,
+    /// Machine-parseable structured output (MCP 2025-06-18)
+    #[serde(rename = "structuredContent", skip_serializing_if = "Option::is_none")]
+    pub structured_content: Option<serde_json::Value>,
     #[serde(rename = "isError", skip_serializing_if = "Option::is_none")]
     pub is_error: Option<bool>,
 }
@@ -548,4 +587,221 @@ pub struct GetContextResult {
     pub items: Vec<ContextItem>,
     /// Total matching items (before limit)
     pub total_matches: usize,
+}
+
+// =============================================================================
+// Session Management (MCP 2025-03-26)
+// =============================================================================
+
+/// Session ID header name
+pub const MCP_SESSION_ID_HEADER: &str = "Mcp-Session-Id";
+
+// =============================================================================
+// Resource Templates (MCP spec)
+// =============================================================================
+
+/// Resource template with URI pattern (RFC 6570)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceTemplate {
+    /// URI template (RFC 6570)
+    #[serde(rename = "uriTemplate")]
+    pub uri_template: String,
+    /// Human-readable name
+    pub name: String,
+    /// Optional description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// MIME type of the resource content
+    #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+}
+
+/// List resource templates result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListResourceTemplatesResult {
+    #[serde(rename = "resourceTemplates")]
+    pub resource_templates: Vec<ResourceTemplate>,
+    #[serde(rename = "nextCursor", skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+}
+
+// =============================================================================
+// Progress Notifications (MCP spec)
+// =============================================================================
+
+/// Progress notification for long-running operations
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressNotification {
+    /// Progress token from the original request
+    #[serde(rename = "progressToken")]
+    pub progress_token: JsonRpcId,
+    /// Current progress value
+    pub progress: f64,
+    /// Total expected value (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<f64>,
+    /// Human-readable progress message (MCP 2025-03-26)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+// =============================================================================
+// Logging (MCP spec)
+// =============================================================================
+
+/// Log levels per MCP specification
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
+pub enum McpLogLevel {
+    Debug,
+    Info,
+    Notice,
+    Warning,
+    Error,
+    Critical,
+    Alert,
+    Emergency,
+}
+
+impl Default for McpLogLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+/// Set logging level params
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetLevelParams {
+    pub level: McpLogLevel,
+}
+
+/// Log message notification (notifications/message)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogMessageNotification {
+    pub level: McpLogLevel,
+    pub logger: String,
+    pub data: serde_json::Value,
+}
+
+// =============================================================================
+// Elicitation (MCP 2025-06-18)
+// =============================================================================
+
+/// Elicitation request sent from server to client
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ElicitRequest {
+    /// Human-readable message explaining what is needed
+    pub message: String,
+    /// JSON Schema describing required input for form-mode
+    #[serde(rename = "requestedSchema", skip_serializing_if = "Option::is_none")]
+    pub requested_schema: Option<serde_json::Value>,
+    /// URL for url-mode elicitation (MCP 2025-11-25)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+/// Elicitation response from client
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ElicitResult {
+    /// Outcome of the elicitation
+    pub action: ElicitAction,
+    /// Collected data (for form-mode)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<serde_json::Value>,
+}
+
+/// Elicitation action outcome
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ElicitAction {
+    Accept,
+    Decline,
+    Cancel,
+}
+
+// =============================================================================
+// Sampling / CreateMessage (MCP spec)
+// =============================================================================
+
+/// Sampling request (server → client)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateMessageParams {
+    pub messages: Vec<SamplingMessage>,
+    #[serde(rename = "modelPreferences", skip_serializing_if = "Option::is_none")]
+    pub model_preferences: Option<serde_json::Value>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "maxTokens")]
+    pub max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f64>,
+    /// Include tool definitions for tool-calling (MCP 2025-11-25)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<Tool>>,
+}
+
+/// Sampling message
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SamplingMessage {
+    pub role: PromptRole,
+    pub content: PromptContent,
+}
+
+/// Sampling result (client → server)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateMessageResult {
+    pub role: PromptRole,
+    pub content: PromptContent,
+    pub model: String,
+    #[serde(rename = "stopReason", skip_serializing_if = "Option::is_none")]
+    pub stop_reason: Option<String>,
+}
+
+// =============================================================================
+// Resource Subscriptions (MCP spec)
+// =============================================================================
+
+/// Subscribe to resource changes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubscribeParams {
+    pub uri: String,
+}
+
+/// Unsubscribe from resource changes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UnsubscribeParams {
+    pub uri: String,
+}
+
+/// Resource updated notification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceUpdatedNotification {
+    pub uri: String,
+}
+
+// =============================================================================
+// Pagination helpers
+// =============================================================================
+
+/// Encode pagination cursor from offset
+pub fn encode_cursor(offset: usize) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD.encode(offset.to_string())
+}
+
+/// Decode pagination cursor to offset
+pub fn decode_cursor(cursor: &str) -> Option<usize> {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD
+        .decode(cursor)
+        .ok()
+        .and_then(|bytes| String::from_utf8(bytes).ok())
+        .and_then(|s| s.parse().ok())
+}
+
+/// Generic list params with optional cursor
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ListParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
 }

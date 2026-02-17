@@ -3,8 +3,8 @@
 Benchmark OTLP gRPC Ingestion
 Generates synthetic traces using Faker and sends them via gRPC.
 Configuration based on user request:
-- Service: j45
-- Project: 29676
+- Service: test45
+- Project: 6861
 - Tenant: 1
 - Endpoint: localhost:47117
 """
@@ -134,7 +134,7 @@ def main():
     parser.add_argument("--target", default=ENDPOINT, help="OTLP gRPC target")
     parser.add_argument("--concurrency", type=int, default=10, help="Thread count")
     parser.add_argument("--batch-size", type=int, default=1000, help="Spans per batch")
-    parser.add_argument("--max-traces", type=int, default=2000000, help="Total traces")
+    parser.add_argument("--max-traces", type=int, default=500000, help="Total traces")
     args = parser.parse_args()
 
     print(f"🚀 Benchmarking Agentreplay Ingestion")

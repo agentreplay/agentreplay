@@ -20,7 +20,6 @@ import {
   Beaker,
   BookOpen,
   ChevronLeft,
-  MessageSquare,
   NotebookPen,
   Settings,
   HardDrive,
@@ -35,35 +34,117 @@ import {
   DollarSign,
   Bug,
   Braces,
+  Shield,
+  Brain,
+  Bot,
+  Server,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProjects } from '../src/context/project-context';
-import { useAppMode } from '../src/context/app-mode-context';
+// Services are now toggled from Layout header; Sidebar listens for changes
 
-const navItems = [
-  { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1', tier: 'basic' as const },
-  { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2', tier: 'basic' as const },
-  { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3', tier: 'pro' as const },
-  { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4', tier: 'basic' as const },
-  { id: 'eval-pipeline', label: 'Eval Pipeline', icon: GitBranch, segment: 'eval-pipeline', tier: 'pro' as const },
-  { id: 'prompts', label: 'Prompts', icon: NotebookPen, segment: 'prompts', shortcut: '6', tier: 'basic' as const },
-  { id: 'model-comparison', label: 'Compare', icon: Scale, segment: 'model-comparison', tier: 'pro' as const },
-  { id: 'tools', label: 'Tools', icon: Wrench, segment: 'tools', tier: 'pro' as const },
-  { id: 'memory', label: 'Memory', icon: Database, segment: 'memory', tier: 'pro' as const },
-  { id: 'plugins', label: 'Plugins', icon: Puzzle, segment: 'plugins', tier: 'pro' as const },
-  { id: 'analytics', label: 'Analytics', icon: BarChart2, segment: 'analytics', shortcut: '7', tier: 'basic' as const },
-  { id: 'costs', label: 'Costs', icon: DollarSign, segment: 'costs', tier: 'pro' as const },
-  { id: 'mcp-tester', label: 'MCP Tester', icon: Braces, segment: 'mcp-tester', tier: 'basic' as const },
-  { id: 'storage', label: 'Storage', icon: HardDrive, segment: 'storage', tier: 'pro' as const },
-  { id: 'docs', label: 'Docs', icon: BookOpen, segment: 'docs', tier: 'basic' as const },
-  { id: 'settings', label: 'Settings', icon: Settings, segment: 'settings', shortcut: ',', tier: 'basic' as const },
+type NavItem = {
+  id: string;
+  label: string;
+  icon: any;
+  segment: string;
+  shortcut?: string;
+  tier: 'basic' | 'pro';
+};
+
+type NavGroup = {
+  groupLabel: string;
+  groupColor?: string;
+  serviceKey?: string; // maps to service ID from setup wizard
+  items: NavItem[];
+};
+
+
+
+const navGroups: NavGroup[] = [
+  {
+    groupLabel: 'AI Agents',
+    groupColor: 'text-purple-500 dark:text-purple-400',
+    serviceKey: 'agents',
+    items: [
+      { id: 'traces', label: 'Traces', icon: Activity, segment: 'traces', shortcut: '1', tier: 'basic' },
+      { id: 'search', label: 'Search', icon: Search, segment: 'search', shortcut: '2', tier: 'basic' },
+      { id: 'insights', label: 'Insights', icon: Lightbulb, segment: 'insights', shortcut: '3', tier: 'pro' },
+      { id: 'evaluations', label: 'Evaluations', icon: Beaker, segment: 'evaluations', shortcut: '4', tier: 'basic' },
+      { id: 'eval-pipeline', label: 'Eval Pipeline', icon: GitBranch, segment: 'eval-pipeline', tier: 'pro' },
+      { id: 'prompts', label: 'Prompts', icon: NotebookPen, segment: 'prompts', shortcut: '6', tier: 'basic' },
+      { id: 'model-comparison', label: 'Compare', icon: Scale, segment: 'model-comparison', tier: 'pro' },
+      { id: 'analytics', label: 'Analytics', icon: BarChart2, segment: 'analytics', shortcut: '7', tier: 'basic' },
+      { id: 'costs', label: 'Costs', icon: DollarSign, segment: 'costs', tier: 'pro' },
+      { id: 'skill-memory', label: 'Skill Memory', icon: Brain, segment: 'skill-memory', tier: 'pro' },
+    ],
+  },
+  {
+    groupLabel: 'Claude Code',
+    groupColor: 'text-sky-500 dark:text-sky-400',
+    serviceKey: 'claude',
+    items: [
+      { id: 'claude-traces', label: 'Traces', icon: Activity, segment: 'traces', tier: 'basic' },
+      { id: 'memory', label: 'Memory', icon: Database, segment: 'memory', tier: 'pro' },
+    ],
+  },
+  {
+    groupLabel: 'Service Testing',
+    groupColor: 'text-emerald-500 dark:text-emerald-400',
+    serviceKey: 'testing',
+    items: [
+      { id: 'mcp-tester', label: 'MCP Tester', icon: Braces, segment: 'mcp-tester', tier: 'basic' },
+      { id: 'skill-tester', label: 'Skill Tester', icon: Shield, segment: 'skill-tester', tier: 'basic' },
+    ],
+  },
+  // OpenClaw group hidden — not yet tested for release
+  // {
+  //   groupLabel: 'OpenClaw',
+  //   groupColor: 'text-orange-500 dark:text-orange-400',
+  //   serviceKey: 'openclaw',
+  //   items: [
+  //     { id: 'openclaw', label: 'Observability', icon: Server, segment: 'openclaw', tier: 'pro' },
+  //   ],
+  // },
+  {
+    groupLabel: 'System',
+    items: [
+      { id: 'tools', label: 'Tools', icon: Wrench, segment: 'tools', tier: 'pro' },
+      { id: 'plugins', label: 'Plugins', icon: Puzzle, segment: 'plugins', tier: 'pro' },
+      { id: 'storage', label: 'Storage', icon: HardDrive, segment: 'storage', tier: 'pro' },
+      { id: 'docs', label: 'Docs', icon: BookOpen, segment: 'docs', tier: 'basic' },
+      { id: 'settings', label: 'Settings', icon: Settings, segment: 'settings', shortcut: ',', tier: 'basic' },
+    ],
+  },
 ];
+
+// Flat list for shortcuts / keyboard nav
+const navItems = navGroups.flatMap(g => g.items);
 
 export default function Sidebar() {
   const { currentProject } = useProjects();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { appMode } = useAppMode();
+  // Enabled services — read from localStorage, synced via custom event from Layout
+  const [enabledServices, setEnabledServices] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('agentreplay_enabled_services');
+      if (stored) return new Set(JSON.parse(stored));
+    } catch {}
+    return new Set(['agents', 'claude', 'testing']);
+  });
+
+  // Sync when services are toggled in the header
+  useEffect(() => {
+    const handleServicesChanged = () => {
+      try {
+        const stored = localStorage.getItem('agentreplay_enabled_services');
+        if (stored) setEnabledServices(new Set(JSON.parse(stored)));
+      } catch {}
+    };
+    window.addEventListener('services-changed', handleServicesChanged);
+    return () => window.removeEventListener('services-changed', handleServicesChanged);
+  }, []);
 
   // Initialize from localStorage if available
   const [collapsed, setCollapsed] = useState(() => {
@@ -118,21 +199,21 @@ export default function Sidebar() {
     localStorage.setItem('sidebar_collapsed', String(newState));
   };
 
-  // Filter items based on experimental flag and app mode
-  const visibleNavItems = useMemo(() => {
-    const experimentalIds = ['insights', 'storage', 'tools', 'plugins'];
-    return navItems.filter(item => {
-      // Experimental features gate
-      if (experimentalIds.includes(item.id)) {
-        if (!experimentalFeatures) return false;
-      }
-      // App mode gate: in basic mode, only show basic-tier items
-      if (appMode === 'basic' && item.tier === 'pro') {
-        return false;
-      }
-      return true;
-    });
-  }, [experimentalFeatures, appMode]);
+  // Filter items based on experimental flag
+  const experimentalIds = ['insights', 'storage', 'tools', 'plugins'];
+  const filterItem = (item: NavItem) => {
+    if (experimentalIds.includes(item.id) && !experimentalFeatures) return false;
+    return true;
+  };
+
+  const visibleNavGroups = useMemo(() => {
+    return navGroups
+      .filter(g => !g.serviceKey || enabledServices.has(g.serviceKey))
+      .map(g => ({ ...g, items: g.items.filter(filterItem) }))
+      .filter(g => g.items.length > 0);
+  }, [experimentalFeatures, enabledServices]);
+
+  const visibleNavItems = useMemo(() => visibleNavGroups.flatMap(g => g.items), [visibleNavGroups]);
 
   // Keyboard navigation shortcuts
   useEffect(() => {
@@ -224,6 +305,11 @@ export default function Sidebar() {
               Alpha
             </span>
           )}
+          {collapsed && (
+            <span className="mt-0.5 inline-flex h-[11px] items-center rounded-full bg-orange-500/90 px-1 text-[6px] font-bold uppercase tracking-wider text-white">
+              Alpha
+            </span>
+          )}
         </div>
       </div>
 
@@ -231,54 +317,71 @@ export default function Sidebar() {
       <div className="h-3 flex-shrink-0" />
 
       {/* Navigation */}
-      <nav className={cn('flex flex-1 flex-col gap-0.5', collapsed ? 'px-1.5' : 'px-2')}>
-        {visibleNavItems.map((item) => {
-          const target = basePath ? `${basePath}/${item.segment}` : '#';
-          const isActive = basePath ? pathname.startsWith(`${basePath}/${item.segment}`) : false;
-          const Icon = item.icon;
+      <nav className={cn('flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden', collapsed ? 'px-1.5' : 'px-2')}>
+        {visibleNavGroups.map((group, gi) => (
+          <div key={group.groupLabel}>
+            {/* Group divider + label */}
+            {gi > 0 && <div className={cn('my-1.5', collapsed ? 'mx-1' : 'mx-0', 'border-t border-border/30')} />}
+            {!collapsed && (
+              <div className={cn('px-2.5 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider', group.groupColor || 'text-muted-foreground/50')}>
+                {group.groupLabel}
+              </div>
+            )}
+            {collapsed && gi > 0 && (
+              <div className="flex justify-center py-0.5">
+                <div className="w-4 h-px bg-border/40" />
+              </div>
+            )}
 
-          return (
-            <NavLink
-              key={item.id}
-              to={target}
-              className={({ isPending }) =>
-                cn(
-                  'flex items-center rounded-md transition-all duration-150 relative group/item',
-                  collapsed
-                    ? 'justify-center h-9 w-full'
-                    : 'gap-2.5 px-2.5 py-[7px]',
-                  isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground',
-                  (!basePath || target === '#') && 'pointer-events-none opacity-40',
-                  isPending && 'opacity-70'
-                )
-              }
-              title={collapsed ? `${item.label}${item.shortcut ? ` (⌘${item.shortcut})` : ''}` : undefined}
-            >
-              <Icon className={cn("flex-shrink-0", collapsed ? "h-[18px] w-[18px]" : "h-4 w-4")} />
+            {group.items.map((item) => {
+              const target = basePath ? `${basePath}/${item.segment}` : '#';
+              const isActive = basePath ? pathname.startsWith(`${basePath}/${item.segment}`) : false;
+              const Icon = item.icon;
 
-              {!collapsed && (
-                <>
-                  <span className="truncate flex-1 text-[13px] tracking-tight">{item.label}</span>
-                  {item.shortcut && (
-                    <kbd className="hidden group-hover/item:inline-flex h-4 items-center rounded border border-border/30 bg-background/40 px-1 font-sans text-[10px] text-muted-foreground/60">
-                      ⌘{item.shortcut}
-                    </kbd>
+              return (
+                <NavLink
+                  key={item.id}
+                  to={target}
+                  className={({ isPending }) =>
+                    cn(
+                      'flex items-center rounded-md transition-all duration-150 relative group/item',
+                      collapsed
+                        ? 'justify-center h-9 w-full'
+                        : 'gap-2.5 px-2.5 py-[7px]',
+                      isActive
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground',
+                      (!basePath || target === '#') && 'pointer-events-none opacity-40',
+                      isPending && 'opacity-70'
+                    )
+                  }
+                  title={collapsed ? `${item.label}${item.shortcut ? ` (⌘${item.shortcut})` : ''}` : undefined}
+                >
+                  <Icon className={cn("flex-shrink-0", collapsed ? "h-[18px] w-[18px]" : "h-4 w-4")} />
+
+                  {!collapsed && (
+                    <>
+                      <span className="truncate flex-1 text-[13px] tracking-tight">{item.label}</span>
+                      {item.shortcut && (
+                        <kbd className="hidden group-hover/item:inline-flex h-4 items-center rounded border border-border/30 bg-background/40 px-1 font-sans text-[10px] text-muted-foreground/60">
+                          ⌘{item.shortcut}
+                        </kbd>
+                      )}
+                    </>
                   )}
-                </>
-              )}
 
-              {/* Collapsed tooltip */}
-              {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/item:opacity-100 transition-opacity shadow-lg z-50">
-                  {item.label}
-                  {item.shortcut && <span className="ml-1.5 opacity-60">⌘{item.shortcut}</span>}
-                </div>
-              )}
-            </NavLink>
-          );
-        })}
+                  {/* Collapsed tooltip */}
+                  {collapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover/item:opacity-100 transition-opacity shadow-lg z-50">
+                      {item.label}
+                      {item.shortcut && <span className="ml-1.5 opacity-60">⌘{item.shortcut}</span>}
+                    </div>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Bottom actions */}
@@ -400,16 +503,17 @@ export default function Sidebar() {
             />
             <div className="flex flex-col min-w-0">
               <span className="text-[11px] font-medium text-foreground/80">Agentreplay</span>
-              <span className="text-[9px] text-muted-foreground/50">v0.1.0</span>
+              <span className="text-[9px] text-muted-foreground/50">v0.2.1</span>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center" title="Agentreplay v0.2.1">
             <img
               src="/icons/32x32.png"
               alt="Agentreplay"
               className="w-5 h-5 rounded"
             />
+            <span className="mt-0.5 text-[7px] leading-none text-muted-foreground/60">v0.2.1</span>
           </div>
         )}
       </div>

@@ -38,14 +38,48 @@ use crate::mcp::protocol::*;
 use crate::mcp::relevance::{BatchRelevanceScorer, RelevanceConfig};
 use agentreplay_index::embedding::{EmbeddingProvider, LocalEmbeddingProvider};
 use agentreplay_index::{CausalIndex, Embedding};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
+/// Tool tiers for configurable tool exposure (Task 7)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolTier {
+    /// Essential observability tools (~3 tools)
+    Minimal,
+    /// All available tools
+    Full,
+}
+
+impl Default for ToolTier {
+    fn default() -> Self {
+        Self::Full
+    }
+}
+
 /// Tool registry - defines all available MCP tools
 pub fn get_tool_definitions() -> Vec<Tool> {
+    get_tool_definitions_for_tier(ToolTier::Full)
+}
+
+/// Get tool definitions filtered by tier (Task 7)
+pub fn get_tool_definitions_for_tier(tier: ToolTier) -> Vec<Tool> {
+    let all_tools = all_tool_definitions();
+    match tier {
+        ToolTier::Minimal => all_tools.into_iter().filter(|t| {
+            matches!(t.name.as_str(), "search_traces" | "get_trace_details" | "get_trace_summary")
+        }).collect(),
+        ToolTier::Full => all_tools,
+    }
+}
+
+/// All tool definitions with annotations, output schemas, and titles
+fn all_tool_definitions() -> Vec<Tool> {
     vec![
         Tool {
             name: "search_traces".to_string(),
+            title: Some("Search Traces".to_string()),
             description: Some(
                 "Search for relevant traces using natural language. Returns traces ranked by \
                  semantic similarity, temporal recency, and graph influence."
@@ -89,9 +123,17 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                 },
                 "required": ["query"]
             }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
         },
         Tool {
             name: "get_context".to_string(),
+            title: Some("Get Context".to_string()),
             description: Some(
                 "Retrieve relevant context for an error or question. Searches historical traces \
                  to find similar past issues and their resolutions."
@@ -118,9 +160,17 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                 },
                 "required": ["query"]
             }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
         },
         Tool {
             name: "get_trace_details".to_string(),
+            title: Some("Get Trace Details".to_string()),
             description: Some(
                 "Get full details for a specific trace by ID, including payload and metadata."
                     .to_string(),
@@ -135,9 +185,17 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                 },
                 "required": ["edge_id"]
             }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
         },
         Tool {
             name: "get_related_traces".to_string(),
+            title: Some("Get Related Traces".to_string()),
             description: Some(
                 "Get traces that are causally related to a given trace (ancestors, descendants, \
                  or path between traces)."
@@ -164,9 +222,17 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                 },
                 "required": ["edge_id"]
             }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
         },
         Tool {
             name: "get_trace_summary".to_string(),
+            title: Some("Get Trace Summary".to_string()),
             description: Some(
                 "Get a high-level summary of traces matching certain criteria, including \
                  statistics on errors, latency, and token usage."
@@ -188,9 +254,17 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                     }
                 }
             }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
         },
         Tool {
             name: "save_memory".to_string(),
+            title: Some("Save Memory".to_string()),
             description: Some(
                 "Save a manual memory/observation into AgentReplay's vector store for future recall. \
                  Use this to remember important information, decisions, or user preferences."
@@ -215,6 +289,88 @@ pub fn get_tool_definitions() -> Vec<Tool> {
                     }
                 },
                 "required": ["content"]
+            }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(false),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(false),
+                open_world_hint: Some(false),
+            }),
+        },
+        Tool {
+            name: "replay_trace".to_string(),
+            title: Some("Replay Trace".to_string()),
+            description: Some(
+                "Deterministically replay an agent trace step-by-step using HLC ordering. \
+                 Returns replay events, breakpoint candidates, and an outcome signature."
+                    .to_string(),
+            ),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "trace_id": {
+                        "type": "string",
+                        "description": "Trace/root edge ID in hex format (e.g. 0xabc...)"
+                    },
+                    "include_payload": {
+                        "type": "boolean",
+                        "description": "Include full payload in each replay event",
+                        "default": false
+                    },
+                    "max_events": {
+                        "type": "integer",
+                        "description": "Maximum replay events (1..50000)",
+                        "default": 10000
+                    }
+                },
+                "required": ["trace_id"]
+            }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
+            }),
+        },
+        Tool {
+            name: "fork_trace_replay".to_string(),
+            title: Some("Fork Trace Replay".to_string()),
+            description: Some(
+                "Create a counterfactual fork at a selected step with an alternate tool response, \
+                 then compute trajectory distance and sensitivity score versus the original."
+                    .to_string(),
+            ),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "trace_id": {
+                        "type": "string",
+                        "description": "Trace/root edge ID in hex format"
+                    },
+                    "fork_edge_id": {
+                        "type": "string",
+                        "description": "Edge ID where replay should fork"
+                    },
+                    "alternate_tool_response": {
+                        "type": "object",
+                        "description": "Alternate tool response injected at fork point"
+                    },
+                    "max_events": {
+                        "type": "integer",
+                        "description": "Maximum replay events (1..50000)",
+                        "default": 10000
+                    }
+                },
+                "required": ["trace_id", "fork_edge_id", "alternate_tool_response"]
+            }),
+            output_schema: None,
+            annotations: Some(ToolAnnotations {
+                read_only_hint: Some(true),
+                destructive_hint: Some(false),
+                idempotent_hint: Some(true),
+                open_world_hint: Some(false),
             }),
         },
     ]
@@ -262,6 +418,7 @@ pub async fn execute_search_traces(
                 })
                 .to_string(),
             }],
+            structured_content: None,
             is_error: None,
         });
     }
@@ -354,6 +511,7 @@ pub async fn execute_search_traces(
         content: vec![ToolContent::Text {
             text: response.to_string(),
         }],
+        structured_content: None,
         is_error: None,
     })
 }
@@ -450,6 +608,7 @@ pub async fn execute_get_context(
         content: vec![ToolContent::Text {
             text: serde_json::to_string(&result).unwrap_or_default(),
         }],
+        structured_content: None,
         is_error: None,
     })
 }
@@ -503,6 +662,7 @@ pub async fn execute_get_trace_details(
         content: vec![ToolContent::Text {
             text: result.to_string(),
         }],
+        structured_content: None,
         is_error: None,
     })
 }
@@ -575,6 +735,7 @@ pub async fn execute_get_related_traces(
         content: vec![ToolContent::Text {
             text: result.to_string(),
         }],
+        structured_content: None,
         is_error: None,
     })
 }
@@ -667,6 +828,7 @@ pub async fn execute_save_memory(
         content: vec![ToolContent::Text {
             text: result.to_string(),
         }],
+        structured_content: None,
         is_error: None,
     })
 }

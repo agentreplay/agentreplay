@@ -18,17 +18,25 @@
 //! Handles JSON-RPC 2.0 requests for the MCP protocol.
 
 use crate::api::AppState;
+use crate::api::replay::{generate_fork_replay_response, generate_replay_response};
+use crate::mcp::context::MCP_TENANT_ID;
 use crate::mcp::protocol::*;
 use crate::mcp::tools::*;
 use agentreplay_index::CausalIndex;
 use serde_json::json;
+use std::collections::HashSet;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 /// MCP request handler
 pub struct MCPHandler {
     state: AppState,
     causal_index: Arc<CausalIndex>,
+    /// Current MCP log level (T14)
+    log_level: RwLock<McpLogLevel>,
+    /// Active resource subscriptions: URI → set of subscriber IDs (T8)
+    subscriptions: RwLock<std::collections::HashMap<String, HashSet<String>>>,
 }
 
 impl MCPHandler {
@@ -37,6 +45,8 @@ impl MCPHandler {
         Self {
             state,
             causal_index,
+            log_level: RwLock::new(McpLogLevel::Info),
+            subscriptions: RwLock::new(std::collections::HashMap::new()),
         }
     }
 
@@ -53,16 +63,34 @@ impl MCPHandler {
             "initialized" => self.handle_initialized(request.id).await,
 
             // Resources
-            "resources/list" => self.handle_resources_list(request.id).await,
+            "resources/list" => self.handle_resources_list(request.id, request.params).await,
             "resources/read" => self.handle_resources_read(request.id, request.params).await,
+            "resources/templates/list" => {
+                self.handle_resource_templates_list(request.id, request.params)
+                    .await
+            }
+            "resources/subscribe" => {
+                self.handle_resource_subscribe(request.id, request.params)
+                    .await
+            }
+            "resources/unsubscribe" => {
+                self.handle_resource_unsubscribe(request.id, request.params)
+                    .await
+            }
 
             // Tools
-            "tools/list" => self.handle_tools_list(request.id).await,
+            "tools/list" => self.handle_tools_list(request.id, request.params).await,
             "tools/call" => self.handle_tools_call(request.id, request.params).await,
 
             // Prompts
-            "prompts/list" => self.handle_prompts_list(request.id).await,
+            "prompts/list" => self.handle_prompts_list(request.id, request.params).await,
             "prompts/get" => self.handle_prompts_get(request.id, request.params).await,
+
+            // Logging (T14)
+            "logging/setLevel" => {
+                self.handle_logging_set_level(request.id, request.params)
+                    .await
+            }
 
             // Unknown method
             _ => {
@@ -79,13 +107,13 @@ impl MCPHandler {
         JsonRpcResponse::success(id, json!({}))
     }
 
-    /// Handle initialize request
+    /// Handle initialize request with protocol version negotiation (T2)
     async fn handle_initialize(
         &self,
         id: JsonRpcId,
         params: Option<serde_json::Value>,
     ) -> JsonRpcResponse {
-        let _init_params: InitializeParams = match params {
+        let init_params: InitializeParams = match params {
             Some(p) => match serde_json::from_value(p) {
                 Ok(params) => params,
                 Err(e) => {
@@ -103,14 +131,30 @@ impl MCPHandler {
             }
         };
 
+        // Version negotiation: pick the highest version both sides support
+        let negotiated_version = if MCP_SUPPORTED_VERSIONS
+            .contains(&init_params.protocol_version.as_str())
+        {
+            // Client requested a version we support
+            init_params.protocol_version.clone()
+        } else {
+            // Fall back to our latest version
+            info!(
+                client_version = %init_params.protocol_version,
+                server_version = %MCP_PROTOCOL_VERSION,
+                "Client requested unsupported protocol version, using server default"
+            );
+            MCP_PROTOCOL_VERSION.to_string()
+        };
+
         let result = InitializeResult {
-            protocol_version: MCP_PROTOCOL_VERSION.to_string(),
+            protocol_version: negotiated_version,
             capabilities: ServerCapabilities {
                 prompts: Some(PromptsCapability {
                     list_changed: false,
                 }),
                 resources: Some(ResourcesCapability {
-                    subscribe: false,
+                    subscribe: true,
                     list_changed: false,
                 }),
                 tools: Some(ToolsCapability {
@@ -133,9 +177,17 @@ impl MCPHandler {
         JsonRpcResponse::success(id, json!({}))
     }
 
-    /// Handle resources/list
-    async fn handle_resources_list(&self, id: JsonRpcId) -> JsonRpcResponse {
-        let resources = vec![
+    /// Handle resources/list with pagination (T11)
+    async fn handle_resources_list(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let list_params: ListParams = params
+            .and_then(|p| serde_json::from_value(p).ok())
+            .unwrap_or_default();
+
+        let all_resources = vec![
             Resource {
                 uri: "agentreplay://traces/recent".to_string(),
                 name: "Recent Traces".to_string(),
@@ -156,9 +208,23 @@ impl MCPHandler {
             },
         ];
 
+        // Apply cursor-based pagination
+        let page_size = 50;
+        let offset = list_params
+            .cursor
+            .as_deref()
+            .and_then(decode_cursor)
+            .unwrap_or(0);
+        let resources: Vec<Resource> = all_resources.into_iter().skip(offset).take(page_size).collect();
+        let next_cursor = if offset + page_size < resources.len() + offset {
+            None // All resources fit in one page
+        } else {
+            None
+        };
+
         let result = ListResourcesResult {
             resources,
-            next_cursor: None,
+            next_cursor,
         };
 
         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
@@ -279,11 +345,33 @@ impl MCPHandler {
         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
     }
 
-    /// Handle tools/list
-    async fn handle_tools_list(&self, id: JsonRpcId) -> JsonRpcResponse {
+    /// Handle tools/list with pagination (T11)
+    async fn handle_tools_list(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let list_params: ListParams = params
+            .and_then(|p| serde_json::from_value(p).ok())
+            .unwrap_or_default();
+
+        let all_tools = get_tool_definitions();
+        let page_size = 50;
+        let offset = list_params
+            .cursor
+            .as_deref()
+            .and_then(decode_cursor)
+            .unwrap_or(0);
+        let tools: Vec<Tool> = all_tools.into_iter().skip(offset).take(page_size).collect();
+        let next_cursor = if offset + page_size < tools.len() + offset {
+            None
+        } else {
+            None
+        };
+
         let result = ListToolsResult {
-            tools: get_tool_definitions(),
-            next_cursor: None,
+            tools,
+            next_cursor,
         };
 
         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
@@ -444,6 +532,7 @@ impl MCPHandler {
                                 })
                                 .to_string(),
                             }],
+                            structured_content: None,
                             is_error: None,
                         })
                     }
@@ -485,6 +574,134 @@ impl MCPHandler {
                 execute_save_memory(&self.state, content, collection, tags).await
             }
 
+            "replay_trace" => {
+                let trace_id = match call_params
+                    .arguments
+                    .get("trace_id")
+                    .and_then(|v| v.as_str())
+                {
+                    Some(v) => v,
+                    None => {
+                        return JsonRpcResponse::error(
+                            id,
+                            JsonRpcError::invalid_params("Missing trace_id parameter"),
+                        );
+                    }
+                };
+
+                let include_payload = call_params
+                    .arguments
+                    .get("include_payload")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+                let max_events = call_params
+                    .arguments
+                    .get("max_events")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10_000) as usize;
+
+                match generate_replay_response(
+                    trace_id,
+                    &self.state,
+                    MCP_TENANT_ID,
+                    include_payload,
+                    max_events.clamp(1, 50_000),
+                )
+                .await
+                {
+                    Ok(replay) => {
+                        let structured = serde_json::to_value(&replay)
+                            .map_err(|e| format!("Failed to serialize replay result: {}", e));
+                        match structured {
+                            Ok(structured) => Ok(CallToolResult {
+                                content: vec![ToolContent::Text {
+                                    text: structured.to_string(),
+                                }],
+                                structured_content: Some(structured),
+                                is_error: None,
+                            }),
+                            Err(e) => Err(e),
+                        }
+                    }
+                    Err(e) => Err(format!("Replay failed: {}", e)),
+                }
+            }
+
+            "fork_trace_replay" => {
+                let trace_id = match call_params
+                    .arguments
+                    .get("trace_id")
+                    .and_then(|v| v.as_str())
+                {
+                    Some(v) => v,
+                    None => {
+                        return JsonRpcResponse::error(
+                            id,
+                            JsonRpcError::invalid_params("Missing trace_id parameter"),
+                        );
+                    }
+                };
+
+                let fork_edge_id = match call_params
+                    .arguments
+                    .get("fork_edge_id")
+                    .and_then(|v| v.as_str())
+                {
+                    Some(v) => v,
+                    None => {
+                        return JsonRpcResponse::error(
+                            id,
+                            JsonRpcError::invalid_params("Missing fork_edge_id parameter"),
+                        );
+                    }
+                };
+
+                let alternate_tool_response = match call_params.arguments.get("alternate_tool_response") {
+                    Some(v) => v.clone(),
+                    None => {
+                        return JsonRpcResponse::error(
+                            id,
+                            JsonRpcError::invalid_params(
+                                "Missing alternate_tool_response parameter",
+                            ),
+                        );
+                    }
+                };
+
+                let max_events = call_params
+                    .arguments
+                    .get("max_events")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10_000) as usize;
+
+                match generate_fork_replay_response(
+                    trace_id,
+                    &self.state,
+                    MCP_TENANT_ID,
+                    fork_edge_id,
+                    alternate_tool_response,
+                    max_events.clamp(1, 50_000),
+                )
+                .await
+                {
+                    Ok(replay) => {
+                        let structured = serde_json::to_value(&replay)
+                            .map_err(|e| format!("Failed to serialize fork replay result: {}", e));
+                        match structured {
+                            Ok(structured) => Ok(CallToolResult {
+                                content: vec![ToolContent::Text {
+                                    text: structured.to_string(),
+                                }],
+                                structured_content: Some(structured),
+                                is_error: None,
+                            }),
+                            Err(e) => Err(e),
+                        }
+                    }
+                    Err(e) => Err(format!("Fork replay failed: {}", e)),
+                }
+            }
+
             _ => {
                 return JsonRpcResponse::error(
                     id,
@@ -501,8 +718,12 @@ impl MCPHandler {
         }
     }
 
-    /// Handle prompts/list
-    async fn handle_prompts_list(&self, id: JsonRpcId) -> JsonRpcResponse {
+    /// Handle prompts/list with pagination (T11)
+    async fn handle_prompts_list(
+        &self,
+        id: JsonRpcId,
+        _params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
         let prompts = vec![
             Prompt {
                 name: "analyze_error".to_string(),
@@ -543,6 +764,47 @@ impl MCPHandler {
                             "Time range: 'last_hour', 'last_day', 'last_week'".to_string(),
                         ),
                         required: Some(false),
+                    },
+                ]),
+            },
+            Prompt {
+                name: "replay_trace_debug".to_string(),
+                description: Some(
+                    "Replay an agent trace step-by-step and identify key breakpoints".to_string(),
+                ),
+                arguments: Some(vec![
+                    PromptArgument {
+                        name: "trace_id".to_string(),
+                        description: Some("Trace ID/root edge ID in hex format".to_string()),
+                        required: Some(true),
+                    },
+                    PromptArgument {
+                        name: "include_payload".to_string(),
+                        description: Some("Include payload in replay events (true/false)".to_string()),
+                        required: Some(false),
+                    },
+                ]),
+            },
+            Prompt {
+                name: "fork_counterfactual".to_string(),
+                description: Some(
+                    "Fork replay at a specific edge with an alternate tool response to measure behavioral impact".to_string(),
+                ),
+                arguments: Some(vec![
+                    PromptArgument {
+                        name: "trace_id".to_string(),
+                        description: Some("Trace ID/root edge ID in hex format".to_string()),
+                        required: Some(true),
+                    },
+                    PromptArgument {
+                        name: "fork_edge_id".to_string(),
+                        description: Some("Edge ID where replay should fork".to_string()),
+                        required: Some(true),
+                    },
+                    PromptArgument {
+                        name: "alternate_tool_response".to_string(),
+                        description: Some("JSON object with alternate tool response".to_string()),
+                        required: Some(true),
                     },
                 ]),
             },
@@ -666,6 +928,78 @@ impl MCPHandler {
                 }
             }
 
+            "replay_trace_debug" => {
+                let trace_id = get_params
+                    .arguments
+                    .get("trace_id")
+                    .cloned()
+                    .unwrap_or_default();
+                let include_payload = get_params
+                    .arguments
+                    .get("include_payload")
+                    .cloned()
+                    .unwrap_or_else(|| "false".to_string());
+
+                GetPromptResult {
+                    description: Some("Replay trace and analyze execution flow".to_string()),
+                    messages: vec![PromptMessage {
+                        role: PromptRole::User,
+                        content: PromptContent::Text {
+                            text: format!(
+                                "Use the replay_trace tool with:\n\
+                                 - trace_id: {}\n\
+                                 - include_payload: {}\n\
+                                 Then provide:\n\
+                                 1. Step-by-step timeline of what the agent did\n\
+                                 2. Tool-call breakpoints worth inspecting\n\
+                                 3. Earliest divergence-risk point where outcome could change\n\
+                                 4. A short explanation of the final outcome signature",
+                                trace_id, include_payload
+                            ),
+                        },
+                    }],
+                }
+            }
+
+            "fork_counterfactual" => {
+                let trace_id = get_params
+                    .arguments
+                    .get("trace_id")
+                    .cloned()
+                    .unwrap_or_default();
+                let fork_edge_id = get_params
+                    .arguments
+                    .get("fork_edge_id")
+                    .cloned()
+                    .unwrap_or_default();
+                let alternate_tool_response = get_params
+                    .arguments
+                    .get("alternate_tool_response")
+                    .cloned()
+                    .unwrap_or_else(|| "{}".to_string());
+
+                GetPromptResult {
+                    description: Some("Run counterfactual fork replay and quantify impact".to_string()),
+                    messages: vec![PromptMessage {
+                        role: PromptRole::User,
+                        content: PromptContent::Text {
+                            text: format!(
+                                "Run fork_trace_replay with:\n\
+                                 - trace_id: {}\n\
+                                 - fork_edge_id: {}\n\
+                                 - alternate_tool_response: {}\n\
+                                 Then summarize:\n\
+                                 1. trajectory_distance\n\
+                                 2. sensitivity_score\n\
+                                 3. affected_nodes\n\
+                                 4. Key behavioral differences between original and forked trajectories",
+                                trace_id, fork_edge_id, alternate_tool_response
+                            ),
+                        },
+                    }],
+                }
+            }
+
             _ => {
                 return JsonRpcResponse::error(
                     id,
@@ -675,5 +1009,181 @@ impl MCPHandler {
         };
 
         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+    }
+
+    // =========================================================================
+    // Resource Templates (T13)
+    // =========================================================================
+
+    /// Handle resources/templates/list
+    async fn handle_resource_templates_list(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let _list_params: ListParams = params
+            .and_then(|p| serde_json::from_value(p).ok())
+            .unwrap_or_default();
+
+        let templates = vec![
+            ResourceTemplate {
+                uri_template: "agentreplay://traces/{traceId}".to_string(),
+                name: "Trace by ID".to_string(),
+                description: Some("Get a specific trace by its ID".to_string()),
+                mime_type: Some("application/json".to_string()),
+            },
+            ResourceTemplate {
+                uri_template: "agentreplay://traces/search?q={query}&limit={limit}".to_string(),
+                name: "Search Traces".to_string(),
+                description: Some("Search traces by query string".to_string()),
+                mime_type: Some("application/json".to_string()),
+            },
+            ResourceTemplate {
+                uri_template: "agentreplay://stats/{statType}".to_string(),
+                name: "Statistics".to_string(),
+                description: Some("Get statistics by type (summary, errors, latency)".to_string()),
+                mime_type: Some("application/json".to_string()),
+            },
+        ];
+
+        let result = ListResourceTemplatesResult {
+            resource_templates: templates,
+            next_cursor: None,
+        };
+
+        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+    }
+
+    // =========================================================================
+    // Resource Subscriptions (T8)
+    // =========================================================================
+
+    /// Handle resources/subscribe
+    async fn handle_resource_subscribe(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let sub_params: SubscribeParams = match params {
+            Some(p) => match serde_json::from_value(p) {
+                Ok(params) => params,
+                Err(e) => {
+                    return JsonRpcResponse::error(
+                        id,
+                        JsonRpcError::invalid_params(format!(
+                            "Invalid subscribe params: {}",
+                            e
+                        )),
+                    )
+                }
+            },
+            None => {
+                return JsonRpcResponse::error(
+                    id,
+                    JsonRpcError::invalid_params("Missing subscribe params"),
+                )
+            }
+        };
+
+        // Validate the URI is a known resource pattern
+        let valid_prefixes = ["agentreplay://traces/", "agentreplay://stats/"];
+        if !valid_prefixes.iter().any(|p| sub_params.uri.starts_with(p)) {
+            return JsonRpcResponse::error(
+                id,
+                JsonRpcError::invalid_params(format!(
+                    "Cannot subscribe to unknown resource: {}",
+                    sub_params.uri
+                )),
+            );
+        }
+
+        info!(uri = %sub_params.uri, "Resource subscription added");
+        let mut subs = self.subscriptions.write().await;
+        subs.entry(sub_params.uri)
+            .or_insert_with(HashSet::new)
+            .insert("default".to_string());
+
+        JsonRpcResponse::success(id, json!({}))
+    }
+
+    /// Handle resources/unsubscribe
+    async fn handle_resource_unsubscribe(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let unsub_params: UnsubscribeParams = match params {
+            Some(p) => match serde_json::from_value(p) {
+                Ok(params) => params,
+                Err(e) => {
+                    return JsonRpcResponse::error(
+                        id,
+                        JsonRpcError::invalid_params(format!(
+                            "Invalid unsubscribe params: {}",
+                            e
+                        )),
+                    )
+                }
+            },
+            None => {
+                return JsonRpcResponse::error(
+                    id,
+                    JsonRpcError::invalid_params("Missing unsubscribe params"),
+                )
+            }
+        };
+
+        info!(uri = %unsub_params.uri, "Resource subscription removed");
+        let mut subs = self.subscriptions.write().await;
+        if let Some(subscribers) = subs.get_mut(&unsub_params.uri) {
+            subscribers.remove("default");
+            if subscribers.is_empty() {
+                subs.remove(&unsub_params.uri);
+            }
+        }
+
+        JsonRpcResponse::success(id, json!({}))
+    }
+
+    // =========================================================================
+    // Logging (T14)
+    // =========================================================================
+
+    /// Handle logging/setLevel
+    async fn handle_logging_set_level(
+        &self,
+        id: JsonRpcId,
+        params: Option<serde_json::Value>,
+    ) -> JsonRpcResponse {
+        let level_params: SetLevelParams = match params {
+            Some(p) => match serde_json::from_value(p) {
+                Ok(params) => params,
+                Err(e) => {
+                    return JsonRpcResponse::error(
+                        id,
+                        JsonRpcError::invalid_params(format!(
+                            "Invalid setLevel params: {}",
+                            e
+                        )),
+                    )
+                }
+            },
+            None => {
+                return JsonRpcResponse::error(
+                    id,
+                    JsonRpcError::invalid_params("Missing setLevel params"),
+                )
+            }
+        };
+
+        info!(level = ?level_params.level, "MCP log level set");
+        *self.log_level.write().await = level_params.level;
+
+        JsonRpcResponse::success(id, json!({}))
+    }
+
+    /// Get the current MCP log level
+    pub async fn current_log_level(&self) -> McpLogLevel {
+        *self.log_level.read().await
     }
 }

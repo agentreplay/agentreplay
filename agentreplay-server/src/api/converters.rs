@@ -114,6 +114,15 @@ pub fn convert_otel_span_to_edge(
 
     // Map span name to SpanType
     let span_type = match span.name.to_lowercase().as_str() {
+        // OpenClaw specific patterns
+        "openclaw.model.usage" => SpanType::Reasoning,
+        "openclaw.webhook.processed" | "openclaw.webhook.error" => SpanType::Response,
+        "openclaw.message.processed" => SpanType::Synthesis,
+        "openclaw.session.stuck" => SpanType::Error,
+        name if name.starts_with("openclaw.skill.") => SpanType::ToolCall,
+        name if name.starts_with("openclaw.tool.") => SpanType::ToolCall,
+        name if name.starts_with("openclaw.agent.") || name.starts_with("openclaw.run.") => SpanType::Planning,
+
         // LangChain/LangGraph specific patterns
         name if name.starts_with("chain.") => SpanType::Planning,
         name if name.starts_with("tool.") => SpanType::ToolCall,

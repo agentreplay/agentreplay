@@ -23,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version for manual release (e.g., 0.1.0). Creates a draft release with this tag.'
+        description: 'Version for manual release (e.g., 0.2.1). Creates a draft release with this tag.'
         required: true
-        default: '0.1.0'
+        default: '0.2.1'
       create_release:
         description: 'Create a draft release with artifacts'
         type: boolean
@@ -309,6 +309,8 @@ jobs:
           name: Agentreplay-linux-appimage
           path: |
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz.sig
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
           if-no-files-found: warn
 
@@ -432,6 +434,8 @@ jobs:
     name: Create Release
     needs: [build-macos-arm, build-macos-intel, build-linux, build-windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     # Run on release trigger OR when workflow_dispatch with create_release=true
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
     
@@ -444,12 +448,6 @@ jobs:
         with:
           path: artifacts
 
-      - name: List artifacts
-        run: |
-          echo "=== Downloaded Artifacts ==="
-          find artifacts -type f
-          echo "==========================="
-
       - name: Determine version
         id: version
         run: |
@@ -459,6 +457,22 @@ jobs:
             echo "version=v${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Flatten artifacts into release-assets
+        run: |
+          mkdir -p release-assets
+          # Copy all release-relevant files into a flat directory
+          find artifacts -type f \( \
+            -name "*.dmg" -o \
+            -name "*.AppImage" -o -name "*.AppImage.tar.gz" -o -name "*.AppImage.tar.gz.sig" -o -name "*.AppImage.sig" -o \
+            -name "*.deb" -o \
+            -name "*.exe" -o -name "*.nsis.zip" -o -name "*.nsis.zip.sig" -o \
+            -name "*.msi" -o -name "*.msi.zip" -o -name "*.msi.zip.sig" -o \
+            -name "*.tar.gz" -o -name "*.tar.gz.sig" \
+          \) -exec cp {} release-assets/ \;
+          echo "=== Release Assets ==="
+          ls -la release-assets/
+          echo "======================"
+
       - name: Generate Tauri updater latest.json
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -466,24 +480,53 @@ jobs:
           REPO="agentreplay/agentreplay"
           BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 
-          # Read signatures from .sig files if they exist
-          MAC_AARCH64_SIG=""
-          MAC_X64_SIG=""
-          LINUX_SIG=""
-          WINDOWS_SIG=""
+          cd release-assets
 
-          # Look for .sig files produced by Tauri signing
-          for sig in $(find artifacts -name "*.sig" -type f); do
-            content=$(cat "$sig")
-            case "$sig" in
-              *aarch64*) MAC_AARCH64_SIG="$content" ;;
-              *x64*.dmg*|*x86_64*apple*) MAC_X64_SIG="$content" ;;
-              *linux*|*AppImage*) LINUX_SIG="$content" ;;
-              *windows*|*setup.exe*|*.msi*) WINDOWS_SIG="$content" ;;
-            esac
-          done
+          # --- Find updater-compatible files for each platform ---
+          # Tauri v2 updater expects: .app.tar.gz (macOS), .AppImage.tar.gz (Linux), .nsis.zip (Windows)
 
-          cat > latest.json << EOF
+          # macOS aarch64: .tar.gz from macos/ bundle (NOT the .dmg)
+          MAC_AARCH64_FILE=$(ls -1 *aarch64*.app.tar.gz 2>/dev/null | head -1 || true)
+          if [ -z "$MAC_AARCH64_FILE" ]; then
+            MAC_AARCH64_FILE=$(ls -1 *aarch64*.tar.gz 2>/dev/null | grep -v '\.sig$' | head -1 || true)
+          fi
+
+          # macOS x86_64: .tar.gz from macos/ bundle
+          MAC_X64_FILE=$(ls -1 *x64*.app.tar.gz 2>/dev/null | head -1 || true)
+          if [ -z "$MAC_X64_FILE" ]; then
+            MAC_X64_FILE=$(ls -1 *x86_64*.tar.gz 2>/dev/null | grep -v '\.sig$' | head -1 || true)
+            if [ -z "$MAC_X64_FILE" ]; then
+              MAC_X64_FILE=$(ls -1 *x64*.tar.gz 2>/dev/null | grep -v '\.sig$' | head -1 || true)
+            fi
+          fi
+
+          # Linux x86_64: .AppImage.tar.gz preferred, fallback to .AppImage
+          LINUX_FILE=$(ls -1 *.AppImage.tar.gz 2>/dev/null | grep -v '\.sig$' | head -1 || true)
+          if [ -z "$LINUX_FILE" ]; then
+            LINUX_FILE=$(ls -1 *.AppImage 2>/dev/null | head -1 || true)
+          fi
+
+          # Windows x86_64: .nsis.zip
+          WINDOWS_FILE=$(ls -1 *.nsis.zip 2>/dev/null | grep -v '\.sig$' | head -1 || true)
+
+          echo "Updater files found:"
+          echo "  macOS aarch64: ${MAC_AARCH64_FILE:-NONE}"
+          echo "  macOS x64:     ${MAC_X64_FILE:-NONE}"
+          echo "  Linux:         ${LINUX_FILE:-NONE}"
+          echo "  Windows:       ${WINDOWS_FILE:-NONE}"
+
+          # --- Read signatures from matching .sig files ---
+          read_sig() { cat "${1}.sig" 2>/dev/null || cat "${1%.*}.sig" 2>/dev/null || echo ""; }
+
+          MAC_AARCH64_SIG=$(read_sig "$MAC_AARCH64_FILE")
+          MAC_X64_SIG=$(read_sig "$MAC_X64_FILE")
+          LINUX_SIG=$(read_sig "$LINUX_FILE")
+          WINDOWS_SIG=$(read_sig "$WINDOWS_FILE")
+
+          cd ..
+
+          # --- Write latest.json ---
+          cat > release-assets/latest.json << ENDJSON
           {
             "version": "${VERSION}",
             "notes": "See release notes at https://github.com/${REPO}/releases/tag/${VERSION}",
@@ -491,40 +534,36 @@ jobs:
             "platforms": {
               "darwin-aarch64": {
                 "signature": "${MAC_AARCH64_SIG}",
-                "url": "${BASE_URL}/Agentreplay_aarch64.dmg"
+                "url": "${BASE_URL}/${MAC_AARCH64_FILE}"
               },
               "darwin-x86_64": {
                 "signature": "${MAC_X64_SIG}",
-                "url": "${BASE_URL}/Agentreplay_x64.dmg"
+                "url": "${BASE_URL}/${MAC_X64_FILE}"
               },
               "linux-x86_64": {
                 "signature": "${LINUX_SIG}",
-                "url": "${BASE_URL}/Agentreplay_x86_64.AppImage"
+                "url": "${BASE_URL}/${LINUX_FILE}"
               },
               "windows-x86_64": {
                 "signature": "${WINDOWS_SIG}",
-                "url": "${BASE_URL}/Agentreplay_x64-setup.exe"
+                "url": "${BASE_URL}/${WINDOWS_FILE}"
               }
             }
           }
-          EOF
+          ENDJSON
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' release-assets/latest.json
 
           echo "=== Generated latest.json ==="
-          cat latest.json
+          cat release-assets/latest.json
           echo "=============================="
 
       - name: Upload to existing Release (release trigger)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/Agentreplay-macos-aarch64/*.dmg
-            artifacts/Agentreplay-macos-x64/*.dmg
-            artifacts/Agentreplay-linux-appimage/*.AppImage
-            artifacts/Agentreplay-linux-deb/*.deb
-            artifacts/Agentreplay-windows-exe/*.exe
-            artifacts/Agentreplay-windows-msi/*.msi
-            latest.json
+          files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -533,16 +572,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.version }}
-          name: Agentreplay v${{ github.event.inputs.version }}
+          name: Agent Replay Alpha v${{ github.event.inputs.version }}
           draft: true
           generate_release_notes: true
-          files: |
-            artifacts/Agentreplay-macos-aarch64/*.dmg
-            artifacts/Agentreplay-macos-x64/*.dmg
-            artifacts/Agentreplay-linux-appimage/*.AppImage
-            artifacts/Agentreplay-linux-deb/*.deb
-            artifacts/Agentreplay-windows-exe/*.exe
-            artifacts/Agentreplay-windows-msi/*.msi
-            latest.json
+          files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

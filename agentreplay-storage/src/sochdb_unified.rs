@@ -48,6 +48,7 @@ use agentreplay_core::{AgentFlowEdge, AgentreplayError, Result};
 use parking_lot::RwLock;
 use sochdb::EmbeddedConnection as Connection;
 use sochdb_storage::{PackedRow, PackedColumnDef, PackedColumnType, PackedTableSchema};
+use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -281,7 +282,7 @@ impl Default for AgentReplayStorageConfig {
             data_dir: PathBuf::from("./agentreplay_data"),
             enable_wal: true,
             sync_mode: SyncMode::Batched,
-            cache_size_bytes: 64 * 1024 * 1024, // 64MB — desktop-grade; 256MB was server-grade
+            cache_size_bytes: 128 * 1024 * 1024, // 128MB — reduces SochDB memtable flush frequency by 2×
             enable_metrics: true,
             metrics_flush_interval_secs: 60,
         }
@@ -478,6 +479,10 @@ impl DashboardSummary {
         self.total_traces += 1;
         self.total_tokens += edge.token_count as u64;
         self.total_duration_us += edge.duration_us as u64;
+        // Track errors: SpanType::Error = 7
+        if edge.span_type == 7 {
+            self.error_count += 1;
+        }
         if edge.timestamp_us > self.last_edge_ts {
             self.last_edge_ts = edge.timestamp_us;
         }
@@ -538,6 +543,10 @@ impl MetricsBucket {
     /// Record an edge
     pub fn record(&mut self, edge: &AgentFlowEdge) {
         self.request_count += 1;
+        // Track errors: SpanType::Error = 7
+        if edge.span_type == 7 {
+            self.error_count += 1;
+        }
         self.total_tokens += edge.token_count as u64;
         let duration = edge.duration_us as u64;
         self.total_duration_us += duration;
@@ -639,6 +648,20 @@ pub struct AgentReplayStorage {
     hour_buckets: RwLock<BTreeMap<(u64, u16, u64), MetricsBucket>>,
     /// Pre-computed dashboard summary (Task 9: O(1) dashboard queries)
     dashboard_summary: RwLock<DashboardSummary>,
+    /// In-memory root trace index for O(log N) insertion and O(log N + K) pagination.
+    /// Keyed by (Reverse(timestamp_us), edge_id) so BTreeMap natural order = newest-first.
+    /// Built on startup (from disk cache or full scan), maintained during ingestion.
+    /// 
+    /// **Performance fix:** Replaced Vec<RootTraceEntry> (O(N) memmove per insert)
+    /// with BTreeMap (O(log N) insert, no bulk memory movement).
+    root_trace_index: RwLock<BTreeMap<(Reverse<u64>, u128), RootTraceEntry>>,
+    /// Set of edge IDs that have at least one child (causal_parent points to them).
+    /// Used to short-circuit observations lookups: if not in this set, return empty
+    /// immediately without touching the database — avoids expensive scan_range.
+    edges_with_children: RwLock<std::collections::HashSet<u128>>,
+    /// Whether the root trace index is ready to serve queries.
+    /// False during startup until the index is loaded from disk or built from scan.
+    index_ready: AtomicBool,
     /// Statistics
     stats: StorageStatsAtomic,
     /// Shutdown flag
@@ -649,6 +672,16 @@ pub struct AgentReplayStorage {
     /// Enable columnar storage for edges (80% I/O reduction)
     /// When true, edges are stored as PackedRows in addition to JSON
     columnar_edges_enabled: bool,
+}
+
+/// Compact entry for the in-memory root trace index.
+/// Stored in a BTreeMap keyed by (Reverse<timestamp_us>, edge_id) for O(log N) insert.
+#[derive(Clone, Copy, Debug)]
+struct RootTraceEntry {
+    timestamp_us: u64,
+    edge_id: u128,
+    project_id: u16,
+    tenant_id: u64,  // kept as u64 for alignment, but only lower bits used
 }
 
 /// Atomic storage statistics
@@ -752,6 +785,9 @@ impl AgentReplayStorage {
             minute_buckets: RwLock::new(BTreeMap::new()),
             hour_buckets: RwLock::new(BTreeMap::new()),
             dashboard_summary: RwLock::new(DashboardSummary::default()),
+            root_trace_index: RwLock::new(BTreeMap::new()),
+            edges_with_children: RwLock::new(std::collections::HashSet::new()),
+            index_ready: AtomicBool::new(false),
             stats: StorageStatsAtomic::default(),
             shutdown: AtomicBool::new(false),
             semantic_cache_enabled: true, // Enable semantic caching by default
@@ -762,6 +798,17 @@ impl AgentReplayStorage {
         if let Err(e) = storage.load_initial_metrics() {
             warn!("Failed to load initial metrics from disk: {}", e);
             // Non-fatal, start with empty metrics
+        }
+        
+        // Load root trace index: try disk cache first (instant), else full scan (first run only).
+        // If disk cache is stale, load it and incrementally append new edges (P2 fix).
+        if !storage.load_root_trace_index_from_disk() {
+            // Disk cache miss — full scan (first run or after upgrade)
+            storage.build_root_trace_index();
+            storage.save_root_trace_index_to_disk();
+        } else {
+            // Disk cache loaded — incrementally catch up with any new edges since cache was written
+            storage.incremental_root_trace_index_update();
         }
 
         info!(
@@ -805,6 +852,73 @@ impl AgentReplayStorage {
         }
         
         info!("Loaded {} metrics buckets from disk", count);
+        
+        // Step 1: Get accurate edge count.
+        // Try persisted meta/edge_count first (O(1)), fall back to idx/edge/ scan (one-time migration).
+        let true_edge_count: u64 = if let Some(count_bytes) = self.connection.get("meta/edge_count")
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to load edge count: {}", e)))? {
+            if count_bytes.len() == 8 {
+                let count = u64::from_le_bytes(count_bytes.try_into().unwrap());
+                info!("Loaded persisted edge count: {}", count);
+                count
+            } else {
+                0
+            }
+        } else {
+            // One-time migration: count from idx/edge/ prefix
+            info!("No persisted edge count found, scanning idx/edge/ prefix (one-time migration)...");
+            let edge_count = self.connection.scan("idx/edge/")
+                .map(|entries| entries.len() as u64)
+                .unwrap_or(0);
+            info!("Counted {} edges from idx/edge/ prefix", edge_count);
+            // Persist for O(1) on next startup
+            if edge_count > 0 {
+                let _ = self.connection.put("meta/edge_count", &edge_count.to_le_bytes());
+            }
+            edge_count
+        };
+        
+        // Step 2: Initialize atomic edge counter
+        self.stats.edges.store(true_edge_count, Ordering::Relaxed);
+        
+        // Step 3: Load or bootstrap dashboard summary, always using true edge count
+        if let Some(summary_bytes) = self.connection.get("meta/dashboard_summary")
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to load dashboard summary: {}", e)))? {
+            if let Ok(mut summary) = serde_json::from_slice::<DashboardSummary>(&summary_bytes) {
+                // Override total_traces with actual edge count (fixes migration from partial metrics)
+                if summary.total_traces != true_edge_count {
+                    info!("Correcting dashboard summary total_traces: {} -> {}", 
+                        summary.total_traces, true_edge_count);
+                    summary.total_traces = true_edge_count;
+                }
+                info!("Loaded dashboard summary: total_traces={}, total_tokens={}, models={}",
+                    summary.total_traces, summary.total_tokens, summary.top_models.len());
+                *self.dashboard_summary.write() = summary;
+            }
+        } else if true_edge_count > 0 {
+            // No persisted summary — bootstrap from edge count + metrics buckets
+            let mut summary = DashboardSummary::default();
+            summary.total_traces = true_edge_count;
+            
+            // Get token/duration totals from metrics buckets if available
+            if !hr_buckets.is_empty() {
+                for bucket in hr_buckets.values() {
+                    summary.total_tokens += bucket.total_tokens;
+                    summary.total_duration_us += bucket.total_duration_us;
+                    summary.error_count += bucket.error_count;
+                }
+            } else {
+                for bucket in min_buckets.values() {
+                    summary.total_tokens += bucket.total_tokens;
+                    summary.total_duration_us += bucket.total_duration_us;
+                    summary.error_count += bucket.error_count;
+                }
+            }
+            info!("Bootstrapped dashboard summary: total_traces={}, total_tokens={}",
+                summary.total_traces, summary.total_tokens);
+            *self.dashboard_summary.write() = summary;
+        }
+        
         Ok(())
     }
 
@@ -814,24 +928,17 @@ impl AgentReplayStorage {
     /// call commit() after every operation. SochDB's group commit batches
     /// multiple operations into single fsync calls for 100× throughput.
     /// 
-    /// For explicit durability guarantees, call `sync()` after critical writes.
+    /// **Concurrency:** The write_lock is held only for SochDB writes.
+    /// In-memory index and metrics updates happen after lock release with
+    /// their own fine-grained locks, eliminating read stalls during writes.
     pub fn put(&self, edge: AgentFlowEdge) -> Result<()> {
-        // SYNCHRONIZATION: Acquire write lock to serialize writes and prevent transaction races
-        // This ensures put is atomic relative to other threads
-        let _write_guard = self.write_lock.write();
-
-        self.put_internal(edge)?;
-        
-        // NOTE: No explicit commit() here - SochDB's group commit handles batching
-        // Group commit accumulates operations and flushes them together,
-        // achieving 100× throughput vs per-operation commit
-        // 
-        // The group commit will:
-        // 1. Batch operations until batch_size or max_wait_us threshold
-        // 2. Issue single fsync for entire batch
-        // 3. Return success to all waiting operations
-        //
-        // For immediate durability, call sync() explicitly
+        // Phase 1: SochDB writes under write_lock (serialized for transaction safety)
+        {
+            let _write_guard = self.write_lock.write();
+            self.put_to_db(&edge)?;
+        }
+        // Phase 2: In-memory index/metrics updates (write_lock released, uses own locks)
+        self.update_indexes_and_metrics(&edge);
 
         Ok(())
     }
@@ -841,33 +948,34 @@ impl AgentReplayStorage {
     /// Unlike `put()`, this method forces an immediate commit.
     /// Use sparingly - for most cases, rely on group commit via `put()`.
     pub fn put_durable(&self, edge: AgentFlowEdge) -> Result<()> {
-        let _write_guard = self.write_lock.write();
-        self.put_internal(edge)?;
-        
-        let _ = self.connection.commit()
-            .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
+        {
+            let _write_guard = self.write_lock.write();
+            self.put_to_db(&edge)?;
+            let _ = self.connection.commit()
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
+        }
+        self.update_indexes_and_metrics(&edge);
 
         Ok(())
     }
 
-    /// Internal put without commit (for batching)
-    fn put_internal(&self, edge: AgentFlowEdge) -> Result<()> {
+    /// Internal put without commit (for batching) — DB writes only.
+    ///
+    /// **MUST be called under write_lock.**
+    /// Does NOT update in-memory indexes or metrics — caller must call
+    /// `update_indexes_and_metrics()` after releasing write_lock.
+    fn put_to_db(&self, edge: &AgentFlowEdge) -> Result<()> {
         let key = encode_trace_key(edge.tenant_id, edge.project_id, edge.timestamp_us, edge.edge_id);
-        let data = serialize_edge(&edge)?;
+        let data = serialize_edge(edge)?;
         
         self.connection.put(&key, &data)
             .map_err(|e| AgentreplayError::Internal(format!("SochDB put failed: {}", e)))?;
-        
-        // PackedRow columnar storage REMOVED — it duplicated the bincode edge
-        // with ~63 bytes overhead per span (was never read by any query path).
-        // For 2.5M spans this saves ~158 MB of WAL + 2.5M BTreeMap entries in memory.
         
         // ====================================================================
         // Secondary indexes stored in SochDB for persistence across restarts
         // ====================================================================
         
         // Edge ID reverse index: edge_id -> primary key
-        // This allows O(log N) point lookup by edge_id without full scan
         let edge_idx_key = format!("idx/edge/{:032x}", edge.edge_id);
         self.connection.put(&edge_idx_key, key.as_bytes())
             .map_err(|e| AgentreplayError::Internal(format!("SochDB edge index update failed: {}", e)))?;
@@ -876,6 +984,13 @@ impl AgentReplayStorage {
         let session_key = format!("idx/session/{}/{:032x}", edge.session_id, edge.edge_id);
         self.connection.put(&session_key, &[])
             .map_err(|e| AgentreplayError::Internal(format!("SochDB session index update failed: {}", e)))?;
+
+        // Children index: parent_edge_id -> child_edge_id (for O(K) child lookups)
+        if edge.causal_parent != 0 {
+            let children_key = format!("idx/children/{:032x}/{:032x}", edge.causal_parent, edge.edge_id);
+            self.connection.put(&children_key, &[])
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB children index update failed: {}", e)))?;
+        }
 
         // Project index: project_id/edge_id -> (exists)
         let project_key = format!("idx/project/{}/{:032x}", edge.project_id, edge.edge_id);
@@ -887,13 +1002,41 @@ impl AgentReplayStorage {
         self.connection.put(&tenant_ts_key, &[])
             .map_err(|e| AgentreplayError::Internal(format!("SochDB tenant index update failed: {}", e)))?;
 
-        // Record metrics in in-memory buckets
-        self.record_metrics(&edge);
-
         self.stats.puts.fetch_add(1, Ordering::Relaxed);
         self.stats.edges.fetch_add(1, Ordering::Relaxed);
         
         Ok(())
+    }
+
+    /// Update in-memory indexes and metrics for an edge.
+    ///
+    /// **Concurrency:** This is called AFTER releasing write_lock, using only
+    /// fine-grained locks (root_trace_index, metrics buckets, dashboard_summary).
+    /// This eliminates read stalls — queries can proceed while DB writes are in progress.
+    ///
+    /// **Performance:** root_trace_index uses BTreeMap for O(log N) insert
+    /// instead of Vec::insert which was O(N) memmove (the #1 bottleneck).
+    fn update_indexes_and_metrics(&self, edge: &AgentFlowEdge) {
+        // Record metrics in in-memory buckets (has its own locks)
+        self.record_metrics(edge);
+        
+        // Track parent-child relationships
+        if edge.causal_parent != 0 {
+            self.edges_with_children.write().insert(edge.causal_parent);
+        }
+        
+        // Maintain in-memory root trace index for instant pagination
+        // BTreeMap insert: O(log N) — no bulk memory movement
+        if edge.causal_parent == 0 {
+            let entry = RootTraceEntry {
+                timestamp_us: edge.timestamp_us,
+                edge_id: edge.edge_id,
+                project_id: edge.project_id,
+                tenant_id: edge.tenant_id,
+            };
+            let key = (Reverse(edge.timestamp_us), edge.edge_id);
+            self.root_trace_index.write().insert(key, entry);
+        }
     }
 
     /// Store denormalized filter attributes for an edge.
@@ -966,28 +1109,27 @@ impl AgentReplayStorage {
     /// 
     /// **Performance Note:** Uses SochDB's group commit for optimal throughput.
     /// A single commit is issued at the end of the batch, amortizing fsync cost.
-    /// 
-    /// For N edges, this achieves:
-    /// - Throughput: N / L_fsync (vs 1 / L_fsync per edge with individual commits)
-    /// - Latency: O(N * put_cost) + L_fsync (single fsync for entire batch)
+    /// Write lock is held only for DB writes; index/metrics updates happen after release.
     pub fn put_batch(&self, edges: &[AgentFlowEdge]) -> Result<()> {
         if edges.is_empty() {
             return Ok(());
         }
         
-        // SYNCHRONIZATION: Acquire write lock for entire batch
-        let _write_guard = self.write_lock.write();
-        
-        for edge in edges {
-            self.put_internal(edge.clone())?;
+        // Phase 1: DB writes under write_lock
+        {
+            let _write_guard = self.write_lock.write();
+            for edge in edges {
+                self.put_to_db(edge)?;
+            }
+            let _ = self.connection.commit()
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
         }
         
-        // Explicit commit at end of batch for durability
-        // This is more efficient than per-operation commit
-        let _ = self.connection.commit()
-            .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
+        // Phase 2: Index/metrics updates (write_lock released)
+        for edge in edges {
+            self.update_indexes_and_metrics(edge);
+        }
         
-        // Use debug level to avoid per-batch log overhead under high throughput
         tracing::debug!(batch_size = edges.len(), "Batch ingestion complete");
         Ok(())
     }
@@ -1001,13 +1143,17 @@ impl AgentReplayStorage {
             return Ok(());
         }
         
-        let _write_guard = self.write_lock.write();
-        
-        for edge in edges {
-            self.put_internal(edge.clone())?;
+        {
+            let _write_guard = self.write_lock.write();
+            for edge in edges {
+                self.put_to_db(edge)?;
+            }
         }
         
-        // No explicit commit - group commit handles batching
+        for edge in edges {
+            self.update_indexes_and_metrics(edge);
+        }
+        
         Ok(())
     }
 
@@ -1023,27 +1169,32 @@ impl AgentReplayStorage {
             return Ok(());
         }
 
-        let _write_guard = self.write_lock.write();
+        // Phase 1: All DB writes under write_lock
+        {
+            let _write_guard = self.write_lock.write();
 
-        // Write payloads first (they should exist before edges for consistency)
-        // Payloads are zstd-compressed (level 1) before storage.
-        // For typical OTLP JSON (~650 bytes), zstd achieves ~4-6x compression,
-        // reducing per-span WAL cost from ~700 bytes to ~150 bytes.
-        for (edge_id, data) in payloads {
-            let key = encode_payload_key(*edge_id);
-            let compressed = compress_payload(data);
-            self.connection.put(&key, &compressed)
-                .map_err(|e| AgentreplayError::Internal(format!("SochDB put payload failed: {}", e)))?;
+            // Write payloads first (they should exist before edges for consistency)
+            for (edge_id, data) in payloads {
+                let key = encode_payload_key(*edge_id);
+                let compressed = compress_payload(data);
+                self.connection.put(&key, &compressed)
+                    .map_err(|e| AgentreplayError::Internal(format!("SochDB put payload failed: {}", e)))?;
+            }
+
+            // Write edges with all DB indexes
+            for edge in edges {
+                self.put_to_db(edge)?;
+            }
+
+            // Single commit for the entire batch
+            let _ = self.connection.commit()
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
         }
 
-        // Write edges with all indexes
+        // Phase 2: Index/metrics updates (write_lock released)
         for edge in edges {
-            self.put_internal(edge.clone())?;
+            self.update_indexes_and_metrics(edge);
         }
-
-        // Single commit for the entire batch (payloads + edges + indexes)
-        let _ = self.connection.commit()
-            .map_err(|e| AgentreplayError::Internal(format!("SochDB commit failed: {}", e)))?;
 
         tracing::debug!(edges = edges.len(), payloads = payloads.len(), "Batch with payloads complete");
         Ok(())
@@ -1328,22 +1479,21 @@ impl AgentReplayStorage {
                 }
             }
         } else if let Some(t) = tenant_id {
-            // Tenant-only: use bounded scan on the tenant index for time range
-            // This avoids scanning ALL tenant entries when only a time window is needed
-            let start_key = format!("idx/tenant/{}/{:020}/", t, start_ts);
-            let end_key = format!("idx/tenant/{}/{:020}/", t, end_ts.saturating_add(1));
+            // PERF FIX: Scan traces prefix directly instead of tenant index.
+            // The tenant index path required 2M individual get() calls (6.5s).
+            // Scanning traces/{t}/ reads edge data inline — single sequential pass (~2s).
+            // Trade-off: no time filtering at scan level, but post-filter is fast.
+            let prefix = format!("{}/{}/", TRACE_PREFIX, t);
             
-            let results = self.connection.scan_range(&start_key, &end_key)
-                .map_err(|e| AgentreplayError::Internal(format!("SochDB scan_range failed: {}", e)))?;
+            let results = self.connection.scan(&prefix)
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB scan failed: {}", e)))?;
             
-            for (key_str, _) in &results {
-                let parts: Vec<&str> = key_str.split('/').collect();
-                if parts.len() >= 5 {
-                    if let Ok(eid) = u128::from_str_radix(parts[4], 16) {
-                        if let Some(edge) = self.get(eid)? {
-                            // Apply project filter if needed
-                            let project_match = project_id.map_or(true, |p| p == edge.project_id);
-                            if project_match {
+            for (key_str, value) in results {
+                if let Some((_t_id, p_id, ts, _)) = decode_trace_key(&key_str) {
+                    if ts >= start_ts && ts <= end_ts {
+                        let project_match = project_id.map_or(true, |p| p == p_id);
+                        if project_match {
+                            if let Ok(edge) = deserialize_edge(&value) {
                                 edges.push(edge);
                             }
                         }
@@ -1376,6 +1526,365 @@ impl AgentReplayStorage {
         Ok(edges)
     }
     
+    /// Build the in-memory root trace index by streaming all trace entries.
+    /// Called once at startup. Uses the kernel's streaming iterator to avoid
+    /// materializing all 2.5M+ entries in RAM simultaneously.
+    ///
+    /// Populates a BTreeMap keyed by (Reverse(timestamp_us), edge_id) for
+    /// O(log N) insert and O(log N + K) range queries.
+    fn build_root_trace_index(&self) {
+        let timer = std::time::Instant::now();
+        static ZERO_PARENT: [u8; 16] = [0u8; 16];
+        
+        let db = self.connection.kernel();
+        let txn = match db.begin_read_only() {
+            Ok(t) => t,
+            Err(e) => {
+                warn!("Failed to begin read-only txn for root index: {}", e);
+                return;
+            }
+        };
+        
+        // Scan all traces
+        let start = format!("{}/", TRACE_PREFIX);
+        let end = format!("{}0", TRACE_PREFIX); // "traces0" > "traces/" lexicographically
+        
+        let mut index_map = BTreeMap::new();
+        let mut parents_with_children = std::collections::HashSet::new();
+        let mut total_scanned: u64 = 0;
+        
+        for result in db.scan_range_iter(txn, start.as_bytes(), end.as_bytes()) {
+            total_scanned += 1;
+            let (_key, value) = match result {
+                Ok(kv) => kv,
+                Err(_) => continue,
+            };
+            
+            // Check causal_parent at bytes 16..32 without full deserialization
+            if value.len() >= 32 && value[16..32] == ZERO_PARENT {
+                // Root span: deserialize for the root index
+                if let Ok(edge) = deserialize_edge(&value) {
+                    let entry = RootTraceEntry {
+                        timestamp_us: edge.timestamp_us,
+                        edge_id: edge.edge_id,
+                        project_id: edge.project_id,
+                        tenant_id: edge.tenant_id,
+                    };
+                    let key = (Reverse(edge.timestamp_us), edge.edge_id);
+                    index_map.insert(key, entry);
+                }
+            } else if value.len() >= 32 {
+                // Non-root span: extract causal_parent and record it has children
+                let causal_parent = u128::from_le_bytes(value[16..32].try_into().unwrap_or([0u8; 16]));
+                if causal_parent != 0 {
+                    parents_with_children.insert(causal_parent);
+                }
+            }
+        }
+        
+        let root_count = index_map.len();
+        let parents_count = parents_with_children.len();
+        *self.root_trace_index.write() = index_map;
+        *self.edges_with_children.write() = parents_with_children;
+        self.index_ready.store(true, Ordering::Release);
+        
+        info!(
+            "Root trace index built: {} root spans, {} parents with children, from {} total edges in {:?}",
+            root_count, parents_count, total_scanned, timer.elapsed()
+        );
+    }
+
+    /// Incrementally update the root trace index with edges added since the disk cache was written.
+    ///
+    /// **Performance fix (P2):** Instead of falling back to a full O(N) rebuild when the cache
+    /// is slightly stale, this method loads the cache and scans only NEW edges. It finds the
+    /// newest timestamp in the cached index, then scans from there forward.
+    ///
+    /// Reduces startup time from O(N) to O(delta) where delta = new edges since last cache.
+    fn incremental_root_trace_index_update(&self) {
+        let timer = std::time::Instant::now();
+        
+        // Fast path: if cached count matches persisted edge count, skip scan entirely.
+        // This is the common case on clean restarts (shutdown checkpointed correctly).
+        let cached_count = self.root_trace_index.read().len() as u64;
+        let persisted_count = self.stats.edges.load(Ordering::Relaxed);
+        
+        if cached_count > 0 && cached_count >= persisted_count {
+            info!(
+                "Incremental index update: cache is current ({} cached >= {} persisted), skipping scan in {:?}",
+                cached_count, persisted_count, timer.elapsed()
+            );
+            return;
+        }
+        
+        // Find the newest timestamp in the cached index
+        let newest_cached_ts = {
+            let index = self.root_trace_index.read();
+            // BTreeMap with Reverse keys: first entry = newest timestamp
+            index.iter().next().map(|(_, e)| e.timestamp_us).unwrap_or(0)
+        };
+        
+        if newest_cached_ts == 0 {
+            // Empty cache, do full build
+            self.build_root_trace_index();
+            return;
+        }
+        
+        info!(
+            "Incremental index update: {} cached vs {} persisted, scanning for new edges since ts={}",
+            cached_count, persisted_count, newest_cached_ts
+        );
+        
+        let db = self.connection.kernel();
+        let txn = match db.begin_read_only() {
+            Ok(t) => t,
+            Err(e) => {
+                warn!("Failed to begin read-only txn for incremental index update: {}", e);
+                return;
+            }
+        };
+        
+        // Scan all traces (we need to check timestamps, which are encoded in the key)
+        let start = format!("{}/", TRACE_PREFIX);
+        let end = format!("{}0", TRACE_PREFIX);
+        
+        let mut new_roots = 0u64;
+        let mut new_children = 0u64;
+        let mut total_scanned = 0u64;
+        
+        for result in db.scan_range_iter(txn, start.as_bytes(), end.as_bytes()) {
+            total_scanned += 1;
+            let (_key, value) = match result {
+                Ok(kv) => kv,
+                Err(_) => continue,
+            };
+            
+            if value.len() < 32 { continue; }
+            
+            // Quick timestamp check: only process edges newer than cached
+            if let Ok(edge) = deserialize_edge(&value) {
+                if edge.timestamp_us <= newest_cached_ts {
+                    continue; // Already in cache
+                }
+                
+                if edge.causal_parent == 0 {
+                    // New root span
+                    let entry = RootTraceEntry {
+                        timestamp_us: edge.timestamp_us,
+                        edge_id: edge.edge_id,
+                        project_id: edge.project_id,
+                        tenant_id: edge.tenant_id,
+                    };
+                    let key = (Reverse(edge.timestamp_us), edge.edge_id);
+                    self.root_trace_index.write().insert(key, entry);
+                    new_roots += 1;
+                } else {
+                    self.edges_with_children.write().insert(edge.causal_parent);
+                    new_children += 1;
+                }
+            }
+        }
+        
+        if new_roots > 0 || new_children > 0 {
+            info!(
+                "Incremental index update: {} new roots, {} new children, scanned {} edges in {:?}",
+                new_roots, new_children, total_scanned, timer.elapsed()
+            );
+            // Save updated index for next startup
+            self.save_root_trace_index_to_disk();
+        } else {
+            info!("Incremental index update: no new edges found ({} scanned in {:?})", 
+                total_scanned, timer.elapsed());
+        }
+    }
+
+    /// Save root trace index to disk as a compact binary file.
+    /// Format: [version:u32][count:u64][entries: count * (timestamp_us:u64 + edge_id:u128 + project_id:u16 + tenant_id:u64)]
+    /// Also saves edges_with_children set.
+    fn save_root_trace_index_to_disk(&self) {
+        let path = self.config.data_dir.join("root_trace_index.bin");
+        let timer = std::time::Instant::now();
+        
+        let index = self.root_trace_index.read();
+        let children_set = self.edges_with_children.read();
+        
+        // Each entry: 8 + 16 + 2 + 8 = 34 bytes
+        let entry_size = 34usize;
+        let buf_size = 4 + 8 + (index.len() * entry_size) + 8 + (children_set.len() * 16);
+        let mut buf = Vec::with_capacity(buf_size);
+        
+        // Version (bumped to 2 for BTreeMap format — same binary layout, different in-memory type)
+        buf.extend_from_slice(&2u32.to_le_bytes());
+        // Entry count
+        buf.extend_from_slice(&(index.len() as u64).to_le_bytes());
+        // Entries (BTreeMap iterates in key order = newest-first due to Reverse<u64>)
+        for (_, e) in index.iter() {
+            buf.extend_from_slice(&e.timestamp_us.to_le_bytes());
+            buf.extend_from_slice(&e.edge_id.to_le_bytes());
+            buf.extend_from_slice(&e.project_id.to_le_bytes());
+            buf.extend_from_slice(&e.tenant_id.to_le_bytes());
+        }
+        // Children set count
+        buf.extend_from_slice(&(children_set.len() as u64).to_le_bytes());
+        // Children set entries
+        for &parent_id in children_set.iter() {
+            buf.extend_from_slice(&parent_id.to_le_bytes());
+        }
+        
+        drop(index);
+        drop(children_set);
+        
+        match std::fs::write(&path, &buf) {
+            Ok(_) => info!("Root trace index saved to disk: {} bytes in {:?}", buf.len(), timer.elapsed()),
+            Err(e) => warn!("Failed to save root trace index: {}", e),
+        }
+    }
+
+    /// Load root trace index from disk cache.
+    /// Returns true if successfully loaded, false if cache miss or corrupt.
+    /// Supports both v1 (legacy Vec) and v2 (BTreeMap) formats.
+    fn load_root_trace_index_from_disk(&self) -> bool {
+        let path = self.config.data_dir.join("root_trace_index.bin");
+        let timer = std::time::Instant::now();
+        
+        let data = match std::fs::read(&path) {
+            Ok(d) => d,
+            Err(_) => return false,
+        };
+        
+        // Minimum: version(4) + count(8) = 12 bytes
+        if data.len() < 12 {
+            return false;
+        }
+        
+        let version = u32::from_le_bytes(data[0..4].try_into().unwrap());
+        if version != 1 && version != 2 {
+            info!("Root trace index cache version mismatch (got {}), rebuilding", version);
+            return false;
+        }
+        
+        let count = u64::from_le_bytes(data[4..12].try_into().unwrap()) as usize;
+        let entry_size = 34usize;
+        let entries_end = 12 + count * entry_size;
+        
+        if data.len() < entries_end {
+            warn!("Root trace index cache truncated, rebuilding");
+            return false;
+        }
+        
+        // Validate against current edge count
+        let current_edges = self.stats.edges.load(Ordering::Relaxed) as usize;
+        // Allow some tolerance — if the index is close to current count, use it
+        if count > 0 && current_edges > 0 && (count as f64 / current_edges as f64) < 0.9 {
+            info!("Root trace index cache stale ({} cached vs {} current), rebuilding", count, current_edges);
+            return false;
+        }
+        
+        let mut index_map = BTreeMap::new();
+        let mut offset = 12;
+        for _ in 0..count {
+            let timestamp_us = u64::from_le_bytes(data[offset..offset+8].try_into().unwrap());
+            let edge_id = u128::from_le_bytes(data[offset+8..offset+24].try_into().unwrap());
+            let project_id = u16::from_le_bytes(data[offset+24..offset+26].try_into().unwrap());
+            let tenant_id = u64::from_le_bytes(data[offset+26..offset+34].try_into().unwrap());
+            let entry = RootTraceEntry { timestamp_us, edge_id, project_id, tenant_id };
+            let key = (Reverse(timestamp_us), edge_id);
+            index_map.insert(key, entry);
+            offset += entry_size;
+        }
+        
+        // Load children set if present
+        let mut children_set = std::collections::HashSet::new();
+        if data.len() >= offset + 8 {
+            let children_count = u64::from_le_bytes(data[offset..offset+8].try_into().unwrap()) as usize;
+            offset += 8;
+            for _ in 0..children_count {
+                if offset + 16 > data.len() { break; }
+                let parent_id = u128::from_le_bytes(data[offset..offset+16].try_into().unwrap());
+                children_set.insert(parent_id);
+                offset += 16;
+            }
+        }
+        
+        let root_count = index_map.len();
+        let children_count = children_set.len();
+        *self.root_trace_index.write() = index_map;
+        *self.edges_with_children.write() = children_set;
+        self.index_ready.store(true, Ordering::Release);
+        
+        info!(
+            "Root trace index loaded from disk cache: {} root spans, {} parents with children in {:?}",
+            root_count, children_count, timer.elapsed()
+        );
+        true
+    }
+    
+    /// Fast paginated query for root traces using in-memory BTreeMap index.
+    ///
+    /// **Performance:** O(log N) seek via BTreeMap::range() + O(K) iteration where K = entries
+    /// in the time range. The BTreeMap is keyed by (Reverse(timestamp_us), edge_id) so
+    /// natural iteration order = newest-first.
+    ///
+    /// # Arguments
+    /// * `start_ts` - Start of time range (inclusive, microseconds)
+    /// * `end_ts` - End of time range (inclusive, microseconds)
+    /// * `tenant_id` - Tenant ID filter
+    /// * `project_id` - Optional project ID filter
+    /// * `limit` - Maximum root traces to return
+    /// * `offset` - Number of root traces to skip (for pagination)
+    ///
+    /// # Returns
+    /// `(root_edges, total_matching)` — edges for the requested page,
+    /// and the total count of matching root traces.
+    pub fn query_root_traces_page(
+        &self,
+        start_ts: u64,
+        end_ts: u64,
+        tenant_id: u64,
+        project_id: Option<u16>,
+        limit: usize,
+        offset: usize,
+    ) -> Result<(Vec<AgentFlowEdge>, u64)> {
+        self.stats.scans.fetch_add(1, Ordering::Relaxed);
+        
+        let index = self.root_trace_index.read();
+        
+        // Use BTreeMap::range() for O(log N) seek to the time window.
+        // Key ordering: (Reverse(ts), edge_id)
+        // Reverse(end_ts) < Reverse(start_ts) in BTreeMap ordering, so:
+        //   range start = (Reverse(end_ts), 0)       — newest in range
+        //   range end   = (Reverse(start_ts), MAX)   — oldest in range
+        let range_start = (Reverse(end_ts), 0u128);
+        let range_end = (Reverse(start_ts), u128::MAX);
+
+        // Filter by tenant and optionally project within the time range
+        let matching: Vec<&RootTraceEntry> = index.range(range_start..=range_end)
+            .map(|(_, e)| e)
+            .filter(|e| {
+                e.tenant_id == tenant_id
+                && project_id.map_or(true, |p| e.project_id == p)
+            })
+            .collect();
+        
+        let total = matching.len() as u64;
+        
+        // Apply pagination (already sorted newest-first from BTreeMap iteration)
+        let page_entries: Vec<&RootTraceEntry> = matching.into_iter()
+            .skip(offset)
+            .take(limit)
+            .collect();
+        
+        // Fetch full edges by ID (point lookups, fast)
+        let mut edges = Vec::with_capacity(page_entries.len());
+        for entry in &page_entries {
+            if let Ok(Some(edge)) = self.get(entry.edge_id) {
+                edges.push(edge);
+            }
+        }
+        
+        Ok((edges, total))
+    }
+
     /// Query edges for a specific tenant within a time range
     /// 
     /// **Performance:** Uses bounded range scan on the tenant index for true
@@ -1575,6 +2084,55 @@ impl AgentReplayStorage {
         Ok(edges)
     }
 
+    /// Get ALL descendants of a parent edge using the children index.
+    ///
+    /// **Performance:** O(K * log N) where K is the number of descendants.
+    /// For traces with no children (causal_parent == 0 for all edges in the
+    /// dataset), this returns immediately after a single empty scan_range.
+    ///
+    /// Uses the children index: `idx/children/{parent_edge_id}/{child_edge_id:032x}`
+    pub fn get_descendant_edges(&self, parent_edge_id: u128) -> Result<Vec<AgentFlowEdge>> {
+        // Fast check: if no edge has causal_parent == parent_edge_id, return empty.
+        // This avoids the expensive scan_range seek entirely (~1s saved).
+        if !self.edges_with_children.read().contains(&parent_edge_id) {
+            return Ok(Vec::new());
+        }
+        
+        self.stats.scans.fetch_add(1, Ordering::Relaxed);
+        
+        let mut all_descendants = Vec::new();
+        let mut queue = vec![parent_edge_id];
+        let mut visited = std::collections::HashSet::new();
+        visited.insert(parent_edge_id);
+        
+        while let Some(current_parent) = queue.pop() {
+            let start_key = format!("idx/children/{:032x}/", current_parent);
+            let end_key = format!("idx/children/{:032x}0", current_parent);
+            
+            let results = self.connection.scan_range(&start_key, &end_key)
+                .map_err(|e| AgentreplayError::Internal(format!("SochDB children scan failed: {}", e)))?;
+            
+            for (key_str, _) in &results {
+                // Key format: idx/children/{parent:032x}/{child:032x}
+                let parts: Vec<&str> = key_str.split('/').collect();
+                if parts.len() >= 4 {
+                    if let Ok(child_id) = u128::from_str_radix(parts[3], 16) {
+                        if visited.insert(child_id) {
+                            if let Some(edge) = self.get(child_id)? {
+                                all_descendants.push(edge);
+                                queue.push(child_id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Sort by timestamp for chronological order
+        all_descendants.sort_by_key(|e| e.timestamp_us);
+        Ok(all_descendants)
+    }
+
     /// Batch-fetch multiple payloads in a single pass.
     ///
     /// **Performance:** Amortizes LSM lookup overhead across N payloads. Instead
@@ -1648,6 +2206,10 @@ impl AgentReplayStorage {
     }
 
     /// Record metrics for an edge
+    ///
+    /// **Performance fix:** Periodically evicts minute_buckets older than 24h
+    /// to cap unbounded in-memory growth. Hour buckets are kept longer (7 days)
+    /// since they're coarser-grained.
     fn record_metrics(&self, edge: &AgentFlowEdge) {
         let minute_bucket_size = 60 * 1_000_000u64;
         let hour_bucket_size = 60 * minute_bucket_size;
@@ -1663,6 +2225,13 @@ impl AgentReplayStorage {
                 MetricsBucket::new(minute_ts, edge.tenant_id, edge.project_id)
             });
             bucket.record(edge);
+            
+            // Evict minute buckets older than 24 hours (every 1000 buckets to amortize cost)
+            // 24h in microseconds = 24 * 60 * 60 * 1_000_000 = 86_400_000_000
+            if buckets.len() > 1500 {
+                let cutoff = edge.timestamp_us.saturating_sub(86_400_000_000);
+                buckets.retain(|(_t, _p, ts), _| *ts >= cutoff);
+            }
         }
         
         // Update hour bucket
@@ -1673,6 +2242,13 @@ impl AgentReplayStorage {
                 MetricsBucket::new(hour_ts, edge.tenant_id, edge.project_id)
             });
             bucket.record(edge);
+            
+            // Evict hour buckets older than 7 days
+            // 7d in microseconds = 7 * 86_400_000_000 = 604_800_000_000
+            if buckets.len() > 200 {
+                let cutoff = edge.timestamp_us.saturating_sub(604_800_000_000);
+                buckets.retain(|(_t, _p, ts), _| *ts >= cutoff);
+            }
         }
 
         // Task 9: Update dashboard summary incrementally
@@ -1688,6 +2264,33 @@ impl AgentReplayStorage {
     /// instead of scanning all edges. Updated on every edge insertion.
     pub fn get_dashboard_summary(&self) -> DashboardSummary {
         self.dashboard_summary.read().clone()
+    }
+
+    /// Record model/provider attribution in the dashboard summary.
+    ///
+    /// Called from the query engine after extracting model info from payloads.
+    /// This populates top_models and top_providers for the cost analytics endpoint.
+    pub fn record_model_metrics(&self, model: &str, provider: &str, tokens: u64) {
+        let mut summary = self.dashboard_summary.write();
+        summary.record_model(model, provider, tokens);
+    }
+
+    /// Persist the DashboardSummary to disk.
+    ///
+    /// Called periodically by the maintenance worker so that totals survive restarts.
+    pub fn persist_dashboard_summary(&self) -> Result<()> {
+        let summary = self.dashboard_summary.read().clone();
+        let data = serde_json::to_vec(&summary)
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to serialize dashboard summary: {}", e)))?;
+        self.connection.put("meta/dashboard_summary", &data)
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to persist dashboard summary: {}", e)))?;
+        // Also persist edge count for O(1) startup
+        let edge_count = self.stats.edges.load(Ordering::Relaxed);
+        self.connection.put("meta/edge_count", &edge_count.to_le_bytes())
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to persist edge count: {}", e)))?;
+        let _ = self.connection.commit()
+            .map_err(|e| AgentreplayError::Internal(format!("Failed to commit dashboard summary: {}", e)))?;
+        Ok(())
     }
 
     // ========================================================================
@@ -1873,11 +2476,14 @@ impl AgentReplayStorage {
         result
     }
 
-    /// Query metrics as a timeseries (per-minute buckets) for a time range.
+    /// Query metrics as a timeseries for a time range.
     ///
     /// Returns a Vec of (timestamp, MetricsBucket) sorted by timestamp.
-    /// Uses the pre-aggregated minute_buckets for O(B) where B = number of
-    /// minute buckets in range, instead of O(N) edge scanning.
+    ///
+    /// **Adaptive granularity:** Uses minute_buckets for the recent window
+    /// (last 24h) and falls back to hour_buckets for older data. Minute
+    /// buckets are evicted after 24h, so queries for "Last 7 Days" or
+    /// "Last 30 Days" must read from hour_buckets to avoid data loss.
     pub fn query_metrics_timeseries(
         &self,
         tenant_id: u64,
@@ -1885,19 +2491,45 @@ impl AgentReplayStorage {
         start_ts: u64,
         end_ts: u64,
     ) -> Vec<(u64, MetricsBucket)> {
-        let buckets = self.minute_buckets.read();
         let mut result: Vec<(u64, MetricsBucket)> = Vec::new();
-        
-        for ((t, p, ts), bucket) in buckets.iter() {
-            if *ts >= start_ts && *ts <= end_ts {
-                let tenant_match = tenant_id == 0 || *t == tenant_id;
-                let project_match = project_id == 0 || *p == project_id;
-                if tenant_match && project_match {
-                    result.push((*ts, bucket.clone()));
+
+        // Determine the cutoff: minute buckets only cover ~last 24h.
+        // Use the earliest minute bucket timestamp as the boundary.
+        let minute_cutoff = {
+            let mb = self.minute_buckets.read();
+            mb.keys().next().map(|(_, _, ts)| *ts).unwrap_or(end_ts)
+        };
+
+        // 1) Collect hour_buckets for the portion BEFORE minute_cutoff
+        if start_ts < minute_cutoff {
+            let hb = self.hour_buckets.read();
+            for ((t, p, ts), bucket) in hb.iter() {
+                // Only take hour buckets that fall before the minute cutoff
+                // to avoid double-counting the overlapping window
+                if *ts >= start_ts && *ts < minute_cutoff {
+                    let tenant_match = tenant_id == 0 || *t == tenant_id;
+                    let project_match = project_id == 0 || *p == project_id;
+                    if tenant_match && project_match {
+                        result.push((*ts, bucket.clone()));
+                    }
                 }
             }
         }
-        
+
+        // 2) Collect minute_buckets for the recent window
+        {
+            let mb = self.minute_buckets.read();
+            for ((t, p, ts), bucket) in mb.iter() {
+                if *ts >= start_ts && *ts <= end_ts {
+                    let tenant_match = tenant_id == 0 || *t == tenant_id;
+                    let project_match = project_id == 0 || *p == project_id;
+                    if tenant_match && project_match {
+                        result.push((*ts, bucket.clone()));
+                    }
+                }
+            }
+        }
+
         result.sort_by_key(|(ts, _)| *ts);
         result
     }
@@ -2173,11 +2805,29 @@ impl AgentReplayStorage {
         
         info!("Shutting down AgentReplay storage");
         
+        // Save root trace index to disk for fast next startup
+        self.save_root_trace_index_to_disk();
+        
         // Flush metrics
         if self.config.enable_metrics {
             if let Err(e) = self.flush_metrics() {
                 warn!("Failed to flush metrics on shutdown: {}", e);
             }
+        }
+        
+        // CRITICAL: Checkpoint flushes memtable → SSTables and truncates the WAL.
+        // Without this, the entire WAL is replayed on next startup — taking 60+s
+        // for 2.5M edges. With checkpoint, next startup reads SSTables directly.
+        {
+            let _write_guard = self.write_lock.write();
+            if let Err(e) = self.connection.checkpoint() {
+                warn!("Failed to checkpoint on shutdown: {}", e);
+            }
+        }
+        
+        // Final fsync to ensure checkpoint data is durable on disk
+        if let Err(e) = self.connection.fsync() {
+            warn!("Failed to fsync after checkpoint on shutdown: {}", e);
         }
         
         info!("AgentReplay storage shutdown complete");
@@ -2307,27 +2957,24 @@ impl AgentReplayStorage {
     /// Call this periodically (e.g. every 5 minutes or when WAL exceeds a
     /// size threshold) to keep the WAL small and startup fast.
     ///
-    /// **Note**: After truncation, data in the current session remains
-    /// queryable (held in the in-memory memtable) but will NOT survive a
-    /// crash or restart. This is acceptable for a desktop telemetry viewer
-    /// where trace data can be re-collected from external sources.
+    /// Checkpoint the database by fsyncing the WAL to disk.
+    ///
+    /// This ensures all committed data is durable on disk. The WAL is
+    /// preserved so that data survives restarts — SochDB replays the WAL
+    /// into the memtable on the next `open()`.
     pub fn checkpoint(&self) -> Result<()> {
         let _write_guard = self.write_lock.write();
-        let wal_before = self.wal_size_bytes();
+        let wal_size = self.wal_size_bytes();
         self.connection.checkpoint()
             .map_err(|e| AgentreplayError::Internal(format!("SochDB checkpoint failed: {}", e)))?;
-        // Truncate the WAL file to reclaim disk space.
-        // The memtable still holds all data in memory for the current session.
-        if let Err(e) = self.connection.truncate_wal() {
-            tracing::warn!("WAL truncation failed (non-fatal): {}", e);
-        } else {
-            let wal_after = self.wal_size_bytes();
-            tracing::info!(
-                wal_before_mb = wal_before / (1024 * 1024),
-                wal_after_mb = wal_after / (1024 * 1024),
-                "SochDB checkpoint + WAL truncation completed"
-            );
+        // fsync to ensure the checkpoint marker and all WAL data are on disk
+        if let Err(e) = self.connection.fsync() {
+            tracing::warn!("WAL fsync after checkpoint failed (non-fatal): {}", e);
         }
+        tracing::info!(
+            wal_size_mb = wal_size / (1024 * 1024),
+            "SochDB checkpoint completed (WAL preserved for durability)"
+        );
         Ok(())
     }
 

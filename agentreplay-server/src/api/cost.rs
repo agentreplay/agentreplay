@@ -93,10 +93,10 @@ pub async fn get_detailed_cost_breakdown(
         params.start_ts, params.end_ts
     );
 
-    // Query edges in range
+    // Query edges in range using filtered scan (O(K) not O(N))
     let edges = state
         .db
-        .query_temporal_range(params.start_ts, params.end_ts)
+        .query_filtered(params.start_ts, params.end_ts, None, None)
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     let mut groups: HashMap<String, CostGroup> = HashMap::new();
@@ -198,7 +198,7 @@ pub async fn get_provider_costs(
 
     let edges = state
         .db
-        .query_temporal_range(start_ts, end_ts)
+        .query_filtered(start_ts, end_ts, None, None)
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     let mut provider_map: HashMap<String, ProviderCost> = HashMap::new();

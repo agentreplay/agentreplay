@@ -38,6 +38,14 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Helper for deserializing tool metadata from trace context.
+/// Matches the shape stored in TraceContext.metadata["tool_metadata"].
+#[derive(Debug, Deserialize)]
+struct ToolMetadataEntry {
+    edge_id: u128,
+    tool_name: String,
+}
+
 /// Tool correctness evaluation strictness levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToolCorrectnessStrictness {
@@ -146,8 +154,22 @@ impl ToolCorrectnessEvaluator {
         self
     }
 
-    /// Extract tool calls from trace edges
+    /// Extract tool calls from trace edges.
+    ///
+    /// Resolves tool names from the trace metadata (key: "tool_metadata")
+    /// which maps edge_id → ToolMetadata. Falls back to edge attributes
+    /// (key: "gen_ai.tool.name") or the edge_id hex if unavailable.
     fn extract_tool_calls(&self, trace: &TraceContext) -> Vec<ToolCall> {
+        // Build a lookup from edge_id → tool_name from metadata if available
+        let tool_names: HashMap<u128, String> = trace
+            .metadata
+            .get("tool_metadata")
+            .and_then(|v| serde_json::from_value::<Vec<ToolMetadataEntry>>(v.clone()).ok())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|tm| (tm.edge_id, tm.tool_name))
+            .collect();
+
         trace
             .edges
             .iter()
@@ -155,11 +177,16 @@ impl ToolCorrectnessEvaluator {
                 let span_type = e.get_span_type();
                 span_type == SpanType::ToolCall
             })
-            .map(|e| ToolCall {
-                // Note: Tool names are stored in payloads, not in the fixed edge structure
-                // For now, use span type as identifier. Production code should fetch payload.
-                name: format!("Tool_{:x}", e.edge_id),
-                parameters: None, // TODO: Extract from edge payload if available
+            .map(|e| {
+                let name = tool_names
+                    .get(&e.edge_id)
+                    .cloned()
+                    .unwrap_or_else(|| format!("Tool_{:x}", e.edge_id));
+
+                ToolCall {
+                    name,
+                    parameters: None,
+                }
             })
             .collect()
     }

@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import SetupWizard from '../components/SetupWizard';
 import '../app/globals.css';
 import { initTheme } from './lib/theme';
 import { useProjects } from './context/project-context';
 import { AppModeProvider } from './context/app-mode-context';
+import { BotProvider } from './context/bot-context';
 import Traces from './pages/Traces';
 import TraceDetail from './pages/TraceDetail';
 import Evaluations from './pages/Evaluations';
@@ -48,8 +49,13 @@ import EvalPipelinePage from './pages/EvalPipelinePage';
 import CostManagementPage from './pages/CostManagementPage';
 import CodingSessions from './pages/CodingSessions';
 import McpTesterPage from './pages/McpTesterPage';
+import SkillTesterPage from './pages/SkillTesterPage';
+import SkillMemoryPage from './pages/SkillMemoryPage';
+// OpenClaw page hidden — not yet tested for release
+// import OpenClawPage from './pages/OpenClawPage';
 
 import ServerStatus from '../components/ServerStatus';
+import SyncingScreen from '../components/SyncingScreen';
 
 const STORAGE_KEY_LAST_PATH = 'agentreplay_last_path';
 
@@ -65,8 +71,49 @@ function usePathPersistence() {
   }, [location, currentProject]);
 }
 
+/**
+ * WebKit-safe redirect that builds an absolute path using useParams.
+ * Fires the navigate call exactly once per mount to avoid exceeding
+ * WebKit's history.replaceState rate limit (100 calls / 10 s).
+ */
+function SafeRedirect({ to }: { to: string }) {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+  const fired = useRef(false);
+
+  useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+    navigate(`/projects/${projectId}/${to}`, { replace: true });
+  }, [projectId, to, navigate]);
+
+  return null;
+}
+
 function ProjectLanding() {
   const { currentProject, loading, connectionError } = useProjects();
+  const navigate = useNavigate();
+  const didNavigate = useRef(false);
+
+  useEffect(() => {
+    // Reset the guard when we re-mount (e.g. user navigated back to /)
+    didNavigate.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (didNavigate.current || connectionError || loading) return;
+    if (!currentProject) {
+      didNavigate.current = true;
+      navigate('/get-started', { replace: true });
+      return;
+    }
+    const lastPath = localStorage.getItem(STORAGE_KEY_LAST_PATH);
+    const target = (lastPath && lastPath.startsWith(`/projects/${currentProject.project_id}`))
+      ? lastPath
+      : `/projects/${currentProject.project_id}/traces`;
+    didNavigate.current = true;
+    navigate(target, { replace: true });
+  }, [currentProject, loading, connectionError, navigate]);
 
   if (connectionError) {
     return (
@@ -77,26 +124,7 @@ function ProjectLanding() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-textSecondary">
-        Syncing projects...
-      </div>
-    );
-  }
-
-  if (!currentProject) {
-    return <Navigate to="/get-started" replace />;
-  }
-
-  // Restore last visited path if it belongs to current project
-  const lastPath = localStorage.getItem(STORAGE_KEY_LAST_PATH);
-  if (lastPath && lastPath.startsWith(`/projects/${currentProject.project_id}`)) {
-    return <Navigate to={lastPath} replace />;
-  }
-
-  // Default to Traces
-  return <Navigate to={`/projects/${currentProject.project_id}/traces`} replace />;
+  return <SyncingScreen />;
 }
 
 function SetupWizardWrapper() {
@@ -127,7 +155,7 @@ function AppContent() {
         <Route path="/projects/:projectId/coding-sessions" element={<CodingSessions />} />
         <Route path="/projects/:projectId/coding-sessions/:sessionId" element={<CodingSessions />} />
         <Route path="/projects/:projectId/agents" element={<Agents />} />
-        <Route path="/projects/:projectId/timeline" element={<Navigate to="../analytics" replace />} />
+        <Route path="/projects/:projectId/timeline" element={<SafeRedirect to="analytics" />} />
         <Route path="/projects/:projectId/search" element={<Search />} />
         <Route path="/projects/:projectId/evaluations" element={<Evaluations />} />
         <Route path="/projects/:projectId/evaluations/runs/:runId" element={<EvaluationRunDetail />} />
@@ -140,7 +168,7 @@ function AppContent() {
         <Route path="/projects/:projectId/playground" element={<Playground />} />
         <Route path="/projects/:projectId/model-comparison" element={<ModelComparisonPage />} />
         <Route path="/projects/:projectId/tools" element={<ToolsPage />} />
-        <Route path="/projects/:projectId/versions" element={<Navigate to="prompts" replace />} />
+        <Route path="/projects/:projectId/versions" element={<SafeRedirect to="prompts" />} />
         <Route path="/projects/:projectId/annotation-queue" element={<AnnotationQueue evalRunId="123" />} />
         <Route path="/projects/:projectId/comparison" element={<ExperimentComparison runIds={['123', '456']} />} />
         <Route path="/projects/:projectId/analytics" element={<Analytics />} />
@@ -152,8 +180,13 @@ function AppContent() {
         <Route path="/projects/:projectId/settings" element={<Settings />} />
         <Route path="/projects/:projectId/costs" element={<CostManagementPage />} />
         <Route path="/projects/:projectId/mcp-tester" element={<McpTesterPage />} />
+        <Route path="/projects/:projectId/skill-tester" element={<SkillTesterPage />} />
+        <Route path="/projects/:projectId/skill-memory" element={<SkillMemoryPage />} />
+        {/* OpenClaw routes hidden — not yet tested for release */}
+        {/* <Route path="/projects/:projectId/openclaw" element={<OpenClawPage />} /> */}
+        {/* <Route path="/projects/:projectId/bots" element={<SafeRedirect to="openclaw" />} /> */}
         <Route path="/projects/:projectId/docs" element={<Docs />} />
-        <Route path="/projects/:projectId" element={<Navigate to="traces" replace />} />
+        <Route path="/projects/:projectId" element={<SafeRedirect to="traces" />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -170,11 +203,13 @@ function App() {
   }, []);
 
   return (
+    <BotProvider>
     <AppModeProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppContent />
       </Router>
     </AppModeProvider>
+    </BotProvider>
   );
 }
 

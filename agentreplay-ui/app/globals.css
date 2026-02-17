@@ -339,6 +339,16 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Shimmer slide for syncing screen progress bar */
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-200%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
 /* Pagination button hover scale */
 .page-btn-hover {
   transition: transform 0.15s ease, box-shadow 0.15s ease;

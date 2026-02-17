@@ -18,6 +18,7 @@ pub mod agent_registry;
 pub mod api;
 pub mod auth;
 pub mod batcher;
+pub mod bot_registry;
 pub mod cache;
 pub mod config;
 pub mod cost_tracker;
@@ -27,6 +28,7 @@ pub mod knowledge_graph;
 pub mod llm;
 pub mod mcp;
 pub mod middleware;
+pub mod openclaw_enrichment;
 pub mod otel_genai;
 pub mod otlp_service;
 pub mod project_manager;
@@ -54,7 +56,10 @@ use api::{
     get_trace_observations, health_check, health_check_detailed, ingest_otel_spans, ingest_traces,
     list_traces, semantic_search, submit_trace_feedback, ws_traces, AppState,
 };
-use auth::{auth_middleware, ApiKeyAuth, Authenticator, BearerTokenAuth, MultiAuth, NoAuth};
+use auth::{
+    auth_middleware, oauth_bearer_middleware, ApiKeyAuth, Authenticator, BearerTokenAuth,
+    MultiAuth, NoAuth,
+};
 use config::ServerConfig;
 use agentreplay_query::Agentreplay;
 use project_manager::ProjectManager;
@@ -262,6 +267,31 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         None
     };
 
+    // Initialize Skill Memory Store (AI Memory OS)
+    let skill_memory_store = {
+        let store = crate::api::skill_memory::SkillMemoryStore::new(&config.storage.data_dir);
+        tracing::info!("Skill Memory Store initialized for cross-task skill reuse");
+        Some(Arc::new(store))
+    };
+
+    // Initialize Bot Registry (moltbot, clawdbot, openclaw)
+    let bot_registry_v2 = {
+        let registry = crate::bot_registry::BotRegistry::new(&config.storage.data_dir);
+        tracing::info!("Bot Registry initialized with {} bots", registry.count());
+        Some(Arc::new(registry))
+    };
+
+    // Initialize OpenClaw Enrichment Engine
+    let openclaw_enricher = {
+        let enricher = crate::openclaw_enrichment::OpenclawEnricher::new(
+            &config.storage.data_dir,
+            skill_memory_store.clone(),
+            bot_registry_v2.clone(),
+        );
+        tracing::info!("OpenClaw enrichment engine initialized");
+        Some(Arc::new(enricher))
+    };
+
     let state = AppState {
         db: db.clone(),
         project_manager,
@@ -276,6 +306,9 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         semantic_governor,
         eval_cache,
         ingestion_actor,
+        skill_memory_store,
+        bot_registry_v2,
+        openclaw_enricher,
     };
 
     // Set up authenticator with secure-by-default approach (Task 4)
@@ -396,6 +429,11 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
             get(get_trace_observations),
         )
         .route("/api/v1/traces/:trace_id/graph", get(get_trace_graph))
+        .route("/api/v1/replay/:trace_id", get(api::replay::get_trace_replay))
+        .route(
+            "/api/v1/replay/:trace_id/fork",
+            post(api::replay::fork_trace_replay),
+        )
         .route("/api/v1/traces/:trace_id/detailed", get(get_detailed_trace))
         .route(
             "/api/v1/traces/:trace_id/feedback",
@@ -715,6 +753,41 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         )
         // Memory & RAG routes (MCP isolated project/tenant)
         .nest("/api/v1/memory", api::memory::memory_router())
+        // AI Memory OS — Skill Memory for cross-task reuse & evolution
+        .nest("/api/v1/skill-memory", api::skill_memory::skill_memory_router())
+        // Bot Registry — moltbot, clawdbot, openclaw management
+        .nest("/api/v1/bots", api::bots::bots_router())
+        // OpenClaw observability — metrics, sessions, skills import
+        .nest("/api/v1/openclaw", api::openclaw::openclaw_router())
+        // Skill Tester routes (load, test, scan, drift, viz)
+        .route(
+            "/api/v1/skill-tester/load",
+            post(api::skill_tester::load_skill),
+        )
+        .route(
+            "/api/v1/skill-tester/run",
+            post(api::skill_tester::run_tests),
+        )
+        .route(
+            "/api/v1/skill-tester/scan",
+            post(api::skill_tester::scan_security),
+        )
+        .route(
+            "/api/v1/skill-tester/drift",
+            get(api::skill_tester::get_drift),
+        )
+        .route(
+            "/api/v1/skill-tester/confusion-matrix",
+            get(api::skill_tester::get_confusion_matrix),
+        )
+        .route(
+            "/api/v1/skill-tester/sankey",
+            post(api::skill_tester::get_sankey),
+        )
+        .route(
+            "/api/v1/skill-tester/calibration",
+            get(api::skill_tester::get_calibration),
+        )
         // Git-like Response Versioning routes
         .nest("/api/v1/git", {
             let git_state = Arc::new(api::GitVersioningState::new("Agentreplay User"));
@@ -733,6 +806,18 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
     // Clone db for MCP server
     let db_for_mcp = db.clone();
     let state_for_mcp = state.clone();
+
+    // MCP OAuth authenticator (T4): MCP requires Bearer/JWT when auth is enabled.
+    let mcp_oauth_authenticator: Option<Arc<dyn Authenticator>> = if config.auth.enabled {
+        let jwt_secret = config.auth.jwt_secret.clone().ok_or_else(|| {
+            anyhow::anyhow!(
+                "MCP OAuth is enabled with auth.enabled=true but auth.jwt_secret is not configured"
+            )
+        })?;
+        Some(Arc::new(BearerTokenAuth::new(jwt_secret)))
+    } else {
+        None
+    };
 
     // Build full application router
     let app = Router::new()
@@ -763,9 +848,10 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
         .layer(TraceLayer::new_for_http());
 
     // Start OTLP gRPC server on port 47117 in parallel (if project manager available)
+    let otlp_enricher = state_for_mcp.openclaw_enricher.clone();
     let otlp_handle = if let Some(pm) = pm_for_otlp {
         Some(tokio::spawn(async move {
-            if let Err(e) = otlp_service::start_otlp_server(pm).await {
+            if let Err(e) = otlp_service::start_otlp_server(pm, otlp_enricher).await {
                 tracing::error!("OTLP gRPC server error: {}", e);
             }
         }))
@@ -775,11 +861,12 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
     };
 
     // Start MCP server on port 47101 for Claude Desktop / Cursor integration
+    let mcp_auth_enabled = config.auth.enabled;
     let mcp_handle = tokio::spawn(async move {
         let causal_index = db_for_mcp.causal_index();
         let mcp_router = mcp::mcp_router(state_for_mcp, causal_index);
 
-        let mcp_app = Router::new()
+        let mcp_app_base = Router::new()
             .merge(mcp_router)
             .layer(
                 CorsLayer::new()
@@ -788,6 +875,23 @@ pub async fn run_server(config: ServerConfig) -> Result<()> {
                     .allow_headers(Any),
             )
             .layer(TraceLayer::new_for_http());
+
+        let mcp_app = if mcp_auth_enabled {
+            if let Some(mcp_auth) = mcp_oauth_authenticator {
+                tracing::info!("MCP OAuth 2.1 bearer authentication enabled");
+                mcp_app_base
+                    .layer(axum_middleware::from_fn(oauth_bearer_middleware))
+                    .layer(Extension(mcp_auth))
+            } else {
+                tracing::error!("MCP OAuth authenticator missing while auth is enabled");
+                return;
+            }
+        } else {
+            tracing::warn!(
+                "MCP authentication is disabled (localhost/dev mode). Enable [auth] for OAuth 2.1 bearer protection."
+            );
+            mcp_app_base
+        };
 
         let mcp_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 47101));
         tracing::info!("🔌 MCP Server listening on http://{}", mcp_addr);

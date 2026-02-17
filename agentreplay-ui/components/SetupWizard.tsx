@@ -18,6 +18,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EnvironmentConfig } from './EnvironmentConfig';
 import { API_BASE_URL } from '../src/lib/agentreplay-api';
+// Bot context available if needed in future
+// import { useBot } from '../src/context/bot-context';
 import {
   Check,
   Copy,
@@ -38,6 +40,10 @@ import {
   Lock,
   Zap,
   Eye,
+  Globe,
+  MessageSquare,
+  Cpu,
+  Braces,
 } from 'lucide-react';
 
 interface SetupWizardProps {
@@ -103,6 +109,7 @@ console.log(\`🚀 Visit http://localhost:5173/traces to see your data\`);`
 export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set(['agents', 'claude', 'testing']));
   const [selectedSdk, setSelectedSdk] = useState<SdkType>('python');
   // const [usageContext, setUsageContext] = useState<UsageContext>('observability'); // Moved to EnvironmentConfig
   const [projectName, setProjectName] = useState('');
@@ -113,6 +120,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const steps = [
     { id: 'welcome', title: 'Welcome', icon: Sparkles },
+    { id: 'services', title: 'Services', icon: Cpu },
     { id: 'create', title: 'Create Project', icon: FolderPlus },
     { id: 'install', title: 'Install SDK', icon: Download },
     { id: 'verify', title: 'Verify Setup', icon: CheckCircle2 },
@@ -197,7 +205,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           };
 
           setCreatedProject(createdProjectData);
-          setCurrentStep(2); // Go to Install SDK step
+          setCurrentStep(3); // Go to Install SDK step
           return; // Success, exit the function
         } catch (error) {
           lastError = error instanceof Error ? error : new Error('Unknown error');
@@ -227,6 +235,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     // Mark setup as complete in localStorage
     localStorage.setItem('agentreplay_setup_complete', 'true');
     localStorage.setItem('agentreplay_default_project', createdProject.project_id.toString());
+    // Persist selected services so sidebar can filter groups
+    localStorage.setItem('agentreplay_enabled_services', JSON.stringify([...selectedServices]));
+    window.dispatchEvent(new Event('services-changed'));
 
     // Call parent callback
     onComplete(createdProject.project_id);
@@ -292,102 +303,209 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               transition={{ duration: 0.2 }}
               className="h-full overflow-y-auto p-6 sm:p-8"
             >
-            {/* Step 0: Welcome */}
+            {/* Step 0: Welcome — info only */}
             {currentStep === 0 && (
-              <div className="text-center relative">
-                {/* Modern GitHub Star CTA – floating badge top-right */}
+              <div className="text-center relative flex flex-col items-center justify-center h-full">
+                {/* GitHub Star CTA – floating badge top-right */}
                 <a
                   href="https://github.com/agentreplay/agentreplay"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute top-0 right-0 group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 hover:from-amber-500/20 hover:via-orange-500/20 hover:to-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 rounded-xl text-sm font-medium text-textPrimary hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-200 shadow-sm hover:shadow-md backdrop-blur-sm"
+                  className="absolute top-0 right-0 group inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/8 hover:bg-amber-500/15 border border-amber-500/25 hover:border-amber-500/40 rounded-lg text-xs font-medium text-textSecondary hover:text-amber-500 transition-all"
                 >
-                  <Star className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline">Star us</span>
-                  <span className="sm:hidden">⭐</span>
-                  <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <Star className="w-3.5 h-3.5 text-amber-500" />
+                  Star us
+                  <ExternalLink className="w-3 h-3 opacity-50" />
                 </a>
 
                 {/* Logo */}
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-4">
                   <div className="relative">
-                    <img
-                      src="/logo.svg"
-                      alt="AgentReplay"
-                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-xl"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
-                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    <img src="/logo.svg" alt="AgentReplay" className="w-20 h-20 rounded-2xl shadow-xl" />
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center border-2 border-surface shadow-md">
+                      <Check className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
                 </div>
 
-                {/* Modern welcome section with enhanced typography */}
-                <div className="mb-8">
-                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-textPrimary mb-4 tracking-tight">
-                    <span className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
-                      Welcome to AgentReplay
-                    </span>
-                  </h2>
-                  
-                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs sm:text-sm font-semibold border border-primary/20">
-                      <Zap className="w-3.5 h-3.5" />
-                      Local-First
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs sm:text-sm font-semibold border border-emerald-500/20">
-                      <Brain className="w-3.5 h-3.5" />
-                      AI Memory
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-xs sm:text-sm font-semibold border border-purple-500/20">
-                      <Activity className="w-3.5 h-3.5" />
-                      Observability
-                    </span>
-                  </div>
+                {/* Heading */}
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Welcome to AgentReplay
+                  </span>
+                </h2>
 
-                  <p className="text-base sm:text-lg font-medium text-textPrimary mb-3 max-w-2xl mx-auto leading-relaxed">
-                    Desktop observability & AI memory for your agents and coding tools
-                  </p>
-                  
-                  <p className="text-sm sm:text-base text-textSecondary mb-4 max-w-2xl mx-auto leading-relaxed">
-                    The open-source desktop app purpose-built for <span className="font-semibold text-textPrimary">AI agents</span> & <span className="font-semibold text-textPrimary">Claude Code</span>. Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
-                  </p>
+                <p className="text-sm sm:text-base text-textSecondary max-w-2xl mx-auto mb-1.5 leading-relaxed">
+                  The open-source desktop app purpose-built for <span className="font-semibold text-textPrimary">AI agents</span> & <span className="font-semibold text-textPrimary">Claude Code</span>.
+                </p>
+                <p className="text-xs sm:text-sm text-textTertiary max-w-2xl mx-auto mb-6 leading-relaxed">
+                  Trace every interaction, build persistent memory, and debug with confidence — all without sending a single byte off your machine.
+                </p>
+
+                {/* Feature pills */}
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-purple-500/20 bg-purple-500/8 text-purple-600 dark:text-purple-400">
+                    <Activity className="w-3.5 h-3.5" /> AI Agents
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-sky-500/20 bg-sky-500/8 text-sky-600 dark:text-sky-400">
+                    <Brain className="w-3.5 h-3.5" /> Claude Code
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-500/20 bg-emerald-500/8 text-emerald-600 dark:text-emerald-400">
+                    <Shield className="w-3.5 h-3.5" /> Service Testing
+                  </span>
+                  {/* OpenClaw pill hidden — not yet tested for release */}
                 </div>
 
-                {/* Privacy banner – modern, highlighted, positioned after welcome section */}
-                <div className="bg-gradient-to-br from-emerald-500/15 via-green-500/20 to-emerald-500/15 border-2 border-emerald-500/40 rounded-2xl p-4 sm:p-5 mb-6 shadow-lg shadow-emerald-500/10 backdrop-blur-sm">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
-                        <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400 hidden sm:block" />
-                    </div>
-                    <div className="text-center sm:text-left">
-                      <p className="text-sm sm:text-base font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-                        100% Local & Private
-                      </p>
-                      <p className="text-xs sm:text-sm font-medium text-emerald-700 dark:text-emerald-400 leading-relaxed">
-                        Your data never leaves your laptop. Zero cloud dependencies. Fully optimized for desktops & laptops.
-                      </p>
-                    </div>
-                  </div>
+                {/* CTA */}
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors text-base"
+                >
+                  Continue
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Step 1: Service Selection — all pre-selected */}
+            {currentStep === 1 && (
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-textPrimary mb-1">Select Services</h2>
+                <p className="text-sm text-textTertiary mb-5">Choose which features to enable. All are selected by default.</p>
+
+                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto mb-5">
+                  {/* Service 1: AI Agents */}
+                  {(() => {
+                    const isOn = selectedServices.has('agents');
+                    return (
+                      <button
+                        onClick={() => setSelectedServices(prev => {
+                          const next = new Set(prev);
+                          next.has('agents') ? next.delete('agents') : next.add('agents');
+                          return next;
+                        })}
+                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-150 cursor-pointer text-center ${
+                          isOn
+                            ? 'border-purple-500/50 bg-purple-500/8 shadow-md'
+                            : 'border-border/30 bg-surface hover:bg-surface-elevated hover:border-border/60 opacity-50'
+                        }`}
+                      >
+                        {isOn && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <div className={`p-2 rounded-lg ${isOn ? 'bg-purple-500/15' : 'bg-border/20'}`}>
+                          <Activity className={`w-5 h-5 ${isOn ? 'text-purple-500 dark:text-purple-400' : 'text-textTertiary'}`} />
+                        </div>
+                        <span className={`text-sm font-bold leading-tight ${isOn ? 'text-purple-700 dark:text-purple-300' : 'text-textSecondary'}`}>
+                          AI Agents
+                        </span>
+                        <span className="text-[11px] text-textTertiary leading-tight">
+                          Traces, evals, prompts & analytics
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Service 2: Claude Code */}
+                  {(() => {
+                    const isOn = selectedServices.has('claude');
+                    return (
+                      <button
+                        onClick={() => setSelectedServices(prev => {
+                          const next = new Set(prev);
+                          next.has('claude') ? next.delete('claude') : next.add('claude');
+                          return next;
+                        })}
+                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-150 cursor-pointer text-center ${
+                          isOn
+                            ? 'border-sky-500/50 bg-sky-500/8 shadow-md'
+                            : 'border-border/30 bg-surface hover:bg-surface-elevated hover:border-border/60 opacity-50'
+                        }`}
+                      >
+                        {isOn && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-sky-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <div className={`p-2 rounded-lg ${isOn ? 'bg-sky-500/15' : 'bg-border/20'}`}>
+                          <Brain className={`w-5 h-5 ${isOn ? 'text-sky-500 dark:text-sky-400' : 'text-textTertiary'}`} />
+                        </div>
+                        <span className={`text-sm font-bold leading-tight ${isOn ? 'text-sky-700 dark:text-sky-300' : 'text-textSecondary'}`}>
+                          Claude Code
+                        </span>
+                        <span className="text-[11px] text-textTertiary leading-tight">
+                          Memory & skill extraction
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Service 3: Service Testing */}
+                  {(() => {
+                    const isOn = selectedServices.has('testing');
+                    return (
+                      <button
+                        onClick={() => setSelectedServices(prev => {
+                          const next = new Set(prev);
+                          next.has('testing') ? next.delete('testing') : next.add('testing');
+                          return next;
+                        })}
+                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-150 cursor-pointer text-center ${
+                          isOn
+                            ? 'border-emerald-500/50 bg-emerald-500/8 shadow-md'
+                            : 'border-border/30 bg-surface hover:bg-surface-elevated hover:border-border/60 opacity-50'
+                        }`}
+                      >
+                        {isOn && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <div className={`p-2 rounded-lg ${isOn ? 'bg-emerald-500/15' : 'bg-border/20'}`}>
+                          <Shield className={`w-5 h-5 ${isOn ? 'text-emerald-500 dark:text-emerald-400' : 'text-textTertiary'}`} />
+                        </div>
+                        <span className={`text-sm font-bold leading-tight ${isOn ? 'text-emerald-700 dark:text-emerald-300' : 'text-textSecondary'}`}>
+                          Service Testing
+                        </span>
+                        <span className="text-[11px] text-textTertiary leading-tight">
+                          MCP & skill testing
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Service 4: OpenClaw — hidden, not yet tested for release */}
                 </div>
 
-                <div className="flex justify-center">
+                {/* Navigation */}
+                <div className="flex justify-between items-center max-w-lg mx-auto">
                   <button
-                    onClick={() => setCurrentStep(1)}
-                    className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors text-lg"
+                    onClick={() => setCurrentStep(0)}
+                    className="px-6 py-2.5 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors text-sm"
                   >
-                    Get Started
-                    <ChevronRight className="w-5 h-5" />
+                    Back
                   </button>
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() => setCurrentStep(2)}
+                      disabled={selectedServices.size === 0}
+                      className="flex items-center gap-2 px-8 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-base"
+                    >
+                      Get Started
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    {selectedServices.size === 0 && (
+                      <p className="text-[11px] text-red-500">Select at least one service</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Step 1: Create Project */}
-            {currentStep === 1 && (
+            {/* Step 2: Create Project */}
+            {currentStep === 2 && (
               <div>
                 <h2 className="text-2xl font-bold text-textPrimary mb-4">
                   Create Your First Project
@@ -426,7 +544,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 <div className="mt-8 flex justify-between">
                   <button
-                    onClick={() => setCurrentStep(0)}
+                    onClick={() => setCurrentStep(1)}
                     className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
                   >
                     Back
@@ -452,8 +570,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* Step 2: Install SDK & Configure */}
-            {currentStep === 2 && createdProject && (
+            {/* Step 3: Install SDK & Configure */}
+            {currentStep === 3 && createdProject && (
               <div>
                 <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
                   <div className="flex items-start gap-3">
@@ -555,13 +673,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 <div className="mt-8 flex justify-between">
                   <button
-                    onClick={() => setCurrentStep(1)}
+                    onClick={() => setCurrentStep(2)}
                     className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
                   >
                     Back
                   </button>
                   <button
-                    onClick={() => setCurrentStep(3)}
+                    onClick={() => setCurrentStep(4)}
                     className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors"
                   >
                     Next: Verify Setup
@@ -571,8 +689,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            {/* Step 3: Verify Setup */}
-            {currentStep === 3 && createdProject && (
+            {/* Step 4: Verify Setup */}
+            {currentStep === 4 && createdProject && (
               <div>
                 <h2 className="text-2xl font-bold text-textPrimary mb-4">
                   Verify Your Setup
@@ -614,7 +732,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 <div className="mt-8 flex justify-between">
                   <button
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(3)}
                     className="px-6 py-3 bg-surface-hover hover:bg-surface-elevated text-textPrimary rounded-lg font-medium transition-colors"
                   >
                     Back

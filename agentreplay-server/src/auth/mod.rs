@@ -243,6 +243,31 @@ pub async fn auth_middleware(
     }
 }
 
+/// Strict OAuth 2.1 bearer middleware for MCP.
+///
+/// This middleware enforces the presence of an `Authorization: Bearer <token>` header
+/// and does not allow API-key query/header fallback. It is intended for MCP endpoints
+/// where OAuth-style bearer tokens are required.
+pub async fn oauth_bearer_middleware(
+    auth: axum::Extension<Arc<dyn Authenticator>>,
+    mut req: Request,
+    next: Next,
+) -> Result<Response, AuthError> {
+    let auth_header = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|h| h.to_str().ok())
+        .ok_or(AuthError::MissingCredentials)?;
+
+    if !auth_header.starts_with("Bearer ") {
+        return Err(AuthError::MissingCredentials);
+    }
+
+    let ctx = auth.authenticate(req.headers())?;
+    req.extensions_mut().insert(ctx);
+    Ok(next.run(req).await)
+}
+
 /// Authentication middleware with rate limiting
 ///
 /// This middleware should be used for authentication endpoints to prevent brute force attacks

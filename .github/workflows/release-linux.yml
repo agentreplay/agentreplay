@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 0.1.0)'
+        description: 'Version (e.g., 0.2.1)'
         required: true
-        default: '0.1.0'
+        default: '0.2.1'
 
 permissions:
   contents: write
@@ -87,6 +87,9 @@ jobs:
           name: Agentreplay-x86_64-unknown-linux-gnu
           path: |
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
           if-no-files-found: error
 
@@ -94,12 +97,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
-          name: AgentReplay ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          name: Agent Replay Alpha ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
           draft: false
           prerelease: ${{ contains(github.ref_name || github.event.inputs.version, 'alpha') || contains(github.ref_name || github.event.inputs.version, 'beta') }}
           generate_release_notes: true
           files: |
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.tar.gz.sig
+            agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig
             agentreplay-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

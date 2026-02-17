@@ -227,7 +227,7 @@ export default function MemoryPage() {
                 </div>
                 <span className="text-[10px] font-medium text-muted-foreground">REST API</span>
               </div>
-              <div className="p-4 rounded-bl-2xl bg-slate-900">
+              <div className="p-4 rounded-bl-2xl bg-secondary">
                 <pre className="text-[11px] font-mono overflow-x-auto leading-relaxed text-muted-foreground"><span style={{ color: '#38bdf8' }}>curl</span> -X <span style={{ color: '#a78bfa' }}>POST</span> <span style={{ color: '#fbbf24' }}>http://localhost:47100/api/v1/memory/ingest</span> \{'\n'}  -H <span style={{ color: '#4ade80' }}>&quot;Content-Type: application/json&quot;</span> \{'\n'}  -d <span style={{ color: '#4ade80' }}>{`'{"collection": "docs", "content": "Your content"}'`}</span></pre>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function MemoryPage() {
                 </div>
                 <span className="text-[10px] font-medium text-muted-foreground">REST API</span>
               </div>
-              <div className="p-4 rounded-br-2xl bg-slate-900">
+              <div className="p-4 rounded-br-2xl bg-secondary">
                 <pre className="text-[11px] font-mono overflow-x-auto leading-relaxed text-muted-foreground"><span style={{ color: '#38bdf8' }}>curl</span> -X <span style={{ color: '#a78bfa' }}>POST</span> <span style={{ color: '#fbbf24' }}>http://localhost:47100/api/v1/memory/retrieve</span> \{'\n'}  -H <span style={{ color: '#4ade80' }}>&quot;Content-Type: application/json&quot;</span> \{'\n'}  -d <span style={{ color: '#4ade80' }}>{`'{"query": "your search", "k": 5}'`}</span></pre>
               </div>
             </div>
@@ -871,7 +871,7 @@ function MemoryTracesTab({ mcpInfo, loading }: { mcpInfo: MCPInfoResponse | null
               </div>
               <span className="text-[10px] font-medium text-muted-foreground">REST API</span>
             </div>
-            <div className="p-4 bg-slate-900">
+            <div className="p-4 bg-secondary">
               <pre className="text-[11px] font-mono overflow-x-auto leading-relaxed text-muted-foreground"><span style={{ color: '#38bdf8' }}>curl</span> -X <span style={{ color: '#a78bfa' }}>POST</span> <span style={{ color: '#fbbf24' }}>http://localhost:47100/api/v1/memory/ingest</span> \{'\n'}  -H <span style={{ color: '#4ade80' }}>&quot;Content-Type: application/json&quot;</span> \{'\n'}  -d <span style={{ color: '#4ade80' }}>{`'{"collection": "default", "content": "Your content here"}'`}</span></pre>
             </div>
           </div>
@@ -1154,7 +1154,7 @@ function MCPServerTab({
             { icon: <Activity className="w-3.5 h-3.5" />, label: 'Indexing Speed', value: '~1k/sec', color: '#0080FF', bg: 'rgba(0,128,255,0.08)', pct: 88 },
             { icon: <Database className="w-3.5 h-3.5" />, label: 'Vector Operations', value: 'Optimized', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', pct: 100 },
           ].map((metric, i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < 2 ? '1px solid #f8fafc' : 'none' }}>
+            <div key={i} className="flex items-center gap-4 px-6 py-4" style={{ borderBottom: i < 2 ? '1px solid hsl(var(--border))' : 'none' }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: metric.bg, color: metric.color }}>
                 {metric.icon}
               </div>
@@ -1239,7 +1239,7 @@ function MCPServerTab({
             { method: 'POST', path: '/api/v1/memory/ingest', desc: 'Ingest content into vector store', methodColor: '#0080FF', methodBg: 'rgba(0,128,255,0.08)', tags: ['JSON', 'Write'] },
             { method: 'POST', path: '/mcp', desc: 'MCP JSON-RPC protocol endpoint', methodColor: '#8b5cf6', methodBg: 'rgba(139,92,246,0.08)', tags: ['JSON-RPC'] },
           ].map((endpoint, i) => (
-            <div key={i} className="flex items-center gap-4 px-6 py-3.5 transition-all" style={{ borderBottom: i < 3 ? '1px solid #f8fafc' : 'none', borderLeft: `3px solid ${endpoint.methodColor}` }}>
+            <div key={i} className="flex items-center gap-4 px-6 py-3.5 transition-all" style={{ borderBottom: i < 3 ? '1px solid hsl(var(--border))' : 'none', borderLeft: `3px solid ${endpoint.methodColor}` }}>
               <span className="px-2.5 py-1 rounded-md text-[11px] font-bold font-mono tracking-wide flex-shrink-0" style={{ backgroundColor: endpoint.methodBg, color: endpoint.methodColor, minWidth: '52px', textAlign: 'center' as const }}>
                 {endpoint.method}
               </span>

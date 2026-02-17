@@ -81,8 +81,11 @@ impl McpToolAdapter {
     pub fn unified_to_mcp(&self, tool: &UnifiedToolDefinition) -> Tool {
         Tool {
             name: tool.name.clone(),
+            title: None,
             description: Some(tool.metadata.description.clone()),
             input_schema: tool.input_schema.clone(),
+            output_schema: None,
+            annotations: None,
         }
     }
 
@@ -118,6 +121,7 @@ impl McpToolAdapter {
                 })
                 .to_string(),
             }],
+            structured_content: None,
             is_error: None,
         })
     }

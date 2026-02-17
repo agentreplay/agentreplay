@@ -28,12 +28,13 @@ members = [
     "agentreplay-experiments",
     "agentreplay-plugins/core",
     "agentreplay-plugins/sdk/rust",
+    "agentreplay-skill-tester",
 ]
 exclude = ["agentreplay-tauri", "sdks/rust"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Agentreplay Contributors"]
 license = "AGPL-3.0-or-later"
@@ -102,11 +103,17 @@ moka = "0.12"
 clap = { version = "4.4", features = ["derive"] }
 
 # SochDB integration (storage backend migration)
-sochdb-core = { version = "0.4.8" }
-sochdb-storage = { version = "0.4.8" }
-sochdb-index = { version = "0.4.8" }
-sochdb-query = { version = "0.4.8" }
-sochdb = { version = "0.4.8", features = ["embedded"] }
+sochdb-core = { version = "0.5.0" }
+sochdb-storage = { version = "0.5.0" }
+sochdb-index = { version = "0.5.0" }
+sochdb-query = { version = "0.5.0" }
+sochdb = { version = "0.5.0", features = ["embedded"] }
+
+# Optimize all dependencies in dev builds for near-release performance
+# This is critical: SochDB open() drops from 60s → ~5-10s with opt-level=2
+# Only our own workspace crates stay at opt-level=0 (fast compile, debuggable)
+[profile.dev.package."*"]
+opt-level = 2
 
 [profile.release]
 opt-level = 3

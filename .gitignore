@@ -204,3 +204,12 @@ test_memory_prompts_360.py
 USAGE.md
 test_persistence.py
 .gemini/
+
+
+debug_output.txt
+debug_toggle_fail.py
+profile_endpoints.py
+reproduce_toggle.py
+task.md
+test_real_llm.py
+test_sdk_features.py

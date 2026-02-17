@@ -168,6 +168,42 @@ pub async fn start_embedded_server(host: String, port: u16, tauri_state: AppStat
         VersionStore::new("agentreplay")
     );
 
+    // Initialize Skill Memory, Bot Registry, and OpenClaw stores for sub-routers
+    let skill_memory_store = Arc::new(
+        agentreplay_server::api::skill_memory::SkillMemoryStore::new(&data_dir),
+    );
+    let bot_registry_v2 = Arc::new(
+        agentreplay_server::bot_registry::BotRegistry::new(&data_dir),
+    );
+    let openclaw_enricher = Arc::new(
+        agentreplay_server::openclaw_enrichment::OpenclawEnricher::new(
+            &data_dir,
+            Some(Arc::clone(&skill_memory_store)),
+            Some(Arc::clone(&bot_registry_v2)),
+        ),
+    );
+
+    // Build a minimal agentreplay-server AppState for the nested sub-routers
+    let agent_registry_path = data_dir.join("agent_registry.json");
+    let sub_router_app_state = agentreplay_server::api::AppState {
+        db: tauri_state.db.arc(),
+        project_manager: None,
+        project_registry: None,
+        trace_broadcaster: tauri_state.trace_broadcaster.clone(),
+        agent_registry: Arc::new(agentreplay_server::agent_registry::AgentRegistry::new(agent_registry_path)),
+        db_path: tauri_state.db_path.display().to_string(),
+        saved_view_registry: tauri_state.saved_view_registry.clone(),
+        llm_manager: None,
+        cost_tracker: Arc::new(agentreplay_server::cost_tracker::CostTracker::new()),
+        vector_index: None,
+        semantic_governor: None,
+        eval_cache: None,
+        ingestion_actor: None,
+        skill_memory_store: Some(Arc::clone(&skill_memory_store)),
+        bot_registry_v2: Some(Arc::clone(&bot_registry_v2)),
+        openclaw_enricher: Some(Arc::clone(&openclaw_enricher)),
+    };
+
     let server_state = ServerState {
         tauri_state,
         start_time,
@@ -290,7 +326,24 @@ pub async fn start_embedded_server(host: String, port: u16, tauri_state: AppStat
         .route("/api/v1/coding-sessions/:session_id/summarize", post(summarize_coding_session_handler))
         // Context injection endpoint for coding agents
         .route("/api/v1/context", get(get_context_handler))
-        .with_state(server_state.clone());
+        .with_state(server_state.clone())
+        // Nest agentreplay-server sub-routers (Skill Memory, Bots, OpenClaw)
+        .nest("/api/v1/skill-memory", agentreplay_server::api::skill_memory::skill_memory_router().with_state(sub_router_app_state.clone()))
+        .nest("/api/v1/bots", agentreplay_server::api::bots::bots_router().with_state(sub_router_app_state.clone()))
+        .nest("/api/v1/openclaw", agentreplay_server::api::openclaw::openclaw_router().with_state(sub_router_app_state.clone()))
+        // Skill Tester routes (load, test, scan, drift, viz)
+        .nest("/api/v1/skill-tester", {
+            use agentreplay_server::api::skill_tester;
+            axum::Router::new()
+                .route("/load", post(skill_tester::load_skill))
+                .route("/run", post(skill_tester::run_tests))
+                .route("/scan", post(skill_tester::scan_security))
+                .route("/drift", get(skill_tester::get_drift))
+                .route("/confusion-matrix", get(skill_tester::get_confusion_matrix))
+                .route("/sankey", post(skill_tester::get_sankey))
+                .route("/calibration", get(skill_tester::get_calibration))
+                .with_state(sub_router_app_state.clone())
+        });
 
     // MCP Router is now handled by start_mcp_server on a separate port
     let app = app.layer(
@@ -331,6 +384,226 @@ pub async fn start_embedded_server(host: String, port: u16, tauri_state: AppStat
     Ok(())
 }
 
+/// Build trace response JSON from a slice of edges.
+/// Shared between fast-path (root scan) and slow-path (full scan + filters).
+async fn build_trace_response_json(
+    edges: &[AgentFlowEdge],
+    state: &ServerState,
+) -> Vec<serde_json::Value> {
+    edges.iter().map(|edge| {
+        // Get payload attributes if available
+        let attributes = state.tauri_state.db
+            .get_payload(edge.edge_id)
+            .ok()
+            .flatten()
+            .and_then(|payload| serde_json::from_slice::<serde_json::Value>(&payload).ok());
+
+        // Extract model (LLM model name, not tool name)
+        let model = attributes
+            .as_ref()
+            .and_then(|a| {
+                a.get("model")
+                    .or_else(|| a.get("gen_ai.request.model"))
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty())
+            })
+            .unwrap_or("");
+
+        let agent_id_attr = attributes
+            .as_ref()
+            .and_then(|a| a.get("agent_id").and_then(|v| v.as_str()))
+            .unwrap_or("");
+
+        let provider = attributes
+            .as_ref()
+            .and_then(|a| a.get("provider").and_then(|v| v.as_str()))
+            .unwrap_or("");
+
+        let display_name = attributes
+            .as_ref()
+            .and_then(|a| {
+                a.get("operation_name")
+                    .or_else(|| a.get("name"))
+                    .and_then(|v| v.as_str())
+            })
+            .unwrap_or("");
+        
+        let span_type_name = span_type_to_string(edge.span_type);
+        
+        let effective_display_name = if !display_name.is_empty() {
+            display_name.to_string()
+        } else {
+            let tool_name = attributes.as_ref()
+                .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()));
+            let event_type = attributes.as_ref()
+                .and_then(|a| a.get("event.type").and_then(|v| v.as_str()));
+            
+            if let Some(tool) = tool_name {
+                format!("{} ({})", span_type_name, tool)
+            } else if let Some(evt) = event_type {
+                evt.replace('_', " ").split_whitespace()
+                    .map(|w| {
+                        let mut c = w.chars();
+                        match c.next() {
+                            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                            None => String::new(),
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            } else {
+                span_type_name.to_string()
+            }
+        };
+
+        let cost = attributes
+            .as_ref()
+            .and_then(|a| a.get("cost").and_then(|v| v.as_f64()))
+            .unwrap_or(0.0);
+
+        let input_tokens = attributes
+            .as_ref()
+            .and_then(|a| {
+                a.get("input_tokens")
+                    .or_else(|| a.get("gen_ai.usage.input_tokens"))
+                    .or_else(|| a.get("gen_ai.usage.prompt_tokens"))
+                    .and_then(|v| v.as_u64())
+            })
+            .unwrap_or(0);
+
+        let output_tokens = attributes
+            .as_ref()
+            .and_then(|a| {
+                a.get("output_tokens")
+                    .or_else(|| a.get("gen_ai.usage.output_tokens"))
+                    .or_else(|| a.get("gen_ai.usage.completion_tokens"))
+                    .and_then(|v| v.as_u64())
+            })
+            .unwrap_or(0);
+
+        let input_preview = attributes.as_ref().and_then(|a| {
+            if let Some(content) = a.get("gen_ai.prompt.0.content").and_then(|v| v.as_str()) {
+                return Some(content.chars().take(200).collect::<String>());
+            }
+            if let Some(input) = a.get("input") {
+                if let Some(s) = input.as_str() {
+                    return Some(s.chars().take(200).collect::<String>());
+                }
+                return Some(serde_json::to_string(input).unwrap_or_default().chars().take(200).collect());
+            }
+            if let Some(tool_input) = a.get("tool.input").and_then(|v| v.as_str()) {
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_input) {
+                    if let Some(cmd) = parsed.get("command").and_then(|v| v.as_str()) {
+                        return Some(cmd.chars().take(200).collect::<String>());
+                    }
+                    if let Some(desc) = parsed.get("description").and_then(|v| v.as_str()) {
+                        return Some(desc.chars().take(200).collect::<String>());
+                    }
+                }
+                return Some(tool_input.chars().take(200).collect::<String>());
+            }
+            if let Some(prompt) = a.get("prompt").and_then(|v| v.as_str()) {
+                return Some(prompt.chars().take(200).collect::<String>());
+            }
+            if let Some(evt) = a.get("event.type").and_then(|v| v.as_str()) {
+                let reason = a.get("session.end_reason").and_then(|v| v.as_str()).unwrap_or("");
+                if !reason.is_empty() {
+                    return Some(format!("{} ({})", evt, reason));
+                }
+                return Some(evt.to_string());
+            }
+            None
+        }).unwrap_or_default();
+
+        let output_preview = attributes.as_ref().and_then(|a| {
+            if let Some(content) = a.get("gen_ai.completion.0.content").and_then(|v| v.as_str()) {
+                return Some(content.chars().take(200).collect::<String>());
+            }
+            if let Some(output) = a.get("output") {
+                if let Some(s) = output.as_str() {
+                    return Some(s.chars().take(200).collect::<String>());
+                }
+                return Some(serde_json::to_string(output).unwrap_or_default().chars().take(200).collect());
+            }
+            if let Some(tool_output) = a.get("tool.output").and_then(|v| v.as_str()) {
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_output) {
+                    if let Some(stdout) = parsed.get("stdout").and_then(|v| v.as_str()) {
+                        if !stdout.is_empty() {
+                            return Some(stdout.chars().take(200).collect::<String>());
+                        }
+                    }
+                    if let Some(stderr) = parsed.get("stderr").and_then(|v| v.as_str()) {
+                        if !stderr.is_empty() {
+                            return Some(format!("stderr: {}", stderr.chars().take(180).collect::<String>()));
+                        }
+                    }
+                }
+                return Some(tool_output.chars().take(200).collect::<String>());
+            }
+            if let Some(resp) = a.get("response").or_else(|| a.get("completion")).and_then(|v| v.as_str()) {
+                return Some(resp.chars().take(200).collect::<String>());
+            }
+            None
+        }).unwrap_or_default();
+        
+        let status = attributes
+            .as_ref()
+            .and_then(|a| a.get("status").and_then(|v| v.as_str()))
+            .unwrap_or("completed");
+
+        let tool_name = attributes
+            .as_ref()
+            .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()))
+            .unwrap_or("");
+
+        let event_type = attributes
+            .as_ref()
+            .and_then(|a| a.get("event.type").and_then(|v| v.as_str()))
+            .unwrap_or("");
+
+        let is_claude_code = agent_id_attr == "claude-code" || edge.project_id == CLAUDE_CODE_PROJECT_ID;
+
+        serde_json::json!({
+            "trace_id": format!("{}", edge.edge_id),
+            "span_id": format!("{}", edge.edge_id),
+            "timestamp_us": edge.timestamp_us,
+            "duration_ms": edge.duration_us / 1000,
+            "duration_us": edge.duration_us,
+            "session_id": format!("{}", edge.session_id),
+            "agent_id": format!("{}", edge.agent_id),
+            "agent_id_attr": agent_id_attr,
+            "agent_name": if agent_id_attr == "claude-code" { "Claude Code".to_string() } else { format!("Agent {}", edge.agent_id) },
+            "model": model,
+            "provider": provider,
+            "display_name": effective_display_name,
+            "operation_name": effective_display_name,
+            "span_type": span_type_name,
+            "tool_name": tool_name,
+            "event_type": event_type,
+            "is_claude_code": is_claude_code,
+            "token_count": edge.token_count,
+            "tokens": edge.token_count,
+            "cost": cost,
+            "status": status,
+            "confidence": edge.confidence,
+            "project_id": edge.project_id,
+            "tenant_id": format!("{}", edge.tenant_id),
+            "input": input_preview,
+            "output": output_preview,
+            "input_preview": input_preview,
+            "output_preview": output_preview,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "metadata": serde_json::json!({
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "span_type": span_type_name,
+            }),
+            "attributes": &attributes
+        })
+    }).collect()
+}
+
 /// GET /api/v1/traces - Query traces with filters
 async fn query_traces(
     AxumState(state): AxumState<ServerState>,
@@ -369,11 +642,50 @@ async fn query_traces(
     let max_latency_ms = params.get("max_latency_ms").and_then(|s| s.parse::<u64>().ok());
     let full_text_search = params.get("full_text_search").cloned();
 
-    // Query the database
-    // For the Claude Code project (49455), also include legacy traces with project_id=0
-    // since older plugin versions didn't set project_id correctly
+    let default_tenant: u64 = 1;
+    let has_advanced_filters = session_id.is_some() || model_filter.is_some() || 
+        status_filter.is_some() || min_latency_ms.is_some() || max_latency_ms.is_some() || 
+        full_text_search.is_some();
+    
+    // FAST PATH: No advanced filters — use optimized root-span scan with early termination.
+    // This avoids deserializing 2.5M edges: checks causal_parent at byte offset, skips non-roots.
+    if !has_advanced_filters {
+        let timer = std::time::Instant::now();
+        
+        let (root_edges, total) = match state.tauri_state.db.query_root_traces_page(
+            start_ts, end_ts, default_tenant, project_id, limit, offset,
+        ) {
+            Ok(result) => result,
+            Err(e) => {
+                tracing::error!("Failed to query root traces: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": "Failed to query traces"})),
+                ).into_response();
+            }
+        };
+        
+        tracing::info!("Root traces page: {} edges in {:?} (total_estimate={}, offset={}, limit={})", 
+            root_edges.len(), timer.elapsed(), total, offset, limit);
+        
+        // Convert to response format (same as slow path)
+        let traces = build_trace_response_json(&root_edges, &state).await;
+        
+        return Json(serde_json::json!({
+            "traces": traces,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": (offset + root_edges.len()) < total as usize,
+        })).into_response();
+    }
+    
+    // SLOW PATH: Advanced filters require full scan + post-filtering.
+    // This path is used when session_id, model, status, latency, or full-text filters are active.
+    
+    
     let edges = if let Some(pid) = project_id {
-        let mut project_edges = match state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(pid)) {
+        let mut project_edges = match state.tauri_state.db.query_filtered(start_ts, end_ts, Some(default_tenant), Some(pid)) {
             Ok(edges) => edges,
             Err(e) => {
                 tracing::error!("Failed to query traces for project {}: {}", pid, e);
@@ -388,15 +700,17 @@ async fn query_traces(
         // Include project_id=0 traces ONLY for Claude Code project (49455)
         // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
         if pid == CLAUDE_CODE_PROJECT_ID {
-            if let Ok(legacy_edges) = state.tauri_state.db.query_filtered(start_ts, end_ts, None, Some(0)) {
+            if let Ok(legacy_edges) = state.tauri_state.db.query_filtered(start_ts, end_ts, Some(default_tenant), Some(0)) {
                 project_edges.extend(legacy_edges);
             }
         }
         
         project_edges
     } else {
-        // No project filter - return all traces (only when explicitly not filtering by project)
-        match state.tauri_state.db.query_temporal_range(start_ts, end_ts) {
+        // No project filter — use tenant-scoped query
+        // With the optimized storage scan (traces prefix instead of tenant index),
+        // this is a single sequential pass instead of 2M individual get() calls.
+        match state.tauri_state.db.query_filtered(start_ts, end_ts, Some(default_tenant), None) {
             Ok(edges) => edges,
             Err(e) => {
                 tracing::error!("Failed to query traces: {}", e);
@@ -503,244 +817,8 @@ async fn query_traces(
         .take(limit)
         .collect();
 
-    // Convert edges to the traces format expected by the UI
-    let traces: Vec<_> = paginated_edges
-        .iter()
-        .map(|edge| {
-            // Get payload attributes if available
-            let attributes = state.tauri_state.db
-                .get_payload(edge.edge_id)
-                .ok()
-                .flatten()
-                .and_then(|payload| serde_json::from_slice::<serde_json::Value>(&payload).ok());
-
-            // Extract model (LLM model name, not tool name)
-            let model = attributes
-                .as_ref()
-                .and_then(|a| {
-                    a.get("model")
-                        .or_else(|| a.get("gen_ai.request.model"))
-                        .and_then(|v| v.as_str())
-                        .filter(|s| !s.is_empty())
-                })
-                .unwrap_or("");
-
-            // Extract agent_id from attributes for Claude Code identification
-            let agent_id_attr = attributes
-                .as_ref()
-                .and_then(|a| a.get("agent_id").and_then(|v| v.as_str()))
-                .unwrap_or("");
-
-            let provider = attributes
-                .as_ref()
-                .and_then(|a| a.get("provider").and_then(|v| v.as_str()))
-                .unwrap_or("");
-
-            let display_name = attributes
-                .as_ref()
-                .and_then(|a| {
-                    a.get("operation_name")
-                        .or_else(|| a.get("name"))
-                        .and_then(|v| v.as_str())
-                })
-                .unwrap_or("");
-            
-            // Get readable span type name, use as fallback for display_name
-            let span_type_name = span_type_to_string(edge.span_type);
-            
-            // For Claude Code traces, build a richer display name
-            // e.g. "Bash" for tool calls, "Session End" for events
-            let effective_display_name = if !display_name.is_empty() {
-                display_name.to_string()
-            } else {
-                let tool_name = attributes.as_ref()
-                    .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()));
-                let event_type = attributes.as_ref()
-                    .and_then(|a| a.get("event.type").and_then(|v| v.as_str()));
-                
-                if let Some(tool) = tool_name {
-                    format!("{} ({})", span_type_name, tool)
-                } else if let Some(evt) = event_type {
-                    // Convert event.type like "session_end" → "Session End"
-                    evt.replace('_', " ").split_whitespace()
-                        .map(|w| {
-                            let mut c = w.chars();
-                            match c.next() {
-                                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-                                None => String::new(),
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join(" ")
-                } else {
-                    span_type_name.to_string()
-                }
-            };
-
-            let cost = attributes
-                .as_ref()
-                .and_then(|a| a.get("cost").and_then(|v| v.as_f64()))
-                .unwrap_or(0.0);
-
-            let input_tokens = attributes
-                .as_ref()
-                .and_then(|a| {
-                    a.get("input_tokens")
-                        .or_else(|| a.get("gen_ai.usage.input_tokens"))
-                        .or_else(|| a.get("gen_ai.usage.prompt_tokens"))
-                        .and_then(|v| v.as_u64())
-                })
-                .unwrap_or(0);
-
-            let output_tokens = attributes
-                .as_ref()
-                .and_then(|a| {
-                    a.get("output_tokens")
-                        .or_else(|| a.get("gen_ai.usage.output_tokens"))
-                        .or_else(|| a.get("gen_ai.usage.completion_tokens"))
-                        .and_then(|v| v.as_u64())
-                })
-                .unwrap_or(0);
-
-            // Extract input preview (first prompt content)
-            let input_preview = attributes.as_ref().and_then(|a| {
-                // Try GenAI semantic conventions first
-                if let Some(content) = a.get("gen_ai.prompt.0.content").and_then(|v| v.as_str()) {
-                    return Some(content.chars().take(200).collect::<String>());
-                }
-                // Try input field
-                if let Some(input) = a.get("input") {
-                    if let Some(s) = input.as_str() {
-                        return Some(s.chars().take(200).collect::<String>());
-                    }
-                    return Some(serde_json::to_string(input).unwrap_or_default().chars().take(200).collect());
-                }
-                // Try tool.input (Claude Code tool calls)
-                if let Some(tool_input) = a.get("tool.input").and_then(|v| v.as_str()) {
-                    // Parse JSON to extract just the command/description
-                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_input) {
-                        if let Some(cmd) = parsed.get("command").and_then(|v| v.as_str()) {
-                            return Some(cmd.chars().take(200).collect::<String>());
-                        }
-                        if let Some(desc) = parsed.get("description").and_then(|v| v.as_str()) {
-                            return Some(desc.chars().take(200).collect::<String>());
-                        }
-                    }
-                    return Some(tool_input.chars().take(200).collect::<String>());
-                }
-                // Try prompt field
-                if let Some(prompt) = a.get("prompt").and_then(|v| v.as_str()) {
-                    return Some(prompt.chars().take(200).collect::<String>());
-                }
-                // Try event.type for session events
-                if let Some(evt) = a.get("event.type").and_then(|v| v.as_str()) {
-                    let reason = a.get("session.end_reason").and_then(|v| v.as_str()).unwrap_or("");
-                    if !reason.is_empty() {
-                        return Some(format!("{} ({})", evt, reason));
-                    }
-                    return Some(evt.to_string());
-                }
-                None
-            }).unwrap_or_default();
-
-            // Extract output preview (first completion content)
-            let output_preview = attributes.as_ref().and_then(|a| {
-                // Try GenAI semantic conventions first
-                if let Some(content) = a.get("gen_ai.completion.0.content").and_then(|v| v.as_str()) {
-                    return Some(content.chars().take(200).collect::<String>());
-                }
-                // Try output field
-                if let Some(output) = a.get("output") {
-                    if let Some(s) = output.as_str() {
-                        return Some(s.chars().take(200).collect::<String>());
-                    }
-                    return Some(serde_json::to_string(output).unwrap_or_default().chars().take(200).collect());
-                }
-                // Try tool.output (Claude Code tool calls)
-                if let Some(tool_output) = a.get("tool.output").and_then(|v| v.as_str()) {
-                    // Parse JSON to extract just stdout
-                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(tool_output) {
-                        if let Some(stdout) = parsed.get("stdout").and_then(|v| v.as_str()) {
-                            if !stdout.is_empty() {
-                                return Some(stdout.chars().take(200).collect::<String>());
-                            }
-                        }
-                        if let Some(stderr) = parsed.get("stderr").and_then(|v| v.as_str()) {
-                            if !stderr.is_empty() {
-                                return Some(format!("stderr: {}", stderr.chars().take(180).collect::<String>()));
-                            }
-                        }
-                    }
-                    return Some(tool_output.chars().take(200).collect::<String>());
-                }
-                // Try response/completion fields
-                if let Some(resp) = a.get("response").or_else(|| a.get("completion")).and_then(|v| v.as_str()) {
-                    return Some(resp.chars().take(200).collect::<String>());
-                }
-                None
-            }).unwrap_or_default();
-            
-            // Get status from payload if available
-            let status = attributes
-                .as_ref()
-                .and_then(|a| a.get("status").and_then(|v| v.as_str()))
-                .unwrap_or("completed");
-
-            // Extract tool name for Claude Code traces
-            let tool_name = attributes
-                .as_ref()
-                .and_then(|a| a.get("tool.name").and_then(|v| v.as_str()))
-                .unwrap_or("");
-
-            // Extract event type for session events
-            let event_type = attributes
-                .as_ref()
-                .and_then(|a| a.get("event.type").and_then(|v| v.as_str()))
-                .unwrap_or("");
-
-            // Determine if this is a Claude Code trace
-            let is_claude_code = agent_id_attr == "claude-code" || edge.project_id == CLAUDE_CODE_PROJECT_ID;
-
-            serde_json::json!({
-                "trace_id": format!("{}", edge.edge_id),
-                "span_id": format!("{}", edge.edge_id),
-                "timestamp_us": edge.timestamp_us,
-                "duration_ms": edge.duration_us / 1000,
-                "duration_us": edge.duration_us,
-                "session_id": format!("{}", edge.session_id),
-                "agent_id": format!("{}", edge.agent_id),
-                "agent_id_attr": agent_id_attr,
-                "agent_name": if agent_id_attr == "claude-code" { "Claude Code".to_string() } else { format!("Agent {}", edge.agent_id) },
-                "model": model,
-                "provider": provider,
-                "display_name": effective_display_name,
-                "operation_name": effective_display_name,
-                "span_type": span_type_name,
-                "tool_name": tool_name,
-                "event_type": event_type,
-                "is_claude_code": is_claude_code,
-                "token_count": edge.token_count,
-                "tokens": edge.token_count,
-                "cost": cost,
-                "status": status,
-                "confidence": edge.confidence,
-                "project_id": edge.project_id,
-                "tenant_id": format!("{}", edge.tenant_id),
-                "input": input_preview,
-                "output": output_preview,
-                "input_preview": input_preview,
-                "output_preview": output_preview,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "metadata": serde_json::json!({
-                    "input_tokens": input_tokens,
-                    "output_tokens": output_tokens,
-                    "span_type": span_type_name,
-                }),
-                "attributes": &attributes
-            })
-        })
-        .collect();
+    // Convert edges to the traces format expected by the UI (reuse shared helper)
+    let traces = build_trace_response_json(&paginated_edges, &state).await;
 
     Json(serde_json::json!({
         "traces": traces,
@@ -847,7 +925,7 @@ pub async fn start_mcp_server(host: String, port: u16, tauri_state: AppState) ->
 
     // Construct Server AppState
     let server_app_state = agentreplay_server::api::AppState {
-        db: tauri_state.db.clone(),
+        db: tauri_state.db.arc(),
         project_manager: None,
         project_registry: None,
         trace_broadcaster: tauri_state.trace_broadcaster.clone(),
@@ -860,6 +938,9 @@ pub async fn start_mcp_server(host: String, port: u16, tauri_state: AppState) ->
         semantic_governor: None,
         eval_cache: None,
         ingestion_actor: None,
+        skill_memory_store: None,
+        bot_registry_v2: None,
+        openclaw_enricher: None,
     };
 
     // Create MCP Router
@@ -1231,61 +1312,21 @@ async fn get_trace_observations(
         return Json(serde_json::json!([])).into_response();
     }
 
-    // Get the parent edge to find its session_id
-    let parent_edge = match state.tauri_state.db.get(parent_edge_id) {
-        Ok(Some(edge)) => edge,
-        _ => return Json(serde_json::json!([])).into_response(),
-    };
-
-    // Query all edges in the same session
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros() as u64;
-    
-    let start_ts = parent_edge.timestamp_us.saturating_sub(3600_000_000); // 1 hour before
-    let end_ts = now;
-
-    let edges = match state.tauri_state.db.query_temporal_range(start_ts, end_ts) {
+    // Use the children index to find all descendants — O(K) where K = descendant count.
+    // For traces with no children (common when all causal_parent == 0), this returns
+    // immediately after a single empty scan_range (~microseconds).
+    let descendant_edges = match state.tauri_state.db.get_descendant_edges(parent_edge_id) {
         Ok(edges) => edges,
         Err(_) => return Json(serde_json::json!([])).into_response(),
     };
 
-    // Robustly find all edges belonging to this trace via causal links or session ID
-    let mut trace_edge_ids = std::collections::HashSet::new();
-    trace_edge_ids.insert(parent_edge_id);
-    let session_id = parent_edge.session_id;
-
-    let mut changed = true;
-    let mut iter_count = 0;
-    while changed && iter_count < 1000 {
-        changed = false;
-        iter_count += 1;
-        
-        for edge in &edges {
-            if trace_edge_ids.contains(&edge.edge_id) {
-                continue;
-            }
-            
-            let match_session = session_id != 0 && edge.session_id == session_id;
-            // Check if this edge is a child of any known edge in the trace
-            let match_causal = trace_edge_ids.contains(&edge.causal_parent);
-            
-            if match_session || match_causal {
-                trace_edge_ids.insert(edge.edge_id);
-                changed = true;
-            }
-        }
+    if !descendant_edges.is_empty() {
+        info!("Children index found {} descendants for trace {}", descendant_edges.len(), parent_edge_id);
     }
 
-    if !trace_edge_ids.is_empty() {
-        info!("Graph traversal found {} edges (including root) for trace {}", trace_edge_ids.len(), parent_edge_id);
-    }
-
-    // Filter to find ALL spans in the identified set
-    let observations: Vec<_> = edges
+    // Convert descendant edges to observation JSON
+    let observations: Vec<_> = descendant_edges
         .into_iter()
-        .filter(|e| trace_edge_ids.contains(&e.edge_id) && e.edge_id != parent_edge_id)
         .map(|edge| {
             // Get payload for each observation
             let attributes = state.tauri_state.db
@@ -1445,9 +1486,10 @@ async fn liveness_check() -> impl IntoResponse {
 
 /// Kubernetes-style readiness probe - checks if the server is ready to accept requests
 /// Verifies database connectivity and essential components
+/// NOTE: Uses non-blocking is_ready() check — does NOT block waiting for DB init
 async fn readiness_check(AxumState(state): AxumState<ServerState>) -> impl IntoResponse {
-    // Check if database is accessible by attempting a simple query
-    let db_ready = state.tauri_state.db.query_temporal_range(0, 1).is_ok();
+    // Non-blocking check: is the lazy DB initialized?
+    let db_ready = state.tauri_state.db.is_ready();
     
     if db_ready {
         (
@@ -3567,7 +3609,7 @@ async fn analytics_timeseries_handler(
             })
         }).collect();
         
-        // Get summary from aggregated stats
+        // Get summary from aggregated stats + DashboardSummary for accurate total
         let stats = state.tauri_state.db.query_metrics(
             0, // tenant_id
             project_id as u16,
@@ -3575,29 +3617,46 @@ async fn analytics_timeseries_handler(
             params.end_time,
         );
         
+        // Use DashboardSummary.total_traces for accurate total_requests
+        // (MetricsBucket counts only cover partial time windows)
+        let dashboard_summary = state.tauri_state.db.get_dashboard_summary();
+        let total_requests = if dashboard_summary.total_traces > stats.request_count {
+            dashboard_summary.total_traces
+        } else {
+            stats.request_count
+        };
+        
+        // Use per-edge avg from dashboard if metrics bucket avg is 0
+        let avg_duration = if stats.request_count > 0 {
+            stats.avg_duration_ms() as u64
+        } else if dashboard_summary.total_traces > 0 {
+            (dashboard_summary.total_duration_us / dashboard_summary.total_traces / 1000) as u64
+        } else {
+            0
+        };
+        
         return Json(serde_json::json!({
             "data": data,
             "summary": {
-                "total_requests": stats.request_count,
-                "total_tokens": stats.total_tokens,
-                "avg_duration_ms": stats.avg_duration_ms() as u64,
-                "error_rate": if stats.request_count > 0 { stats.error_count as f64 / stats.request_count as f64 } else { 0.0 },
+                "total_requests": total_requests,
+                "total_tokens": std::cmp::max(stats.total_tokens, dashboard_summary.total_tokens),
+                "avg_duration_ms": avg_duration,
+                "total_cost": 0.0,
+                "error_rate": if total_requests > 0 { stats.error_count as f64 / total_requests as f64 } else { 0.0 },
             }
         }))
         .into_response();
     }
     
     // Fallback: Query traces and aggregate
-    // FIX: When a project_id is specified, also include traces with project_id=0
-    // (unassigned traces) since many traces are stored without a project filter.
-    // This ensures analytics work even when traces weren't explicitly tagged.
+    // PERF FIX: Pass tenant_id=Some(1) for bounded scan_range O(K) not O(N)
+    let default_tenant: u64 = 1;
     let edges = if let Some(requested_project_id) = params.project_id {
-        // Query both the specific project AND project_id=0 (unassigned traces)
         let mut all_edges = Vec::new();
         
-        // Query specific project
+        // Query specific project with bounded scan
         if let Ok(project_edges) = state.tauri_state.db.query_filtered(
-            params.start_time, params.end_time, None, Some(requested_project_id)
+            params.start_time, params.end_time, Some(default_tenant), Some(requested_project_id)
         ) {
             tracing::debug!("Analytics: Found {} edges for project_id={} in time range {}..{}", 
                 project_edges.len(), requested_project_id, params.start_time, params.end_time);
@@ -3605,22 +3664,21 @@ async fn analytics_timeseries_handler(
         }
         
         // Include project_id=0 traces ONLY for Claude Code project (49455)
-        // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
         if requested_project_id == CLAUDE_CODE_PROJECT_ID {
             if let Ok(default_edges) = state.tauri_state.db.query_filtered(
-                params.start_time, params.end_time, None, Some(0)
+                params.start_time, params.end_time, Some(default_tenant), Some(0)
             ) {
                 tracing::debug!("Analytics: Found {} edges for project_id=0 (legacy Claude Code)", default_edges.len());
                 all_edges.extend(default_edges);
             }
         }
         
-        // If still no edges, try querying all traces (full fallback)
+        // If still no edges, try tenant-scoped query (not full scan)
         if all_edges.is_empty() {
-            tracing::debug!("Analytics: No edges found, falling back to full temporal range query");
-            match state.tauri_state.db.query_temporal_range(params.start_time, params.end_time) {
+            tracing::debug!("Analytics: No edges found, falling back to tenant-scoped temporal range query");
+            match state.tauri_state.db.query_filtered(params.start_time, params.end_time, Some(default_tenant), None) {
                 Ok(edges) => {
-                    tracing::debug!("Analytics: Full temporal range returned {} edges", edges.len());
+                    tracing::debug!("Analytics: Tenant-scoped range returned {} edges", edges.len());
                     edges
                 },
                 Err(e) => {
@@ -3636,7 +3694,7 @@ async fn analytics_timeseries_handler(
             all_edges
         }
     } else {
-        match state.tauri_state.db.query_temporal_range(params.start_time, params.end_time) {
+        match state.tauri_state.db.query_filtered(params.start_time, params.end_time, Some(default_tenant), None) {
             Ok(edges) => edges,
             Err(e) => {
                 tracing::error!("Failed to query traces: {}", e);
@@ -4878,164 +4936,65 @@ async fn analytics_costs_handler(
     
     tracing::info!("Cost analytics: project_id={:?}, time_range={}..{}", params.project_id, start_time, end_time);
 
-    // Task 6: Try pre-aggregated metrics first for basic cost summary
-    let precomputed_metrics = state.tauri_state.db.query_metrics(
-        0, // all tenants
+    // PERF FIX: Use pre-computed DashboardSummary for totals and top_models (O(1))
+    // instead of scanning ALL 2M edges with per-edge payload I/O (was 22s → now <1ms)
+    let summary = state.tauri_state.db.get_dashboard_summary();
+    let _metrics = state.tauri_state.db.query_metrics(
+        0, // all tenants 
         params.project_id.unwrap_or(0) as u16,
         start_time,
         end_time,
     );
     
-    // If pre-aggregated metrics have data and no detailed breakdown needed,
-    // return the summary directly without scanning individual edges
-    // (Note: this gives totals but not model breakdown — fall through for full detail)
+    // Use DashboardSummary for accurate totals (populated by record_edge on every insert)
+    let total_traces = summary.total_traces;
+    let summary_tokens = summary.total_tokens;
     
-    // Query traces - FIX: Include project_id=0 (unassigned) traces when a specific project is requested
-    let edges = if let Some(project_id) = params.project_id {
-        let mut all_edges = Vec::new();
-        
-        // Query specific project
-        if let Ok(project_edges) = state.tauri_state.db.query_filtered(
-            start_time, end_time, None, Some(project_id as u16)
-        ) {
-            tracing::debug!("Cost analytics: Found {} edges for project_id={}", project_edges.len(), project_id);
-            all_edges.extend(project_edges);
-        }
-        
-        // Include project_id=0 traces ONLY for Claude Code project (49455)
-        // Legacy plugin versions stored traces with project_id=0; these belong to Claude Code
-        if project_id == CLAUDE_CODE_PROJECT_ID as i64 {
-            if let Ok(default_edges) = state.tauri_state.db.query_filtered(
-                start_time, end_time, None, Some(0)
-            ) {
-                tracing::debug!("Cost analytics: Found {} edges for project_id=0 (legacy Claude Code)", default_edges.len());
-                all_edges.extend(default_edges);
-            }
-        }
-        
-        // If still no edges, try querying all traces (full fallback)
-        if all_edges.is_empty() {
-            tracing::debug!("Cost analytics: No edges found, falling back to full temporal query");
-            state.tauri_state.db.query_temporal_range(start_time, end_time)
-                .unwrap_or_default()
-        } else {
-            all_edges
-        }
-    } else {
-        state.tauri_state.db.query_temporal_range(start_time, end_time)
-            .unwrap_or_default()
-    };
+    // Use top_models from DashboardSummary for model breakdown
+    // (populated by record_model_metrics during ingestion)
+    let mut models_vec: Vec<_> = summary.top_models.iter()
+        .map(|(model, (calls, tokens))| {
+            (model.clone(), 0.0f64, *tokens, *calls)
+        })
+        .collect();
     
-    tracing::info!("Cost analytics: Processing {} edges", edges.len());
-    
-    // Aggregate by model
-    let mut model_costs: std::collections::HashMap<String, (f64, u64, u64, u64)> = std::collections::HashMap::new();
-    // (cost, input_tokens, output_tokens, call_count)
-    
-    // Track operation types
-    let mut operation_counts: std::collections::HashMap<String, (f64, u64)> = std::collections::HashMap::new();
-    // (cost, count)
-    
+    // Calculate actual costs for each model using the pricing registry
     let mut total_cost = 0.0;
-    let mut total_tokens = 0u64;
-    let mut total_calls = 0u64;
-    let mut cached_count = 0u64;
+    let mut model_tokens_sum = 0u64;
+    let mut model_calls_sum = 0u64;
     
-    for edge in &edges {
-        // Task 4/6: Try denormalized attrs first for model/provider (avoids payload I/O)
-        let (attr_provider, attr_model, _) = state.tauri_state.db.get_edge_attrs(edge.edge_id)
-            .unwrap_or_default();
-
-        let (model, input_tokens, output_tokens, is_cached, operation_type) = if !attr_model.is_empty() {
-            // Fast path: use denormalized attrs (no payload decompression needed)
-            let input_t = 0u32; // Not available from attrs — use edge token_count as approximation
-            let output_t = edge.token_count;
-            let provider_for_op = if attr_provider.is_empty() { "openai" } else { &attr_provider };
-            let _ = provider_for_op;
-            (attr_model.clone(), input_t, output_t, false, "Chat Completions".to_string())
-        } else {
-            // Fallback: get payload to extract model name
-            let payload = state.tauri_state.db.get_payload(edge.edge_id).ok().flatten();
-            let attrs: serde_json::Value = payload
-                .and_then(|p| serde_json::from_slice(&p).ok())
-                .unwrap_or(serde_json::json!({}));
-            
-            let m = attrs.get("gen_ai.request.model")
-                .or(attrs.get("gen_ai.response.model"))
-                .or(attrs.get("llm.model_name"))
-                .or(attrs.get("model"))
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown")
-                .to_string();
-            
-            let input_t = attrs.get("gen_ai.usage.input_tokens")
-                .or(attrs.get("gen_ai.usage.prompt_tokens"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0) as u32;
-            let output_t = attrs.get("gen_ai.usage.output_tokens")
-                .or(attrs.get("gen_ai.usage.completion_tokens"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0) as u32;
-            
-            let cached = attrs.get("gen_ai.cached").and_then(|v| v.as_bool()).unwrap_or(false);
-            
-            let op_type = attrs.get("span_type")
-                .or(attrs.get("operation_type"))
-                .and_then(|v| v.as_str())
-                .map(|s| {
-                    if s.contains("embed") || s.to_lowercase().contains("embed") {
-                        "Embeddings"
-                    } else if s.contains("function") || s.contains("tool") {
-                        "Function Calls"
-                    } else {
-                        "Chat Completions"
-                    }
-                })
-                .unwrap_or("Chat Completions")
-                .to_string();
-
-            (m, input_t, output_t, cached, op_type)
-        };
-
-        if is_cached {
-            cached_count += 1;
-        }
-        
-        // Calculate cost using pricing registry
-        let cost = state.pricing_registry.calculate_cost(&model, input_tokens, output_tokens).await;
-        
-        // Update model aggregates
-        let entry = model_costs.entry(model).or_insert((0.0, 0, 0, 0));
-        entry.0 += cost;
-        entry.1 += input_tokens as u64;
-        entry.2 += output_tokens as u64;
-        entry.3 += 1;
-        
-        // Update operation aggregates
-        let op_entry = operation_counts.entry(operation_type).or_insert((0.0, 0));
-        op_entry.0 += cost;
-        op_entry.1 += 1;
-        
+    for entry in &mut models_vec {
+        // Use pricing registry to calculate cost from tokens
+        // Approximate: split tokens 60/40 input/output (heuristic)
+        let input_tokens = (entry.2 as f64 * 0.6) as u32;
+        let output_tokens = (entry.2 as f64 * 0.4) as u32;
+        let cost = state.pricing_registry.calculate_cost(&entry.0, input_tokens, output_tokens).await;
+        entry.1 = cost;
         total_cost += cost;
-        total_tokens += (input_tokens + output_tokens) as u64;
-        total_calls += 1;
+        model_tokens_sum += entry.2;
+        model_calls_sum += entry.3;
     }
     
-    // Sort by cost descending and format response
-    let mut models_vec: Vec<_> = model_costs.into_iter().collect();
-    models_vec.sort_by(|a, b| b.1.0.partial_cmp(&a.1.0).unwrap_or(std::cmp::Ordering::Equal));
+    // Use DashboardSummary totals (accurate even if top_models is empty for old data)
+    let total_tokens = if model_tokens_sum > 0 { model_tokens_sum } else { summary_tokens };
+    let total_calls = if model_calls_sum > 0 { model_calls_sum } else { total_traces };
+    
+    // Sort by cost descending
+    models_vec.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     
     // Define colors for models
     let colors = vec!["#10B981", "#F59E0B", "#6366F1", "#3B82F6", "#8B5CF6", "#EC4899"];
     
     let model_breakdown: Vec<serde_json::Value> = models_vec.iter()
-        .take(10) // Top 10 models
+        .take(10)
         .enumerate()
-        .map(|(i, (model, (cost, input_t, output_t, calls)))| {
+        .map(|(i, (model, cost, tokens, calls))| {
+            let input_t = (*tokens as f64 * 0.6) as u64;
+            let output_t = (*tokens as f64 * 0.4) as u64;
             serde_json::json!({
                 "model": model,
                 "cost": cost,
-                "tokens": input_t + output_t,
+                "tokens": tokens,
                 "input_tokens": input_t,
                 "output_tokens": output_t,
                 "calls": calls,
@@ -5044,11 +5003,18 @@ async fn analytics_costs_handler(
         })
         .collect();
     
-    // Build operation breakdown from real data
-    let mut ops_vec: Vec<_> = operation_counts.into_iter().collect();
-    ops_vec.sort_by(|a, b| b.1.0.partial_cmp(&a.1.0).unwrap_or(std::cmp::Ordering::Equal));
+    // Use pre-computed provider data from summary, or default to Chat Completions
+    let mut operation_counts: std::collections::HashMap<String, (f64, u64)> = std::collections::HashMap::new();
+    if !summary.top_providers.is_empty() {
+        for (provider, count) in &summary.top_providers {
+            let provider_cost = if total_calls > 0 { total_cost * (*count as f64 / total_calls as f64) } else { 0.0 };
+            operation_counts.insert(provider.clone(), (provider_cost, *count));
+        }
+    } else {
+        operation_counts.insert("Chat Completions".to_string(), (total_cost, total_calls));
+    }
     
-    let operation_breakdown: Vec<serde_json::Value> = ops_vec.iter()
+    let operation_breakdown: Vec<serde_json::Value> = operation_counts.iter()
         .map(|(op, (cost, _count))| {
             let percentage = if total_cost > 0.0 { (cost / total_cost) * 100.0 } else { 0.0 };
             let icon = match op.as_str() {
@@ -5072,24 +5038,17 @@ async fn analytics_costs_handler(
         0.0
     };
     
-    // Calculate cache hit rate from actual data
-    let cache_hit_rate = if total_calls > 0 {
-        (cached_count as f64 / total_calls as f64) * 100.0
-    } else {
-        0.0
-    };
+    let cache_hit_rate = 0.0; // Not available from pre-computed summary
     
-    // Estimate potential savings based on cache hit rate potential
-    // If cache hit rate is low, there's more potential for savings
     let potential_savings = if cache_hit_rate < 30.0 {
-        total_cost * 0.20 // 20% potential savings if cache is underutilized
+        total_cost * 0.20
     } else if cache_hit_rate < 50.0 {
-        total_cost * 0.10 // 10% potential savings
+        total_cost * 0.10
     } else {
-        total_cost * 0.05 // 5% potential savings
+        total_cost * 0.05
     };
     
-    tracing::info!("Cost analytics result: total_cost={}, total_calls={}, models={}", 
+    tracing::info!("Cost analytics result (pre-computed): total_cost={}, total_calls={}, models={}", 
         total_cost, total_calls, models_vec.len());
     
     Json(serde_json::json!({
@@ -5985,7 +5944,7 @@ async fn create_eval_run_handler(
 
 /// Execute evaluation run in background
 async fn execute_eval_run(
-    db: Arc<agentreplay_query::Agentreplay>,
+    db: Arc<crate::LazyDb>,
     llm_client: Arc<tokio::sync::RwLock<crate::llm::LLMClient>>,
     run_id: u128,
     test_cases: Vec<TestCase>,
@@ -7612,7 +7571,7 @@ async fn git_stats_handler(
 // ============================================================================
 
 /// Helper to extract model and cost from payload
-fn extract_trace_metadata(db: &Arc<agentreplay_query::Agentreplay>, edge: &AgentFlowEdge) -> (Option<String>, f64) {
+fn extract_trace_metadata(db: &agentreplay_query::Agentreplay, edge: &AgentFlowEdge) -> (Option<String>, f64) {
     if let Ok(Some(payload_bytes)) = db.get_payload(edge.edge_id) {
         if let Ok(payload) = serde_json::from_slice::<serde_json::Value>(&payload_bytes) {
             let model = payload.get("model")
