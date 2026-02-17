@@ -168,6 +168,24 @@ jobs:
             agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz.sig
           if-no-files-found: error
 
+      - name: Normalize macOS updater artifact names
+        run: |
+          BUNDLE_DIR="agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
+            ARCH_SUFFIX="aarch64"
+          else
+            ARCH_SUFFIX="x64"
+          fi
+
+          FILE=$(ls -1 "$BUNDLE_DIR"/*.app.tar.gz 2>/dev/null | head -1 || true)
+          if [[ -n "$FILE" ]]; then
+            NEW_FILE="$BUNDLE_DIR/Agent.Replay.Alpha_${ARCH_SUFFIX}.app.tar.gz"
+            mv "$FILE" "$NEW_FILE"
+            if [[ -f "${FILE}.sig" ]]; then
+              mv "${FILE}.sig" "${NEW_FILE}.sig"
+            fi
+          fi
+
       - name: Create Release & Upload
         uses: softprops/action-gh-release@v2
         with:
@@ -178,7 +196,7 @@ jobs:
           generate_release_notes: true
           files: |
             agentreplay-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz
-            agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz.sig
+            agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/Agent.Replay.Alpha_*.app.tar.gz
+            agentreplay-tauri/target/${{ matrix.target }}/release/bundle/macos/Agent.Replay.Alpha_*.app.tar.gz.sig
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -191,6 +191,8 @@ benchmarks/
 docs-site/
 docs/
 scripts
+!/.github/scripts/
+!/.github/scripts/**
 c-code.py
 *.log
 SECURITY.md
