@@ -2,7 +2,7 @@
 
 <div align="center">
 
-### 🖥️ Local-First Desktop Observability & AI Memory for Your Agents and Coding Tools.
+### 🖥️ Local-First Desktop Evals, Observability & AI Memory for Your Agents and Coding Tools.
 
 **No Docker. No servers. No cloud. Just run.**
 
